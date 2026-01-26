@@ -1,0 +1,10 @@
+venv/
+venv311/
+__pycache__/
+.env
+*.pyc
+instance/
+app/static/uploads/*
+!app/static/uploads/.gitkeep
+data/malunggay_health/*
+!data/malunggay_health/.gitkeep

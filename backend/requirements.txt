@@ -1,0 +1,8 @@
+Flask==2.3.3
+flask-cors==6.0.2
+flask-restful==0.3.10
+Werkzeug==2.3.7
+tensorflow==2.13.0
+Pillow==10.1.0
+numpy==1.24.3
+opencv-python-headless==4.8.0.74
