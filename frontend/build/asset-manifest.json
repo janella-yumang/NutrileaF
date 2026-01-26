@@ -1,0 +1,14 @@
+{
+  "files": {
+    "main.css": "/static/css/main.89faf1f0.css",
+    "main.js": "/static/js/main.c2c06f5d.js",
+    "static/media/moringa.jpg": "/static/media/moringa.1f3bf5b00b865f9947c0.jpg",
+    "index.html": "/index.html",
+    "main.89faf1f0.css.map": "/static/css/main.89faf1f0.css.map",
+    "main.c2c06f5d.js.map": "/static/js/main.c2c06f5d.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.89faf1f0.css",
+    "static/js/main.c2c06f5d.js"
+  ]
+}
