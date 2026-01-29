@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import BottomNav from '../components/BottomNav';
+import HeaderNav from '../components/HeaderNav';
 
 const MarketScreen: React.FC = () => {
     const navigate = useNavigate();
@@ -13,9 +13,9 @@ const MarketScreen: React.FC = () => {
                 <div style={{ width: '52px' }}></div>
             </div>
 
-            <div style={{ 
-                maxWidth: '1400px', 
-                margin: '0 auto', 
+            <div style={{
+                maxWidth: '1400px',
+                margin: '0 auto',
                 padding: '80px 64px',
                 minHeight: 'calc(100vh - 200px)',
                 display: 'flex',
@@ -52,7 +52,7 @@ const MarketScreen: React.FC = () => {
                     }}>
                         Browse malunggay products, check market prices, and explore nutrition information. Coming soon!
                     </p>
-                    <button 
+                    <button
                         onClick={() => navigate('/')}
                         style={{
                             marginTop: '40px',
@@ -81,7 +81,7 @@ const MarketScreen: React.FC = () => {
                 </div>
             </div>
 
-            <BottomNav />
+            <HeaderNav />
         </div>
     );
 };

@@ -1,11 +1,24 @@
-from flask import Flask
+from flask import Flask, send_from_directory
 from flask_cors import CORS
+import os
 
 def create_app():
     app = Flask(__name__)
-    CORS(app)  # allows cross-origin requests
+    CORS(app, supports_credentials=True, expose_headers=['Content-Type'])  # allows cross-origin requests with FormData support
 
     app.config.from_object('config.Config')
+
+    # Serve uploaded files
+    @app.route('/uploads/<path:filename>')
+    def serve_uploads(filename):
+        upload_folder = app.config.get('UPLOAD_FOLDER')
+        if not upload_folder:
+            upload_folder = os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                'static',
+                'uploads',
+            )
+        return send_from_directory(upload_folder, filename)
 
     # Register blueprints
     from app.routes.image_analysis import image_analysis_bp
@@ -17,6 +30,8 @@ def create_app():
     from app.routes.analytics_dashboard import analytics_bp
     from app.routes.chatbot import chatbot_bp
     from app.routes.guides_resources import guides_bp
+    from app.routes.auth import auth_bp
+    from app.routes.forum import forum_bp
 
     app.register_blueprint(image_analysis_bp, url_prefix='/api/image')
     app.register_blueprint(growth_bp, url_prefix='/api/growth')
@@ -27,6 +42,8 @@ def create_app():
     app.register_blueprint(analytics_bp, url_prefix='/api/analytics')
     app.register_blueprint(chatbot_bp, url_prefix='/api/chatbot')
     app.register_blueprint(guides_bp, url_prefix='/api/guides')
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    app.register_blueprint(forum_bp, url_prefix='/api/forum')
 
     @app.route("/")
     def home():

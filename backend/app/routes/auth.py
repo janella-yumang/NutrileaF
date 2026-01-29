@@ -1,0 +1,330 @@
+from flask import Blueprint, request, jsonify, current_app
+from werkzeug.security import generate_password_hash, check_password_hash
+import os
+import sqlite3
+from typing import Tuple
+import jwt
+import datetime
+
+
+auth_bp = Blueprint("auth", __name__)
+
+
+def _get_db_path() -> str:
+    """
+    Resolve the SQLite database path from the Flask config DATABASE_URI.
+    Falls back to backend/data/database.db.
+    """
+    uri = current_app.config.get("DATABASE_URI", "sqlite:///data/database.db")
+
+    if uri.startswith("sqlite:///"):
+        relative_path = uri[len("sqlite:///") :]
+    else:
+        # If a full URI or something else is provided, just use it as a filesystem path
+        relative_path = uri
+
+    # current_app.root_path -> backend/app
+    backend_root = os.path.abspath(os.path.join(current_app.root_path, ".."))
+    db_path = os.path.join(backend_root, relative_path)
+
+    os.makedirs(os.path.dirname(db_path), exist_ok=True)
+    return db_path
+
+
+def _get_connection() -> sqlite3.Connection:
+    db_path = _get_db_path()
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def _init_db() -> None:
+    """Ensure the users table exists."""
+    conn = _get_connection()
+    try:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                full_name TEXT NOT NULL,
+                email TEXT NOT NULL UNIQUE,
+                phone TEXT,
+                address TEXT,
+                password_hash TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+@auth_bp.before_app_request
+def ensure_db_initialized() -> None:
+    # This is cheap thanks to IF NOT EXISTS
+    _init_db()
+
+
+@auth_bp.route("/register", methods=["POST"])
+def register():
+    data = request.get_json(silent=True) or {}
+
+    full_name = (data.get("fullName") or "").strip()
+    email = (data.get("email") or "").strip().lower()
+    phone = (data.get("phone") or "").strip()
+    address = (data.get("address") or "").strip()
+    password = data.get("password") or ""
+
+    if not full_name or not email or not password:
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "message": "Full name, email, and password are required.",
+                }
+            ),
+            400,
+        )
+
+    conn = _get_connection()
+    try:
+        cur = conn.cursor()
+
+        # Check if user already exists
+        cur.execute("SELECT id FROM users WHERE email = ?", (email,))
+        existing = cur.fetchone()
+        if existing:
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "message": "An account with this email already exists.",
+                        "field": "email",
+                    }
+                ),
+                400,
+            )
+
+        password_hash = generate_password_hash(password)
+
+        cur.execute(
+            """
+            INSERT INTO users (full_name, email, phone, address, password_hash)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (full_name, email, phone, address, password_hash),
+        )
+        conn.commit()
+
+        user_id = cur.lastrowid
+
+        # Generate JWT token
+        secret_key = current_app.config.get('SECRET_KEY', 'supersecretkey')
+        token = jwt.encode(
+            {
+                'user_id': user_id,
+                'email': email,
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(days=30)
+            },
+            secret_key,
+            algorithm='HS256'
+        )
+
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "user": {
+                        "id": user_id,
+                        "fullName": full_name,
+                        "email": email,
+                        "phone": phone,
+                        "address": address,
+                    },
+                    "token": token,
+                }
+            ),
+            201,
+        )
+    finally:
+        conn.close()
+
+
+@auth_bp.route("/login", methods=["POST"])
+def login():
+    data = request.get_json(silent=True) or {}
+
+    email = (data.get("email") or "").strip().lower()
+    password = data.get("password") or ""
+
+    if not email or not password:
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "message": "Email and password are required.",
+                }
+            ),
+            400,
+        )
+
+    conn = _get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT id, full_name, email, phone, address, password_hash FROM users WHERE email = ?",
+            (email,),
+        )
+        row = cur.fetchone()
+
+        if not row or not check_password_hash(row["password_hash"], password):
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "message": "Invalid email or password.",
+                    }
+                ),
+                401,
+            )
+
+        user = {
+            "id": row["id"],
+            "fullName": row["full_name"],
+            "email": row["email"],
+            "phone": row["phone"],
+            "address": row["address"],
+        }
+
+        # Generate JWT token
+        secret_key = current_app.config.get('SECRET_KEY', 'supersecretkey')
+        token = jwt.encode(
+            {
+                'user_id': row['id'],
+                'email': row['email'],
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(days=30)
+            },
+            secret_key,
+            algorithm='HS256'
+        )
+
+        return jsonify({
+            "success": True,
+            "user": user,
+            "token": token
+        })
+    finally:
+        conn.close()
+
+
+@auth_bp.route("/verify", methods=["GET"])
+def verify_token():
+    """Verify JWT token and return user info"""
+    auth_header = request.headers.get('Authorization')
+    
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({'success': False, 'message': 'Missing or invalid token'}), 401
+    
+    token = auth_header.split(' ')[1]
+    secret_key = current_app.config.get('SECRET_KEY', 'supersecretkey')
+    
+    try:
+        payload = jwt.decode(token, secret_key, algorithms=['HS256'])
+        user_id = payload.get('user_id')
+        
+        conn = _get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT id, full_name, email, phone, address FROM users WHERE id = ?",
+                (user_id,)
+            )
+            row = cur.fetchone()
+            
+            if not row:
+                return jsonify({'success': False, 'message': 'User not found'}), 404
+            
+            user = {
+                'id': row['id'],
+                'fullName': row['full_name'],
+                'email': row['email'],
+                'phone': row['phone'],
+                'address': row['address'],
+            }
+            
+            return jsonify({'success': True, 'user': user})
+        finally:
+            conn.close()
+    except jwt.ExpiredSignatureError:
+        return jsonify({'success': False, 'message': 'Token expired'}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({'success': False, 'message': 'Invalid token'}), 401
+
+
+@auth_bp.route("/update-profile", methods=["POST"])
+def update_profile():
+    """Update user profile information"""
+    auth_header = request.headers.get('Authorization')
+    
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({'success': False, 'message': 'Missing or invalid token'}), 401
+    
+    token = auth_header.split(' ')[1]
+    secret_key = current_app.config.get('SECRET_KEY', 'supersecretkey')
+    
+    try:
+        payload = jwt.decode(token, secret_key, algorithms=['HS256'])
+        user_id = payload.get('user_id')
+    except jwt.ExpiredSignatureError:
+        return jsonify({'success': False, 'message': 'Token expired'}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({'success': False, 'message': 'Invalid token'}), 401
+    
+    data = request.get_json(silent=True) or {}
+    
+    # Extract fields, with validation
+    full_name = (data.get('fullName') or '').strip()
+    phone = (data.get('phone') or '').strip()
+    address = (data.get('address') or '').strip()
+    
+    if not full_name:
+        return jsonify({'success': False, 'message': 'Full name is required'}), 400
+    
+    conn = _get_connection()
+    try:
+        cur = conn.cursor()
+        
+        # Update user profile (note: email is not updatable)
+        cur.execute(
+            """
+            UPDATE users 
+            SET full_name = ?, phone = ?, address = ?
+            WHERE id = ?
+            """,
+            (full_name, phone, address, user_id)
+        )
+        conn.commit()
+        
+        # Fetch and return updated user data
+        cur.execute(
+            "SELECT id, full_name, email, phone, address FROM users WHERE id = ?",
+            (user_id,)
+        )
+        row = cur.fetchone()
+        
+        if not row:
+            return jsonify({'success': False, 'message': 'User not found'}), 404
+        
+        user = {
+            'id': row['id'],
+            'fullName': row['full_name'],
+            'email': row['email'],
+            'phone': row['phone'],
+            'address': row['address'],
+        }
+        
+        return jsonify({'success': True, 'message': 'Profile updated successfully', 'user': user})
+    finally:
+        conn.close()
+

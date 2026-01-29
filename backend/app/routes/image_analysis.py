@@ -1,21 +1,33 @@
 from flask import Blueprint, request, jsonify, current_app
 import os
 from werkzeug.utils import secure_filename
-import tensorflow as tf
 import numpy as np
 import cv2
 from flask import send_from_directory
 
+# Optional TensorFlow import
+try:
+    import tensorflow as tf
+    TF_AVAILABLE = True
+except ImportError:
+    TF_AVAILABLE = False
+    tf = None
 
 image_analysis_bp = Blueprint('image_analysis', __name__)
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+health_model = None
+
+def load_model():
+    global health_model
+    if health_model is None and TF_AVAILABLE:
+        try:
+            health_model = tf.keras.models.load_model('app/models/malunggay_health_model_tf2.13')
+        except Exception as e:
+            print(f"Warning: Could not load health model: {e}")
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-# Load ML model once
-health_model = tf.keras.models.load_model('app/models/malunggay_health_model_tf2.13')
 
 def preprocess_image(filepath):
     img = cv2.imread(filepath)
@@ -39,15 +51,22 @@ def upload_image():
         os.makedirs(current_app.config['UPLOAD_FOLDER'], exist_ok=True)
         file.save(filepath)
 
-        # Run ML prediction
-        img = preprocess_image(filepath)
-        pred_prob = health_model.predict(img)[0][0]
-        label = 'good' if pred_prob > 0.5 else 'bad'
+        # Run ML prediction if available
+        if TF_AVAILABLE and health_model is not None:
+            img = preprocess_image(filepath)
+            pred_prob = health_model.predict(img)[0][0]
+            label = 'good' if pred_prob > 0.5 else 'bad'
 
-        analysis_result = {
-            'health_status': label,
-            'confidence': float(pred_prob)
-        }
+            analysis_result = {
+                'health_status': label,
+                'confidence': float(pred_prob)
+            }
+        else:
+            analysis_result = {
+                'health_status': 'unknown',
+                'confidence': 0.0,
+                'note': 'TensorFlow not available - analysis skipped'
+            }
 
         return jsonify({
             'success': True,
@@ -72,15 +91,22 @@ def analyze_existing(filename):
     if not os.path.exists(filepath):
         return jsonify({'success': False, 'error': 'File not found'}), 404
 
-    # Run ML prediction on existing file
-    img = preprocess_image(filepath)
-    pred_prob = health_model.predict(img)[0][0]
-    label = 'good' if pred_prob > 0.5 else 'bad'
+    # Run ML prediction on existing file if available
+    if TF_AVAILABLE and health_model is not None:
+        img = preprocess_image(filepath)
+        pred_prob = health_model.predict(img)[0][0]
+        label = 'good' if pred_prob > 0.5 else 'bad'
 
-    analysis_result = {
-        'health_status': label,
-        'confidence': float(pred_prob)
-    }
+        analysis_result = {
+            'health_status': label,
+            'confidence': float(pred_prob)
+        }
+    else:
+        analysis_result = {
+            'health_status': 'unknown',
+            'confidence': 0.0,
+            'note': 'TensorFlow not available - analysis skipped'
+        }
 
     return jsonify({
         'success': True,

@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Camera, Upload, X } from 'lucide-react';
+import HeaderNav from '../components/HeaderNav';
 
 const ScanScreen = () => {
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -13,13 +14,13 @@ const ScanScreen = () => {
     const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
     const [flashEnabled, setFlashEnabled] = useState(false);
     const [hasFlash, setHasFlash] = useState(false);
-   const [results, setResults] = useState<{
-    health?: string;
-    healthConfidence?: number;
-    growthStage?: string;
-    growthConfidence?: number;
-} | null>(null);
-const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:5000";
+    const [results, setResults] = useState<{
+        health?: string;
+        healthConfidence?: number;
+        growthStage?: string;
+        growthConfidence?: number;
+    } | null>(null);
+    const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 
 
@@ -101,7 +102,7 @@ const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:5000";
     const toggleCamera = async () => {
         const newFacingMode = facingMode === 'environment' ? 'user' : 'environment';
         setFacingMode(newFacingMode);
-        
+
         if (cameraActive) {
             stopCamera();
             // Small delay before restarting with new camera
@@ -116,7 +117,7 @@ const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
         const videoTrack = stream.getVideoTracks()[0];
         const newFlashState = !flashEnabled;
-        
+
         try {
             await videoTrack.applyConstraints({
                 advanced: [{ torch: newFlashState } as any]
@@ -129,131 +130,131 @@ const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:5000";
     };
 
     const captureImage = () => {
-    if (!videoRef.current || !canvasRef.current) return;
+        if (!videoRef.current || !canvasRef.current) return;
 
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
 
-    console.log('📸 Capturing image, video dimensions:', video.videoWidth, 'x', video.videoHeight);
+        console.log('📸 Capturing image, video dimensions:', video.videoWidth, 'x', video.videoHeight);
 
-    if (video.videoWidth === 0 || video.videoHeight === 0) {
-        alert('Video not ready. Please wait a moment and try again.');
-        return;
-    }
+        if (video.videoWidth === 0 || video.videoHeight === 0) {
+            alert('Video not ready. Please wait a moment and try again.');
+            return;
+        }
 
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
 
-    ctx.drawImage(video, 0, 0);
+        ctx.drawImage(video, 0, 0);
 
-    const imageData = canvas.toDataURL('image/jpeg');
+        const imageData = canvas.toDataURL('image/jpeg');
 
-    // Stop camera first
-    stopCamera();
+        // Stop camera first
+        stopCamera();
 
-    // Set captured image for preview
-    setCapturedImage(imageData);
+        // Set captured image for preview
+        setCapturedImage(imageData);
 
-    // Analyze using the image data directly
-    analyzeImage(imageData);
-};
-
-
-   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setAnalyzing(true);
-    setProgress(0);
-    setResults(null);
-
-    try {
-        const formData = new FormData();
-        formData.append('file', file);
-
-       const resp = await fetch(`${API_BASE}/image/upload`, {
-    method: 'POST',
-    body: formData
-});
+        // Analyze using the image data directly
+        analyzeImage(imageData);
+    };
 
 
-        const data = await resp.json();
+    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
 
-        if (data.success) {
-        setCapturedImage(`${API_BASE}/image/uploads/${data.filename}`);
-            setResults({
-                health: data.analysis.health_status,
-                healthConfidence: data.analysis.confidence,
-                growthStage: undefined,
-                growthConfidence: 0
+        setAnalyzing(true);
+        setProgress(0);
+        setResults(null);
+
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const resp = await fetch(`${API_BASE}/image/upload`, {
+                method: 'POST',
+                body: formData
             });
-        } else {
-            alert('Upload failed: ' + data.error);
+
+
+            const data = await resp.json();
+
+            if (data.success) {
+                setCapturedImage(`${API_BASE}/image/uploads/${data.filename}`);
+                setResults({
+                    health: data.analysis.health_status,
+                    healthConfidence: data.analysis.confidence,
+                    growthStage: undefined,
+                    growthConfidence: 0
+                });
+            } else {
+                alert('Upload failed: ' + data.error);
+            }
+        } catch (err) {
+            console.error('Upload error:', err);
+            alert('Failed to upload and analyze image.');
+        } finally {
+            setAnalyzing(false);
+            setProgress(100);
         }
-    } catch (err) {
-        console.error('Upload error:', err);
-        alert('Failed to upload and analyze image.');
-    } finally {
-        setAnalyzing(false);
-        setProgress(100);
-    }
-};
+    };
 
 
 
-   const analyzeImage = async (image?: string) => {
-    const imageData = image || capturedImage;
-    if (!imageData) return;
+    const analyzeImage = async (image?: string) => {
+        const imageData = image || capturedImage;
+        if (!imageData) return;
 
-    setAnalyzing(true);
-    setProgress(0);
-    setResults(null);
+        setAnalyzing(true);
+        setProgress(0);
+        setResults(null);
 
-    try {
-        // Convert base64 image to Blob if needed
-        let file: File;
-        if (imageData.startsWith('data:')) {
-            const res = await fetch(imageData);
-            const blob = await res.blob();
-            file = new File([blob], 'malunggay.jpg', { type: 'image/jpeg' });
-        } else {
-            file = new File([imageData], 'malunggay.jpg', { type: 'image/jpeg' });
-        }
+        try {
+            // Convert base64 image to Blob if needed
+            let file: File;
+            if (imageData.startsWith('data:')) {
+                const res = await fetch(imageData);
+                const blob = await res.blob();
+                file = new File([blob], 'malunggay.jpg', { type: 'image/jpeg' });
+            } else {
+                file = new File([imageData], 'malunggay.jpg', { type: 'image/jpeg' });
+            }
 
-        const formData = new FormData();
-        formData.append('file', file);
+            const formData = new FormData();
+            formData.append('file', file);
 
-       const resp = await fetch(`${API_BASE}/image/upload`, {
-            method: 'POST',
-            body: formData
-        });
-
-
-        const data = await resp.json();
-        console.log('🖼 Backend response:', data);
-
-        if (data.success) {
-            setCapturedImage(imageData); // show preview
-            setResults({
-                health: data.analysis.health_status,
-                healthConfidence: data.analysis.confidence,
-                growthStage: undefined,
-                growthConfidence: 0
+            const resp = await fetch(`${API_BASE}/image/upload`, {
+                method: 'POST',
+                body: formData
             });
-        } else {
-            alert('Analysis failed: ' + data.error);
+
+
+            const data = await resp.json();
+            console.log('🖼 Backend response:', data);
+
+            if (data.success) {
+                setCapturedImage(imageData); // show preview
+                setResults({
+                    health: data.analysis.health_status,
+                    healthConfidence: data.analysis.confidence,
+                    growthStage: undefined,
+                    growthConfidence: 0
+                });
+            } else {
+                alert('Analysis failed: ' + data.error);
+            }
+        } catch (err) {
+            console.error('Error analyzing image:', err);
+            alert('Failed to analyze image. Make sure backend is running.');
+        } finally {
+            setAnalyzing(false);
+            setProgress(100);
         }
-    } catch (err) {
-        console.error('Error analyzing image:', err);
-        alert('Failed to analyze image. Make sure backend is running.');
-    } finally {
-        setAnalyzing(false);
-        setProgress(100);
-    }
-};
+    };
 
 
 
@@ -273,8 +274,10 @@ const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:5000";
             flexDirection: 'column',
             width: '100%',
             maxWidth: '100vw',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            paddingTop: '72px'
         }}>
+            <HeaderNav />
             {/* Main Content - Responsive Layout */}
             <div style={{
                 flex: 1,
@@ -339,7 +342,7 @@ const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:5000";
                                     backgroundColor: '#000'
                                 }}
                             />
-                            
+
                             {/* Camera Controls Overlay */}
                             <div style={{
                                 position: 'absolute',
@@ -373,7 +376,7 @@ const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:5000";
                                         </span>
                                     </button>
                                 )}
-                                
+
                                 {/* Camera Flip */}
                                 <button
                                     onClick={toggleCamera}
@@ -479,59 +482,59 @@ const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:5000";
                         </div>
                     )}
 
-                   {/* Analysis Results Overlay */}
-        {results && !analyzing && (
-            <div style={{
-                position: 'absolute',
-                bottom: '20px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                background: 'rgba(255,255,255,0.9)',
-                padding: '16px 24px',
-                borderRadius: '16px',
-                textAlign: 'center',
-                zIndex: 20,
-                boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
-            }}>
-                <h3 style={{ margin: 0, color: '#2d5016' }}>Analysis Results</h3>
+                    {/* Analysis Results Overlay */}
+                    {results && !analyzing && (
+                        <div style={{
+                            position: 'absolute',
+                            bottom: '20px',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            background: 'rgba(255,255,255,0.9)',
+                            padding: '16px 24px',
+                            borderRadius: '16px',
+                            textAlign: 'center',
+                            zIndex: 20,
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+                        }}>
+                            <h3 style={{ margin: 0, color: '#2d5016' }}>Analysis Results</h3>
 
-               {results ? (
-  <>
-    {/* Health */}
-    <p style={{ margin: '4px 0' }}>
-      🌿 <strong>Health:</strong> {results.health ? results.health : '❌ Not recognized'} 
-      {results.healthConfidence !== undefined ? ` (${(results.healthConfidence * 100).toFixed(1)}%)` : ''}
-    </p>
+                            {results ? (
+                                <>
+                                    {/* Health */}
+                                    <p style={{ margin: '4px 0' }}>
+                                        🌿 <strong>Health:</strong> {results.health ? results.health : '❌ Not recognized'}
+                                        {results.healthConfidence !== undefined ? ` (${(results.healthConfidence * 100).toFixed(1)}%)` : ''}
+                                    </p>
 
-    {/* Growth Stage */}
-    <p style={{ margin: '4px 0' }}>
-      🌱 <strong>Growth Stage:</strong> {results.growthStage ? results.growthStage : '❌ Not recognized'} 
-      {results.growthConfidence !== undefined ? ` (${(results.growthConfidence * 100).toFixed(1)}%)` : ''}
-    </p>
-  </>
-) : (
-  <p style={{ margin: '8px 0', color: '#c62828', fontWeight: '600' }}>
-    ❌ Not recognized as a Malunggay leaf
-  </p>
-)}
+                                    {/* Growth Stage */}
+                                    <p style={{ margin: '4px 0' }}>
+                                        🌱 <strong>Growth Stage:</strong> {results.growthStage ? results.growthStage : '❌ Not recognized'}
+                                        {results.growthConfidence !== undefined ? ` (${(results.growthConfidence * 100).toFixed(1)}%)` : ''}
+                                    </p>
+                                </>
+                            ) : (
+                                <p style={{ margin: '8px 0', color: '#c62828', fontWeight: '600' }}>
+                                    ❌ Not recognized as a Malunggay leaf
+                                </p>
+                            )}
 
 
-        <button
-            onClick={resetScan}
-            style={{
-                marginTop: '8px',
-                padding: '8px 16px',
-                background: '#2d5016',
-                color: 'white',
-                border: 'none',
-                borderRadius: '12px',
-                cursor: 'pointer'
-            }}
-        >
-            Scan Again
-        </button>
-    </div>
-)}
+                            <button
+                                onClick={resetScan}
+                                style={{
+                                    marginTop: '8px',
+                                    padding: '8px 16px',
+                                    background: '#2d5016',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '12px',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Scan Again
+                            </button>
+                        </div>
+                    )}
 
 
                     {/* Reset button when image captured */}
