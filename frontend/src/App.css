@@ -91,6 +91,24 @@ body::before {
   display: none;
 }
 
+/* Mobile Menu Toggle - Hidden by default, shown on mobile */
+.mobile-menu-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: rgba(15, 36, 25, 0.1);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+.mobile-menu-toggle:hover {
+  background: rgba(15, 36, 25, 0.15);
+}
+
 /* ===== Header Navigation ===== */
 .header-nav {
   position: fixed;
@@ -1017,12 +1035,255 @@ body::before {
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  .header-nav-container {
+    padding: 0 16px;
+    height: 64px;
+  }
+  
+  .header-nav-links {
+    display: none !important;
+  }
+  
+  .header-actions {
+    display: none !important;
+  }
+  
+  .mobile-menu-toggle {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: rgba(15, 36, 25, 0.1);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-left: auto;
+    position: relative;
+    z-index: 1001;
+  }
+  
+  .mobile-menu-toggle:hover {
+    background: rgba(15, 36, 25, 0.2);
+  }
+  
+  .mobile-menu-toggle:active {
+    transform: scale(0.95);
+  }
+  
+  .logo-image {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .logo-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 20px;
+  }
+  
+  .mobile-nav {
+    position: fixed !important;
+    top: 64px !important;
+    left: 0 !important;
+    right: 0 !important;
+    background: rgba(0, 255, 0, 0.8) !important;
+    border-bottom: 1px solid rgba(15, 36, 25, 0.12);
+    box-shadow: 0 4px 12px rgba(15, 36, 25, 0.15);
+    z-index: 9999 !important;
+    max-height: 70vh;
+    overflow-y: auto;
+    min-height: 200px;
+  }
+  
+  .mobile-nav-item {
+    display: block;
+    width: 100%;
+    padding: 16px 20px;
+    background: rgba(255, 255, 255, 0.9) !important;
+    border: none;
+    border-bottom: 1px solid rgba(15, 36, 25, 0.08);
+    text-align: left;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text-dark) !important;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+  
+  .mobile-nav-item:hover {
+    background: rgba(15, 36, 25, 0.05);
+  }
+  
+  .mobile-nav-item.active {
+    background: rgba(15, 36, 25, 0.1);
+    color: var(--primary-green);
+  }
+  
+  .mobile-nav-about-group {
+    border-top: 1px solid rgba(15, 36, 25, 0.12);
+  }
+  
+  .mobile-nav-about-label {
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-medium);
+    background: rgba(15, 36, 25, 0.03);
+  }
+  
+  .mobile-nav-about-item {
+    padding-left: 32px;
+    font-size: 15px;
+  }
+  
+  .hero-section {
+    padding: 80px 0 40px;
+  }
+  
+  .hero-content {
+    padding: 0 16px;
+    text-align: center;
+  }
+  
+  .hero-title {
+    font-size: 32px;
+    line-height: 1.2;
+  }
+  
+  .hero-subtitle {
+    font-size: 16px;
+    margin-top: 12px;
+  }
+  
+  .hero-carousel {
+    margin-top: 32px;
+  }
+  
+  .news-section {
+    padding: 24px 16px;
+  }
+  
+  .news-title {
+    font-size: 20px;
+    margin-bottom: 16px;
+  }
+  
+  .news-item {
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  
+  .news-item-title {
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  
+  .news-item-source {
+    font-size: 12px;
+    margin-top: 8px;
+  }
+  
+  /* Chat Screen Mobile Styles */
+  .chat-screen {
+    padding: 72px 0 0;
+  }
+  
+  .chat-header {
+    padding: 16px;
+  }
+  
+  .chat-messages {
+    padding: 16px;
+  }
+  
+  .chat-message {
+    max-width: 85%;
+  }
+  
+  .chat-input-area {
+    padding: 16px;
+  }
+  
+  .chat-input-wrapper {
+    padding: 12px 16px;
+  }
+  
+  .chat-send-button {
+    width: 44px;
+    height: 44px;
+  }
+  
+  .quick-actions {
+    padding: 0 16px 16px;
+    gap: 8px;
+  }
+  
+  .quick-action-button {
+    padding: 12px 16px;
+    font-size: 13px;
+  }
+  
+  /* General Mobile Button Styles */
+  .btn {
+    padding: 12px 20px;
+    font-size: 14px;
+    min-height: 44px;
+  }
+  
+  .btn-small {
+    padding: 8px 16px;
+    font-size: 13px;
+    min-height: 36px;
+  }
+  
+  .btn-large {
+    padding: 16px 24px;
+    font-size: 16px;
+    min-height: 52px;
+  }
+  
+  /* Touch-friendly targets */
+  .clickable {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Form inputs mobile */
+  input, textarea, select {
+    font-size: 16px;
+    padding: 12px 16px;
+    min-height: 44px;
+  }
+  
+  /* Cards mobile */
+  .card {
+    margin: 8px 0;
+    padding: 16px;
+  }
+  
+  /* Tables mobile */
+  table {
+    font-size: 14px;
+  }
+  
+  th, td {
+    padding: 8px 12px;
+  }
+  
   .quick-actions-section {
-    padding: 0 32px;
+    padding: 0 16px;
+    flex-direction: column;
+  }
+  
+  .quick-actions {
+    width: 100%;
+    order: 2;
   }
   
   .main-content-area {
-    gap: 32px;
+    order: 1;
+    gap: 24px;
   }
   
   .big-buttons-grid {
@@ -1031,7 +1292,7 @@ body::before {
   }
   
   .big-button {
-    padding: 24px 20px;
+    padding: 20px 16px;
     gap: 12px;
   }
   
@@ -2150,6 +2411,179 @@ body::before {
 .login-btn:hover:not(:disabled) {
   transform: translateY(-3px);
   box-shadow: 0 14px 36px rgba(26, 95, 58, 0.28);
+}
+
+/* Mobile Login Page Styles */
+@media (max-width: 768px) {
+  .login-hero {
+    padding: 60px 32px 40px;
+  }
+  
+  .login-hero-title {
+    font-size: 36px;
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+  
+  .login-hero-subtitle {
+    font-size: 16px;
+    line-height: 1.4;
+  }
+  
+  .login-container {
+    padding: 40px 24px 60px;
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+  
+  .login-form-wrapper {
+    padding: 32px 24px;
+    border-radius: var(--border-radius-md);
+  }
+  
+  .login-form {
+    gap: 20px;
+  }
+  
+  .form-group {
+    gap: 8px;
+  }
+  
+  .form-label {
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+  
+  .form-input {
+    padding: 14px 16px;
+    font-size: 16px;
+    border-radius: var(--border-radius-sm);
+  }
+  
+  .login-btn {
+    padding: 16px 24px;
+    font-size: 16px;
+    border-radius: var(--border-radius-sm);
+    min-height: 52px;
+  }
+  
+  .form-checkbox {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .checkbox-label {
+    font-size: 13px;
+  }
+}
+
+/* Mobile Register Page Styles */
+@media (max-width: 768px) {
+  .register-hero {
+    padding: 60px 32px 40px;
+  }
+  
+  .register-hero-title {
+    font-size: 36px;
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+  
+  .register-hero-subtitle {
+    font-size: 16px;
+    line-height: 1.4;
+  }
+  
+  .register-container {
+    padding: 40px 24px 60px;
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+  
+  .register-form-wrapper {
+    padding: 32px 24px;
+    border-radius: var(--border-radius-md);
+  }
+  
+  .register-form {
+    gap: 24px;
+  }
+  
+  .form-group {
+    gap: 8px;
+  }
+  
+  .form-label {
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+  
+  .form-input {
+    padding: 14px 16px;
+    font-size: 16px;
+    border-radius: var(--border-radius-sm);
+  }
+  
+  .register-btn {
+    padding: 16px 24px;
+    font-size: 16px;
+    border-radius: var(--border-radius-sm);
+    min-height: 52px;
+  }
+  
+  .form-input-wrapper {
+    position: relative;
+  }
+  
+  .password-toggle {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-medium);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: var(--border-radius-sm);
+    transition: all 0.2s ease;
+  }
+  
+  .password-toggle:hover {
+    background: rgba(107, 201, 142, 0.1);
+    color: var(--primary-green);
+  }
+  
+  .form-section-title {
+    font-size: 18px;
+    margin-bottom: 20px;
+  }
+  
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  /* Footer mobile styles */
+  .footer {
+    padding: 20px 24px;
+  }
+  
+  .footer-content {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .footer-section {
+    text-align: center;
+  }
+  
+  .footer-bottom {
+    text-align: center;
+    padding-top: 20px;
+  }
 }
 
 .login-btn:active:not(:disabled) {

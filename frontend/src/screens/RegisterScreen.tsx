@@ -34,7 +34,7 @@ const RegisterScreen: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
-  const API_BASE = process.env.REACT_APP_API_URL || 'http://127.0.0.1:5000/api';
+  const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrileaf-backend.onrender.com/api';
 
   const validateForm = (): boolean => {
     const errors: FormErrors = {};
@@ -92,12 +92,20 @@ const RegisterScreen: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setApiError(null);
+    
+    // Debug: Log form data
+    console.log('Mobile register - Form data:', formData);
+    console.log('Mobile register - API_BASE:', API_BASE);
+    
     if (!validateForm()) {
+      console.log('Mobile register - Validation failed');
       return;
     }
 
     setIsSubmitting(true);
     try {
+      console.log('Mobile register - Sending request to:', `${API_BASE}/auth/register`);
+      
       const response = await fetch(`${API_BASE}/auth/register`, {
         method: 'POST',
         headers: {
@@ -112,7 +120,10 @@ const RegisterScreen: React.FC = () => {
         }),
       });
 
+      console.log('Mobile register - Response status:', response.status);
+      
       const data = await response.json();
+      console.log('Mobile register - Response data:', data);
 
       if (!response.ok || !data.success) {
         const message = data?.message || 'Registration failed. Please try again.';
@@ -130,9 +141,10 @@ const RegisterScreen: React.FC = () => {
 
       // Registration succeeded – redirect to login page
       // User will need to login to access the app
+      console.log('Mobile register - Registration successful, redirecting to login');
       navigate('/login');
     } catch (error) {
-      console.error('Registration error:', error);
+      console.error('Mobile register error:', error);
       setApiError('Something went wrong while creating your account. Please try again.');
     } finally {
       setIsSubmitting(false);

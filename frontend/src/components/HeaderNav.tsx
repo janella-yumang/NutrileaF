@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { User } from 'lucide-react';
+import { User, Menu } from 'lucide-react';
 
 const HeaderNav: React.FC = () => {
   const navigate = useNavigate();
@@ -13,6 +13,7 @@ const HeaderNav: React.FC = () => {
   const [userId, setUserId] = useState<number | null>(null);
   const [profileIcon, setProfileIcon] = useState<string | null>(null);
   const [showProfileCard, setShowProfileCard] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const aboutRef = useRef<HTMLDivElement | null>(null);
   const profileRef = useRef<HTMLDivElement | null>(null);
 
@@ -180,6 +181,16 @@ const HeaderNav: React.FC = () => {
           </div>
         </nav>
 
+        {/* Mobile Menu Toggle */}
+        <button 
+          className="mobile-menu-toggle"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          type="button"
+          title="Toggle menu"
+        >
+          <Menu size={20} color="#0f2419" />
+        </button>
+
         <div className="header-actions">
           {isLoggedIn ? (
             <>
@@ -262,52 +273,222 @@ const HeaderNav: React.FC = () => {
             </>
           )}
         </div>
-
-        {/* Mobile Menu Button */}
-        <button className="mobile-menu-btn" onClick={() => {
-          const mobileNav = document.querySelector('.mobile-nav');
-          mobileNav?.classList.toggle('open');
-        }}>
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
       </div>
 
       {/* Mobile Navigation Dropdown */}
-      <nav className="mobile-nav">
-        {navItems.map((item) => (
-          <button
-            key={item.path}
-            className={`mobile-nav-item ${location.pathname === item.path ? 'active' : ''}`}
-            onClick={() => handleNavigate(item.path)}
-            type="button"
-          >
-            <span className="nav-label">{item.label}</span>
-          </button>
-        ))}
+      {mobileMenuOpen && (
+        <div style={{
+          position: 'fixed',
+          top: '64px',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          zIndex: 9999,
+        }}>
+          <nav style={{
+            background: 'white',
+            height: '100%',
+            overflowY: 'auto',
+            boxShadow: '0 -4px 20px rgba(0,0,0,0.1)',
+            position: 'relative',
+            zIndex: 10000
+          }}>
+            <div style={{
+              padding: '20px',
+              borderBottom: '1px solid #eee',
+              background: '#f8f9fa'
+            }}>
+              <div style={{
+                fontSize: '18px',
+                fontWeight: 'bold',
+                color: '#333'
+              }}>
+                Menu
+              </div>
+            </div>
+            
+            {navItems.map((item) => (
+              <button
+                key={item.path}
+                style={{
+                  width: '100%',
+                  padding: '16px 20px',
+                  background: 'transparent',
+                  border: 'none',
+                  borderBottom: '1px solid #eee',
+                  textAlign: 'left',
+                  fontSize: '16px',
+                  color: location.pathname === item.path ? '#1a5f3a' : '#333',
+                  fontWeight: location.pathname === item.path ? 'bold' : 'normal',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s',
+                  position: 'relative',
+                  zIndex: 10001
+                }}
+                onClick={() => {
+                  handleNavigate(item.path);
+                  setMobileMenuOpen(false);
+                }}
+                type="button"
+              >
+                {item.label}
+              </button>
+            ))}
 
-        {/* Mobile About dropdown items */}
-        <div className="mobile-nav-about-group">
-          <div className="mobile-nav-about-label">About</div>
-          {aboutItems.map((item) => (
-            <button
-              key={item.path}
-              className={`mobile-nav-item mobile-nav-about-item ${
-                location.pathname === item.path ? 'active' : ''
-              }`}
-              onClick={() => {
-                handleNavigate(item.path);
-                const mobileNav = document.querySelector('.mobile-nav');
-                mobileNav?.classList.remove('open');
-              }}
-              type="button"
-            >
-              <span className="nav-label">{item.label}</span>
-            </button>
-          ))}
+            <div style={{
+              padding: '12px 20px',
+              background: '#f8f9fa',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              color: '#666',
+              borderTop: '1px solid #eee'
+            }}>
+              About
+            </div>
+            
+            {aboutItems.map((item) => (
+              <button
+                key={item.path}
+                style={{
+                  width: '100%',
+                  padding: '16px 20px 16px 32px',
+                  background: 'transparent',
+                  border: 'none',
+                  borderBottom: '1px solid #eee',
+                  textAlign: 'left',
+                  fontSize: '15px',
+                  color: location.pathname === item.path ? '#1a5f3a' : '#333',
+                  fontWeight: location.pathname === item.path ? 'bold' : 'normal',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s',
+                  position: 'relative',
+                  zIndex: 10001
+                }}
+                onClick={() => {
+                  handleNavigate(item.path);
+                  setMobileMenuOpen(false);
+                }}
+                type="button"
+              >
+                {item.label}
+              </button>
+            ))}
+
+            {/* Login/Register Section */}
+            <div style={{
+              padding: '12px 20px',
+              background: '#f8f9fa',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              color: '#666',
+              borderTop: '1px solid #eee'
+            }}>
+              Account
+            </div>
+            
+            {isLoggedIn ? (
+              <>
+                <button
+                  style={{
+                    width: '100%',
+                    padding: '16px 20px',
+                    background: 'transparent',
+                    border: 'none',
+                    borderBottom: '1px solid #eee',
+                    textAlign: 'left',
+                    fontSize: '16px',
+                    color: '#333',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s',
+                    position: 'relative',
+                    zIndex: 10001
+                  }}
+                  onClick={() => {
+                    handleNavigate('/profile');
+                    setMobileMenuOpen(false);
+                  }}
+                  type="button"
+                >
+                  Profile
+                </button>
+                <button
+                  style={{
+                    width: '100%',
+                    padding: '16px 20px',
+                    background: 'transparent',
+                    border: 'none',
+                    borderBottom: '1px solid #eee',
+                    textAlign: 'left',
+                    fontSize: '16px',
+                    color: '#dc3545',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s',
+                    position: 'relative',
+                    zIndex: 10001
+                  }}
+                  onClick={() => {
+                    handleLogout();
+                    setMobileMenuOpen(false);
+                  }}
+                  type="button"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  style={{
+                    width: '100%',
+                    padding: '16px 20px',
+                    background: 'transparent',
+                    border: 'none',
+                    borderBottom: '1px solid #eee',
+                    textAlign: 'left',
+                    fontSize: '16px',
+                    color: '#1a5f3a',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s',
+                    position: 'relative',
+                    zIndex: 10001
+                  }}
+                  onClick={() => {
+                    handleNavigate('/login');
+                    setMobileMenuOpen(false);
+                  }}
+                  type="button"
+                >
+                  Login
+                </button>
+                <button
+                  style={{
+                    width: '100%',
+                    padding: '16px 20px',
+                    background: 'transparent',
+                    border: 'none',
+                    borderBottom: '1px solid #eee',
+                    textAlign: 'left',
+                    fontSize: '16px',
+                    color: '#1a5f3a',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s',
+                    position: 'relative',
+                    zIndex: 10001
+                  }}
+                  onClick={() => {
+                    handleNavigate('/register');
+                    setMobileMenuOpen(false);
+                  }}
+                  type="button"
+                >
+                  Register
+                </button>
+              </>
+            )}
+          </nav>
         </div>
-      </nav>
+      )}
     </header>
   );
 };
