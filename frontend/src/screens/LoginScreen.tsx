@@ -27,7 +27,7 @@ const LoginScreen: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
-  const API_BASE = process.env.REACT_APP_API_URL || 'http://127.0.0.1:5000/api';
+  const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrileaf-backend.onrender.com/api';
 
   const validateForm = (): boolean => {
     const errors: FormErrors = {};
@@ -65,12 +65,20 @@ const LoginScreen: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setApiError(null);
+    
+    // Debug: Log form data
+    console.log('Mobile login - Form data:', formData);
+    console.log('Mobile login - API_BASE:', API_BASE);
+    
     if (!validateForm()) {
+      console.log('Mobile login - Validation failed');
       return;
     }
 
     setIsSubmitting(true);
     try {
+      console.log('Mobile login - Sending request to:', `${API_BASE}/auth/login`);
+      
       const response = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: {
@@ -82,7 +90,10 @@ const LoginScreen: React.FC = () => {
         }),
       });
 
+      console.log('Mobile login - Response status:', response.status);
+      
       const data = await response.json();
+      console.log('Mobile login - Response data:', data);
 
       if (!response.ok || !data.success) {
         const message = data?.message || 'Login failed. Please check your credentials.';
@@ -90,18 +101,15 @@ const LoginScreen: React.FC = () => {
         return;
       }
 
-      // Store user and token in localStorage
-      if (data.user) {
-        window.localStorage.setItem('nutrileaf_user', JSON.stringify(data.user));
-      }
-      if (data.token) {
-        window.localStorage.setItem('nutrileaf_token', data.token);
-      }
-
+      // Store auth data
+      localStorage.setItem('nutrileaf_token', data.token);
+      localStorage.setItem('nutrileaf_user', JSON.stringify(data.user));
+      
+      console.log('Mobile login - Login successful, navigating to home');
       // Navigate to home after successful login
       navigate('/');
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Mobile login error:', error);
       setApiError('Something went wrong while signing in. Please try again.');
     } finally {
       setIsSubmitting(false);
