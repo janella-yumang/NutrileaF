@@ -1,11 +1,15 @@
 from app import create_app
 import os
-from flask_cors import CORS
 
 app = create_app()
-CORS(app)
-# Ensure upload folder exists
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+# Ensure upload folders exist
+with app.app_context():
+    upload_folder = app.config.get('UPLOAD_FOLDER')
+    if upload_folder:
+        os.makedirs(upload_folder, exist_ok=True)
+        os.makedirs(os.path.join(upload_folder, 'forum'), exist_ok=True)
+        os.makedirs(os.path.join(upload_folder, 'profiles'), exist_ok=True)
 
 # Print all registered routes (for debugging)
 print("\n=== Registered Routes ===")
@@ -14,4 +18,4 @@ for rule in app.url_map.iter_rules():
 print("========================\n")
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=False)

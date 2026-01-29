@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Leaf, ArrowLeft, Bot } from 'lucide-react';
+import HeaderNav from '../components/HeaderNav';
 
 const ChatScreen = () => {
     const [messages, setMessages] = useState([
@@ -70,8 +71,10 @@ const ChatScreen = () => {
             display: 'flex',
             flexDirection: 'column',
             position: 'relative',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            paddingTop: '72px'
         }}>
+            <HeaderNav />
             {/* Decorative Background Elements */}
             <div style={{
                 position: 'absolute',
@@ -212,7 +215,7 @@ const ChatScreen = () => {
                                 justifyContent: 'center',
                                 boxShadow: '0 4px 12px rgba(139, 195, 74, 0.4)'
                             }}>
-                              
+
                             </div>
                         </div>
 
@@ -301,7 +304,7 @@ const ChatScreen = () => {
                             )}
                             <div>
                                 <div style={{
-                                    background: msg.role === 'user' 
+                                    background: msg.role === 'user'
                                         ? 'linear-gradient(135deg, #2d5016 0%, #1a5f3a 100%)'
                                         : 'rgba(255, 255, 255, 0.9)',
                                     color: msg.role === 'user' ? '#ffffff' : '#0f2419',
@@ -311,7 +314,7 @@ const ChatScreen = () => {
                                     lineHeight: '1.5',
                                     backdropFilter: 'blur(10px)',
                                     border: msg.role === 'user' ? 'none' : '1px solid rgba(45, 80, 22, 0.1)',
-                                    boxShadow: msg.role === 'user' 
+                                    boxShadow: msg.role === 'user'
                                         ? '0 4px 16px rgba(45, 80, 22, 0.3)'
                                         : '0 2px 8px rgba(0, 0, 0, 0.05)'
                                 }}>
@@ -468,7 +471,7 @@ const ChatScreen = () => {
                             width: '52px',
                             height: '52px',
                             borderRadius: '50%',
-                            background: inputMessage.trim() 
+                            background: inputMessage.trim()
                                 ? 'linear-gradient(135deg, #2d5016 0%, #1a5f3a 100%)'
                                 : 'rgba(45, 80, 22, 0.2)',
                             border: 'none',
@@ -477,7 +480,7 @@ const ChatScreen = () => {
                             justifyContent: 'center',
                             cursor: inputMessage.trim() ? 'pointer' : 'not-allowed',
                             transition: 'all 0.3s ease',
-                            boxShadow: inputMessage.trim() 
+                            boxShadow: inputMessage.trim()
                                 ? '0 8px 24px rgba(45, 80, 22, 0.4)'
                                 : 'none'
                         }}
