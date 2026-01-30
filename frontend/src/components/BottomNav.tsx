@@ -10,7 +10,7 @@ const BottomNav: React.FC = () => {
     { icon: '🔍', label: 'Scan', path: '/scan' },
     { icon: '🛒', label: 'Market', path: '/market' },
     { icon: '💬', label: 'Chat', path: '/chat' },
-    { icon: '👤', label: 'Profile', path: '/analytics' },
+    { icon: '�', label: 'Forum', path: '/forum' },
   ];
 
   return (

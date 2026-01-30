@@ -1,0 +1,496 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { User, Menu } from 'lucide-react';
+
+const HeaderNav: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userName, setUserName] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userPhone, setUserPhone] = useState<string | null>(null);
+  const [userId, setUserId] = useState<number | null>(null);
+  const [profileIcon, setProfileIcon] = useState<string | null>(null);
+  const [showProfileCard, setShowProfileCard] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const aboutRef = useRef<HTMLDivElement | null>(null);
+  const profileRef = useRef<HTMLDivElement | null>(null);
+
+  // Check login status on mount
+  useEffect(() => {
+    const token = localStorage.getItem('nutrileaf_token');
+    const user = localStorage.getItem('nutrileaf_user');
+    
+    if (token && user) {
+      setIsLoggedIn(true);
+      try {
+        const userData = JSON.parse(user);
+        setUserId(userData.id);
+        setUserName(userData.fullName);
+        setUserEmail(userData.email);
+        setUserPhone(userData.phone);
+        
+        // Load profile icon
+        const userIcon = localStorage.getItem(`nutrileaf_profile_icon_${userData.id}`);
+        if (userIcon) {
+          setProfileIcon(userIcon);
+        }
+      } catch (error) {
+        console.error('Failed to parse user data:', error);
+      }
+    }
+  }, []);
+
+  // Listen for storage changes (login/logout in other tabs)
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const token = localStorage.getItem('nutrileaf_token');
+      const user = localStorage.getItem('nutrileaf_user');
+      
+      if (token && user) {
+        setIsLoggedIn(true);
+        try {
+          const userData = JSON.parse(user);
+          setUserId(userData.id);
+          setUserName(userData.fullName);
+          setUserEmail(userData.email);
+          setUserPhone(userData.phone);
+          
+          // Load profile icon
+          const userIcon = localStorage.getItem(`nutrileaf_profile_icon_${userData.id}`);
+          if (userIcon) {
+            setProfileIcon(userIcon);
+          }
+        } catch (error) {
+          console.error('Failed to parse user data:', error);
+        }
+      } else {
+        setIsLoggedIn(false);
+        setUserName(null);
+        setUserEmail(null);
+        setUserPhone(null);
+        setUserId(null);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // Poll for profile icon updates every 500ms
+  useEffect(() => {
+    if (!userId || !isLoggedIn) return;
+
+    const interval = setInterval(() => {
+      const userIcon = localStorage.getItem(`nutrileaf_profile_icon_${userId}`);
+      if (userIcon) {
+        setProfileIcon(userIcon);
+      }
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, [userId, isLoggedIn]);
+
+  const navItems = [
+    { label: 'Home', path: '/' },
+    { label: 'Scan', path: '/scan' },
+    { label: 'Market', path: '/market' },
+    { label: 'Chat', path: '/chat' },
+    { label: 'Forum', path: '/forum' },
+  ];
+
+  const aboutItems = [
+    { label: 'About us', path: '/about' },
+    { label: 'About moringa', path: '/moringa' },
+  ];
+
+  const handleNavigate = (path: string) => {
+    navigate(path);
+    setAboutOpen(false);
+  };
+
+  const handleRegister = () => {
+    navigate('/register');
+  };
+
+  const handleLogin = () => {
+    navigate('/login');
+  };
+
+  const handleProfile = () => {
+    navigate('/profile');
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('nutrileaf_token');
+    localStorage.removeItem('nutrileaf_user');
+    setIsLoggedIn(false);
+    setUserName(null);
+    navigate('/login');
+  };
+
+  return (
+    <header className="header-nav">
+      <div className="header-nav-container">
+        {/* Logo */}
+        <div className="header-logo" onClick={() => navigate('/')}>
+          <img className="logo-image" src="/nutrileaf logo.png" alt="NutriLeaf logo" />
+          <span className="logo-text">NutriLeaf</span>
+        </div>
+
+        {/* Navigation Links */}
+        <nav className="header-nav-links">
+          {navItems.map((item) => (
+            <button
+              key={item.path}
+              className={`header-nav-item ${location.pathname === item.path ? 'active' : ''}`}
+              onClick={() => handleNavigate(item.path)}
+              type="button"
+            >
+              <span className="nav-label">{item.label}</span>
+            </button>
+          ))}
+
+          {/* About dropdown */}
+          <div
+            ref={aboutRef}
+            className={`header-nav-item header-nav-dropdown ${
+              location.pathname === '/about' || location.pathname === '/moringa' ? 'active' : ''
+            } ${aboutOpen ? 'open' : ''}`}
+          >
+            <button
+              type="button"
+              className="header-nav-dropdown-toggle"
+              onClick={() => setAboutOpen((prev) => !prev)}
+            >
+              <span className="nav-label">About</span>
+            </button>
+            <div className="header-nav-dropdown-menu">
+              {aboutItems.map((item) => (
+                <button
+                  key={item.path}
+                  className="header-nav-dropdown-item"
+                  onClick={() => handleNavigate(item.path)}
+                  type="button"
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </nav>
+
+        {/* Mobile Menu Toggle */}
+        <button 
+          className="mobile-menu-toggle"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          type="button"
+          title="Toggle menu"
+        >
+          <Menu size={20} color="#0f2419" />
+        </button>
+
+        <div className="header-actions">
+          {isLoggedIn ? (
+            <>
+              <div className="user-greeting">
+                Welcome, {userName}
+              </div>
+              
+              <div className="header-profile-wrapper" ref={profileRef}>
+                <button 
+                  className="header-profile-icon-btn" 
+                  type="button"
+                  onMouseEnter={() => setShowProfileCard(true)}
+                  onMouseLeave={() => setShowProfileCard(false)}
+                  onClick={handleProfile}
+                  title="Go to profile"
+                >
+                  {profileIcon ? (
+                    <img src={profileIcon} alt="Profile" className="header-profile-icon" />
+                  ) : (
+                    <div className="header-profile-icon-placeholder">
+                      <User size={24} />
+                    </div>
+                  )}
+                </button>
+                
+                {showProfileCard && (
+                  <div className="profile-card-popup">
+                    <div className="profile-card-icon">
+                      {profileIcon ? (
+                        <img src={profileIcon} alt="Profile" />
+                      ) : (
+                        <div className="profile-card-placeholder">
+                          <User size={32} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="profile-card-info">
+                      <div className="profile-card-name">{userName}</div>
+                      <div className="profile-card-email">{userEmail}</div>
+                      {userPhone && <div className="profile-card-phone">{userPhone}</div>}
+                      <button 
+                        className="profile-card-edit-btn"
+                        type="button"
+                        onClick={() => {
+                          setShowProfileCard(false);
+                          handleProfile();
+                        }}
+                      >
+                        Edit Profile
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <button 
+                className="header-action-btn header-action-btn--danger" 
+                type="button"
+                onClick={handleLogout}
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <button 
+                className="header-action-btn header-action-btn--ghost" 
+                type="button"
+                onClick={handleLogin}
+              >
+                Login
+              </button>
+              <button 
+                className="header-action-btn" 
+                type="button"
+                onClick={handleRegister}
+              >
+                Register
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Mobile Navigation Dropdown */}
+      {mobileMenuOpen && (
+        <div style={{
+          position: 'fixed',
+          top: '64px',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          zIndex: 9999,
+        }}>
+          <nav style={{
+            background: 'white',
+            height: '100%',
+            overflowY: 'auto',
+            boxShadow: '0 -4px 20px rgba(0,0,0,0.1)',
+            position: 'relative',
+            zIndex: 10000
+          }}>
+            <div style={{
+              padding: '20px',
+              borderBottom: '1px solid #eee',
+              background: '#f8f9fa'
+            }}>
+              <div style={{
+                fontSize: '18px',
+                fontWeight: 'bold',
+                color: '#333'
+              }}>
+                Menu
+              </div>
+            </div>
+            
+            {navItems.map((item) => (
+              <button
+                key={item.path}
+                style={{
+                  width: '100%',
+                  padding: '16px 20px',
+                  background: 'transparent',
+                  border: 'none',
+                  borderBottom: '1px solid #eee',
+                  textAlign: 'left',
+                  fontSize: '16px',
+                  color: location.pathname === item.path ? '#1a5f3a' : '#333',
+                  fontWeight: location.pathname === item.path ? 'bold' : 'normal',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s',
+                  position: 'relative',
+                  zIndex: 10001
+                }}
+                onClick={() => {
+                  handleNavigate(item.path);
+                  setMobileMenuOpen(false);
+                }}
+                type="button"
+              >
+                {item.label}
+              </button>
+            ))}
+
+            <div style={{
+              padding: '12px 20px',
+              background: '#f8f9fa',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              color: '#666',
+              borderTop: '1px solid #eee'
+            }}>
+              About
+            </div>
+            
+            {aboutItems.map((item) => (
+              <button
+                key={item.path}
+                style={{
+                  width: '100%',
+                  padding: '16px 20px 16px 32px',
+                  background: 'transparent',
+                  border: 'none',
+                  borderBottom: '1px solid #eee',
+                  textAlign: 'left',
+                  fontSize: '15px',
+                  color: location.pathname === item.path ? '#1a5f3a' : '#333',
+                  fontWeight: location.pathname === item.path ? 'bold' : 'normal',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s',
+                  position: 'relative',
+                  zIndex: 10001
+                }}
+                onClick={() => {
+                  handleNavigate(item.path);
+                  setMobileMenuOpen(false);
+                }}
+                type="button"
+              >
+                {item.label}
+              </button>
+            ))}
+
+            {/* Login/Register Section */}
+            <div style={{
+              padding: '12px 20px',
+              background: '#f8f9fa',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              color: '#666',
+              borderTop: '1px solid #eee'
+            }}>
+              Account
+            </div>
+            
+            {isLoggedIn ? (
+              <>
+                <button
+                  style={{
+                    width: '100%',
+                    padding: '16px 20px',
+                    background: 'transparent',
+                    border: 'none',
+                    borderBottom: '1px solid #eee',
+                    textAlign: 'left',
+                    fontSize: '16px',
+                    color: '#333',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s',
+                    position: 'relative',
+                    zIndex: 10001
+                  }}
+                  onClick={() => {
+                    handleNavigate('/profile');
+                    setMobileMenuOpen(false);
+                  }}
+                  type="button"
+                >
+                  Profile
+                </button>
+                <button
+                  style={{
+                    width: '100%',
+                    padding: '16px 20px',
+                    background: 'transparent',
+                    border: 'none',
+                    borderBottom: '1px solid #eee',
+                    textAlign: 'left',
+                    fontSize: '16px',
+                    color: '#dc3545',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s',
+                    position: 'relative',
+                    zIndex: 10001
+                  }}
+                  onClick={() => {
+                    handleLogout();
+                    setMobileMenuOpen(false);
+                  }}
+                  type="button"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  style={{
+                    width: '100%',
+                    padding: '16px 20px',
+                    background: 'transparent',
+                    border: 'none',
+                    borderBottom: '1px solid #eee',
+                    textAlign: 'left',
+                    fontSize: '16px',
+                    color: '#1a5f3a',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s',
+                    position: 'relative',
+                    zIndex: 10001
+                  }}
+                  onClick={() => {
+                    handleNavigate('/login');
+                    setMobileMenuOpen(false);
+                  }}
+                  type="button"
+                >
+                  Login
+                </button>
+                <button
+                  style={{
+                    width: '100%',
+                    padding: '16px 20px',
+                    background: 'transparent',
+                    border: 'none',
+                    borderBottom: '1px solid #eee',
+                    textAlign: 'left',
+                    fontSize: '16px',
+                    color: '#1a5f3a',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s',
+                    position: 'relative',
+                    zIndex: 10001
+                  }}
+                  onClick={() => {
+                    handleNavigate('/register');
+                    setMobileMenuOpen(false);
+                  }}
+                  type="button"
+                >
+                  Register
+                </button>
+              </>
+            )}
+          </nav>
+        </div>
+      )}
+    </header>
+  );
+};
+
+export default HeaderNav;

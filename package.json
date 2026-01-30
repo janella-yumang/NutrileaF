@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "axios": "^1.13.2",
+    "react-scripts": "^0.0.0",
     "workbox-precaching": "^7.4.0",
     "workbox-webpack-plugin": "^7.4.0"
   }
