@@ -28,8 +28,12 @@ Run the backend
 python run.py
 
 BEFORE PULLING
+
 git lfs install
 
 CLONE THE REPO
+
 git clone https://github.com/hlynxs/Nutrileaf2.git
+
+
 git lfs pull
