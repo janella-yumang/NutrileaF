@@ -420,6 +420,9 @@ def create_post():
         conn.commit()
         post_id = cur.lastrowid
         
+        print(f"DEBUG: Post created successfully with ID: {post_id}")
+        print(f"DEBUG: Post data: user_id={user_id}, title={title}, content={content}")
+        
         # Get user name and profile image
         cur.execute("SELECT full_name, profile_image FROM users WHERE id = ?", (user_id,))
         user_row = cur.fetchone()
