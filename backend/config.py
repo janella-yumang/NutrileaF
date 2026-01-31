@@ -13,6 +13,11 @@ class Config:
     # Database configuration
     DATABASE_URI = os.environ.get('DATABASE_URI', 'sqlite:///data/database.db')
     
+    # On Render, use persistent disk storage
+    if os.environ.get('RENDER'):
+        # Use Render's persistent disk at /opt/render/project/data
+        DATABASE_URI = 'sqlite:///opt/render/project/data/database.db'
+    
     # Model path (for future ML models)
     MODEL_PATH = os.path.join(os.path.dirname(__file__), 'models', 'moringa_model.h5')
     
