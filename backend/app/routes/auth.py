@@ -22,8 +22,21 @@ def _get_db_path() -> str:
 
     # On Render, use persistent disk storage
     if os.environ.get('RENDER'):
-        # Use Render's persistent disk at /opt/render/project/data
-        db_path = "/opt/render/project/data/database.db"
+        # Use user's home directory for persistent storage
+        home_dir = os.path.expanduser('~')
+        data_dir = os.path.join(home_dir, 'nutrileaf_data')
+        
+        try:
+            os.makedirs(data_dir, mode=0o755, exist_ok=True)
+            db_path = os.path.join(data_dir, "database.db")
+            print(f"DEBUG: Created/verified persistent data directory: {data_dir}")
+        except Exception as e:
+            print(f"ERROR: Failed to create persistent data directory: {e}")
+            # Fallback to /tmp directory
+            fallback_dir = "/tmp/nutrileaf_data"
+            os.makedirs(fallback_dir, mode=0o777, exist_ok=True)
+            db_path = os.path.join(fallback_dir, "database.db")
+            print(f"DEBUG: Using fallback database path: {db_path}")
     else:
         # current_app.root_path -> backend/app
         backend_root = os.path.abspath(os.path.join(current_app.root_path, ".."))
