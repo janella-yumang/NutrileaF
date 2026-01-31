@@ -11,9 +11,7 @@ auth_bp = Blueprint("auth", __name__)
 
 
 def _get_db_path() -> str:
-    """
-    Get the absolute path to the database file.
-    """
+    """Get the absolute path to the database file."""
     uri = current_app.config.get("DATABASE_URI", "sqlite:///data/database.db")
     
     if uri.startswith("sqlite:///"):
@@ -22,15 +20,21 @@ def _get_db_path() -> str:
         # If a full URI or something else is provided, just use it as a filesystem path
         relative_path = uri
 
-    # current_app.root_path -> backend/app
-    backend_root = os.path.abspath(os.path.join(current_app.root_path, ".."))
-    db_path = os.path.join(backend_root, relative_path)
+    # On Render, use persistent disk storage
+    if os.environ.get('RENDER'):
+        # Use Render's persistent disk at /opt/render/project/data
+        db_path = "/opt/render/project/data/database.db"
+    else:
+        # current_app.root_path -> backend/app
+        backend_root = os.path.abspath(os.path.join(current_app.root_path, ".."))
+        db_path = os.path.join(backend_root, relative_path)
     
     print(f"DEBUG: Database URI: {uri}")
-    print(f"DEBUG: Backend root: {backend_root}")
+    print(f"DEBUG: Backend root: {os.path.abspath(os.path.join(current_app.root_path, '..'))}")
     print(f"DEBUG: Relative path: {relative_path}")
     print(f"DEBUG: Final database path: {db_path}")
     print(f"DEBUG: Database file exists: {os.path.exists(db_path)}")
+    print(f"DEBUG: Running on Render: {bool(os.environ.get('RENDER'))}")
 
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
     return db_path
