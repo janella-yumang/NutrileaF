@@ -167,7 +167,31 @@ def _get_connection():
     # Ensure database schema is up to date
     cur = conn.cursor()
     
-    # Check if attachments column exists in posts table
+    # Create tables first if they don't exist
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS posts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            title TEXT NOT NULL,
+            content TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    """)
+    
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            full_name TEXT NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    
+    conn.commit()
+    
+    # NOW check if attachments column exists in posts table
     cur.execute("PRAGMA table_info(posts)")
     columns = [column[1] for column in cur.fetchall()]
     if 'attachments' not in columns:
