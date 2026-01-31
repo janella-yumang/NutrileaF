@@ -237,7 +237,7 @@ def verify_token():
         try:
             cur = conn.cursor()
             cur.execute(
-                "SELECT id, full_name, email, phone, address FROM users WHERE id = ?",
+                "SELECT id, full_name, email, phone, address, profile_image FROM users WHERE id = ?",
                 (user_id,)
             )
             row = cur.fetchone()
@@ -251,6 +251,7 @@ def verify_token():
                 'email': row['email'],
                 'phone': row['phone'],
                 'address': row['address'],
+                'profileImage': row['profile_image'],
             }
             
             return jsonify({'success': True, 'user': user})
