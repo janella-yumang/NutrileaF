@@ -5,3 +5,4 @@
 *.onnx binary
 backend/app/models/malunggay_disease_model/*.pb filter=lfs diff=lfs merge=lfs -text
 backend/app/models/malunggay_disease_model/variables/* filter=lfs diff=lfs merge=lfs -text
+backend/app/models/malunggay_disease_model/variables/variables.data-* filter=lfs diff=lfs merge=lfs -text
