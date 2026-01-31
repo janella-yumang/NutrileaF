@@ -177,6 +177,7 @@ const ScanScreen = () => {
 
             const resp = await fetch(`${API_BASE}/image/upload`, {
                 method: 'POST',
+                credentials: 'include',
                 body: formData
             });
 
@@ -229,6 +230,7 @@ const ScanScreen = () => {
 
             const resp = await fetch(`${API_BASE}/image/upload`, {
                 method: 'POST',
+                credentials: 'include',
                 body: formData
             });
 
