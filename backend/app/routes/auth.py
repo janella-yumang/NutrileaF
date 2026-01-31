@@ -12,11 +12,10 @@ auth_bp = Blueprint("auth", __name__)
 
 def _get_db_path() -> str:
     """
-    Resolve the SQLite database path from the Flask config DATABASE_URI.
-    Falls back to backend/data/database.db.
+    Get the absolute path to the database file.
     """
     uri = current_app.config.get("DATABASE_URI", "sqlite:///data/database.db")
-
+    
     if uri.startswith("sqlite:///"):
         relative_path = uri[len("sqlite:///") :]
     else:
@@ -26,6 +25,12 @@ def _get_db_path() -> str:
     # current_app.root_path -> backend/app
     backend_root = os.path.abspath(os.path.join(current_app.root_path, ".."))
     db_path = os.path.join(backend_root, relative_path)
+    
+    print(f"DEBUG: Database URI: {uri}")
+    print(f"DEBUG: Backend root: {backend_root}")
+    print(f"DEBUG: Relative path: {relative_path}")
+    print(f"DEBUG: Final database path: {db_path}")
+    print(f"DEBUG: Database file exists: {os.path.exists(db_path)}")
 
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
     return db_path
@@ -116,8 +121,10 @@ def register():
             (full_name, email, phone, address, password_hash),
         )
         conn.commit()
-
         user_id = cur.lastrowid
+        
+        print(f"DEBUG: User registered successfully with ID: {user_id}")
+        print(f"DEBUG: User data: {full_name}, {email}")
 
         # Generate JWT token
         secret_key = current_app.config.get('SECRET_KEY', 'supersecretkey')
