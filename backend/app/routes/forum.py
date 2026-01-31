@@ -11,17 +11,38 @@ forum_bp = Blueprint("forum", __name__)
 
 
 def _get_db_path() -> str:
-    """Resolve the SQLite database path from the Flask config DATABASE_URI."""
+    """Get the absolute path to the database file."""
+    # Use the same logic as auth.py to ensure consistency
     uri = current_app.config.get("DATABASE_URI", "sqlite:///data/database.db")
-
+    
     if uri.startswith("sqlite:///"):
         relative_path = uri[len("sqlite:///") :]
     else:
+        # If a full URI or something else is provided, just use it as a filesystem path
         relative_path = uri
 
-    backend_root = os.path.abspath(os.path.join(current_app.root_path, ".."))
-    db_path = os.path.join(backend_root, relative_path)
-
+    # On Render, use /tmp directory for storage (best option for Render)
+    if os.environ.get('RENDER'):
+        # Use /tmp directory which is writable on Render
+        data_dir = "/tmp/nutrileaf_data"
+        try:
+            os.makedirs(data_dir, mode=0o777, exist_ok=True)
+            db_path = os.path.join(data_dir, "database.db")
+            print(f"DEBUG: Forum - Created/verified data directory: {data_dir}")
+        except Exception as e:
+            print(f"ERROR: Forum - Failed to create data directory: {e}")
+            # Ultimate fallback - use current working directory
+            db_path = "database.db"
+            print(f"DEBUG: Forum - Using fallback database path: {db_path}")
+    else:
+        # current_app.root_path -> backend/app
+        backend_root = os.path.abspath(os.path.join(current_app.root_path, ".."))
+        db_path = os.path.join(backend_root, relative_path)
+    
+    print(f"DEBUG: Forum - Database URI: {uri}")
+    print(f"DEBUG: Forum - Final database path: {db_path}")
+    print(f"DEBUG: Forum - Database file exists: {os.path.exists(db_path)}")
+    
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
     return db_path
 
