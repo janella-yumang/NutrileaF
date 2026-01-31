@@ -15,11 +15,11 @@ const ScanScreen = () => {
     const [flashEnabled, setFlashEnabled] = useState(false);
     const [hasFlash, setHasFlash] = useState(false);
     const [results, setResults] = useState<{
-        health?: string;
-        healthConfidence?: number;
-        growthStage?: string;
-        growthConfidence?: number;
-    } | null>(null);
+    health?: string;
+    healthConfidence?: number;
+    disease?: string;
+    diseaseConfidence?: number;
+} | null>(null);
     const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 
@@ -163,100 +163,96 @@ const ScanScreen = () => {
     };
 
 
-    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
+   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-        setAnalyzing(true);
-        setProgress(0);
-        setResults(null);
+    setAnalyzing(true);
+    setProgress(0);
+    setResults(null);
 
-        try {
-            const formData = new FormData();
-            formData.append('file', file);
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
 
-            const resp = await fetch(`${API_BASE}/image/upload`, {
-                method: 'POST',
-                body: formData
+        const resp = await fetch(`${API_BASE}/image/upload`, {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await resp.json();
+
+        if (data.success) {
+            setCapturedImage(`${API_BASE}/image/uploads/${data.filename}`);
+            setResults({
+                health: data.analysis.health_status,
+                healthConfidence: data.analysis.health_confidence,
+                disease: data.analysis.disease_detected,
+                diseaseConfidence: data.analysis.disease_confidence
             });
-
-
-            const data = await resp.json();
-
-            if (data.success) {
-                setCapturedImage(`${API_BASE}/image/uploads/${data.filename}`);
-                setResults({
-                    health: data.analysis.health_status,
-                    healthConfidence: data.analysis.confidence,
-                    growthStage: undefined,
-                    growthConfidence: 0
-                });
-            } else {
-                alert('Upload failed: ' + data.error);
-            }
-        } catch (err) {
-            console.error('Upload error:', err);
-            alert('Failed to upload and analyze image.');
-        } finally {
-            setAnalyzing(false);
-            setProgress(100);
+        } else {
+            alert('Upload failed: ' + data.error);
         }
-    };
+    } catch (err) {
+        console.error('Upload error:', err);
+        alert('Failed to upload and analyze image.');
+    } finally {
+        setAnalyzing(false);
+        setProgress(100);
+    }
+};
 
 
 
     const analyzeImage = async (image?: string) => {
-        const imageData = image || capturedImage;
-        if (!imageData) return;
+    const imageData = image || capturedImage;
+    if (!imageData) return;
 
-        setAnalyzing(true);
-        setProgress(0);
-        setResults(null);
+    setAnalyzing(true);
+    setProgress(0);
+    setResults(null);
 
-        try {
-            // Convert base64 image to Blob if needed
-            let file: File;
-            if (imageData.startsWith('data:')) {
-                const res = await fetch(imageData);
-                const blob = await res.blob();
-                file = new File([blob], 'malunggay.jpg', { type: 'image/jpeg' });
-            } else {
-                file = new File([imageData], 'malunggay.jpg', { type: 'image/jpeg' });
-            }
-
-            const formData = new FormData();
-            formData.append('file', file);
-
-            const resp = await fetch(`${API_BASE}/image/upload`, {
-                method: 'POST',
-                body: formData
-            });
-
-
-            const data = await resp.json();
-            console.log('🖼 Backend response:', data);
-
-            if (data.success) {
-                setCapturedImage(imageData); // show preview
-                setResults({
-                    health: data.analysis.health_status,
-                    healthConfidence: data.analysis.confidence,
-                    growthStage: undefined,
-                    growthConfidence: 0
-                });
-            } else {
-                alert('Analysis failed: ' + data.error);
-            }
-        } catch (err) {
-            console.error('Error analyzing image:', err);
-            alert('Failed to analyze image. Make sure backend is running.');
-        } finally {
-            setAnalyzing(false);
-            setProgress(100);
+    try {
+        // Convert base64 image to Blob if needed
+        let file: File;
+        if (imageData.startsWith('data:')) {
+            const res = await fetch(imageData);
+            const blob = await res.blob();
+            file = new File([blob], 'malunggay.jpg', { type: 'image/jpeg' });
+        } else {
+            file = new File([imageData], 'malunggay.jpg', { type: 'image/jpeg' });
         }
-    };
 
+        const formData = new FormData();
+        formData.append('file', file);
 
+        const resp = await fetch(`${API_BASE}/image/upload`, {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await resp.json();
+        console.log('🖼 Backend response:', data);
+
+        if (data.success) {
+            setCapturedImage(imageData); // show preview
+            setResults({
+                health: data.analysis.health_status,
+                healthConfidence: data.analysis.health_confidence,
+                disease: data.analysis.disease_detected,
+                diseaseConfidence: data.analysis.disease_confidence
+            });
+        } else {
+            alert('Analysis failed: ' + data.error);
+        }
+    } catch (err) {
+        console.error('Error analyzing image:', err);
+        alert('Failed to analyze image. Make sure backend is running.');
+    } finally {
+        setAnalyzing(false);
+        setProgress(100);
+    }
+};
 
 
 
@@ -483,58 +479,47 @@ const ScanScreen = () => {
                     )}
 
                     {/* Analysis Results Overlay */}
-                    {results && !analyzing && (
-                        <div style={{
-                            position: 'absolute',
-                            bottom: '20px',
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            background: 'rgba(255,255,255,0.9)',
-                            padding: '16px 24px',
-                            borderRadius: '16px',
-                            textAlign: 'center',
-                            zIndex: 20,
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
-                        }}>
-                            <h3 style={{ margin: 0, color: '#2d5016' }}>Analysis Results</h3>
+                  {results && !analyzing && (
+    <div style={{
+        position: 'absolute',
+        bottom: '20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        background: 'rgba(255,255,255,0.9)',
+        padding: '16px 24px',
+        borderRadius: '16px',
+        textAlign: 'center',
+        zIndex: 20,
+        boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+    }}>
+        <h3 style={{ margin: 0, color: '#2d5016' }}>Analysis Results</h3>
 
-                            {results ? (
-                                <>
-                                    {/* Health */}
-                                    <p style={{ margin: '4px 0' }}>
-                                        🌿 <strong>Health:</strong> {results.health ? results.health : '❌ Not recognized'}
-                                        {results.healthConfidence !== undefined ? ` (${(results.healthConfidence * 100).toFixed(1)}%)` : ''}
-                                    </p>
+        <p style={{ margin: '4px 0' }}>
+            🌿 <strong>Health:</strong> {results.health || '❌ Not recognized'}
+            {results.healthConfidence !== undefined ? ` (${(results.healthConfidence * 100).toFixed(1)}%)` : ''}
+        </p>
 
-                                    {/* Growth Stage */}
-                                    <p style={{ margin: '4px 0' }}>
-                                        🌱 <strong>Growth Stage:</strong> {results.growthStage ? results.growthStage : '❌ Not recognized'}
-                                        {results.growthConfidence !== undefined ? ` (${(results.growthConfidence * 100).toFixed(1)}%)` : ''}
-                                    </p>
-                                </>
-                            ) : (
-                                <p style={{ margin: '8px 0', color: '#c62828', fontWeight: '600' }}>
-                                    ❌ Not recognized as a Malunggay leaf
-                                </p>
-                            )}
+        <p style={{ margin: '4px 0' }}>
+            🦠 <strong>Disease:</strong> {results.disease || '❌ Not recognized'}
+            {results.diseaseConfidence !== undefined ? ` (${(results.diseaseConfidence * 100).toFixed(1)}%)` : ''}
+        </p>
 
-
-                            <button
-                                onClick={resetScan}
-                                style={{
-                                    marginTop: '8px',
-                                    padding: '8px 16px',
-                                    background: '#2d5016',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '12px',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                Scan Again
-                            </button>
-                        </div>
-                    )}
+        <button
+            onClick={resetScan}
+            style={{
+                marginTop: '8px',
+                padding: '8px 16px',
+                background: '#2d5016',
+                color: 'white',
+                border: 'none',
+                borderRadius: '12px',
+                cursor: 'pointer'
+            }}
+        >
+            Scan Again
+        </button>
+    </div>
+)}
 
 
                     {/* Reset button when image captured */}

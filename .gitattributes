@@ -1,0 +1,5 @@
+# Treat TensorFlow/Keras model files as binary
+*.pb binary
+*.h5 binary
+*.tflite binary
+*.onnx binary
