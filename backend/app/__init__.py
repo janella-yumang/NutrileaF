@@ -41,6 +41,7 @@ def create_app():
                 'static',
                 'uploads',
             )
+        # Handle subdirectories in the filename path
         return send_from_directory(upload_folder, filename)
 
     # Register blueprints
