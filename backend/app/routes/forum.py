@@ -1,7 +1,5 @@
 from flask import Blueprint, request, jsonify, current_app
 import sqlite3
-import psycopg2
-import psycopg2.extras
 from typing import Tuple
 import jwt
 import datetime
@@ -164,8 +162,9 @@ def _get_connection():
     db_uri = current_app.config.get("DATABASE_URI", "sqlite:///data/database.db")
     
     if db_uri.startswith("postgresql://") or db_uri.startswith("postgres://"):
-        # PostgreSQL connection
+        # PostgreSQL connection - import only when needed
         try:
+            import psycopg2
             conn = psycopg2.connect(db_uri)
             conn.autocommit = True
             return conn
