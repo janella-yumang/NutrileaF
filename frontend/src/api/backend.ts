@@ -1,7 +1,16 @@
 import axios from "axios";
 
 // Base URL for Flask backend
-const API_BASE = process.env.REACT_APP_API_URL || "http://192.168.1.16:5000";
+const API_BASE = process.env.REACT_APP_API_URL || "https://nutrileaf-10.onrender.com/api";
+
+// Create axios instance with default configuration
+const api = axios.create({
+  baseURL: API_BASE,
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
 
 // Authentication functions
 export const register = async (userData: {
@@ -11,7 +20,7 @@ export const register = async (userData: {
   address: string;
   password: string;
 }) => {
-  const response = await axios.post(`${API_BASE}/api/auth/register`, userData);
+  const response = await api.post("/auth/register", userData);
   return response.data;
 };
 
@@ -19,7 +28,7 @@ export const login = async (credentials: {
   email: string;
   password: string;
 }) => {
-  const response = await axios.post(`${API_BASE}/api/auth/login`, credentials);
+  const response = await api.post("/auth/login", credentials);
   return response.data;
 };
 
@@ -28,7 +37,7 @@ export const uploadImage = async (imageFile: File) => {
   const formData = new FormData();
   formData.append("image", imageFile);
 
-  const response = await axios.post(`${API_BASE}/api/image/upload`, formData, {
+  const response = await api.post("/image/upload", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
 
@@ -40,7 +49,7 @@ export const classifyGrowth = async (imageFile: File) => {
   const formData = new FormData();
   formData.append("image", imageFile);
 
-  const response = await axios.post(`${API_BASE}/api/growth/classify`, formData, {
+  const response = await api.post("/growth/classify", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
 
