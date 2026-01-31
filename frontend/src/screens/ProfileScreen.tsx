@@ -55,10 +55,16 @@ const ProfileScreen: React.FC = () => {
         address: userData.address,
       });
 
-      // Load profile icon from localStorage if it exists
+      // Load profile icon from localStorage if it exists, otherwise check backend
       const savedIcon = localStorage.getItem(`profile_icon_${userData.id}`);
       if (savedIcon) {
         setProfileIcon(savedIcon);
+      } else if (userData.profileImage) {
+        // Use backend profile image if available
+        const profileImageUrl = userData.profileImage.startsWith('http') 
+          ? userData.profileImage 
+          : `${API_BASE.replace('/api', '')}${userData.profileImage}`;
+        setProfileIcon(profileImageUrl);
       }
     } catch (error) {
       console.error('Failed to load user data:', error);
@@ -66,7 +72,7 @@ const ProfileScreen: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [navigate]);
+  }, [navigate, API_BASE]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -83,22 +89,64 @@ const ProfileScreen: React.FC = () => {
     }
   };
 
-  const handleProfileIconChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProfileIconChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (!file.type.startsWith('image/')) {
-        setApiError('Please select a valid image file');
+        setApiError('Please select an image file');
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        setApiError('Image size should be less than 5MB');
         return;
       }
 
       const reader = new FileReader();
-      reader.onload = (event) => {
+      reader.onload = async (event) => {
         const result = event.target?.result as string;
         setProfileIcon(result);
-        // Save to localStorage
+        
+        // Save to localStorage as backup
         localStorage.setItem(`profile_icon_${formData.id}`, result);
+        
+        // Upload to backend
+        await uploadProfileImage(file);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadProfileImage = async (file: File) => {
+    try {
+      const token = localStorage.getItem('nutrileaf_token');
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await fetch(`${API_BASE}/forum/upload-profile-image`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        console.log('Profile image uploaded successfully');
+        // Update user data in localStorage with new profile image
+        const userJson = localStorage.getItem('nutrileaf_user');
+        if (userJson) {
+          const userData = JSON.parse(userJson);
+          userData.profileImage = data.profileImage;
+          localStorage.setItem('nutrileaf_user', JSON.stringify(userData));
+        }
+      } else {
+        console.error('Failed to upload profile image:', data.message);
+      }
+    } catch (error) {
+      console.error('Error uploading profile image:', error);
     }
   };
 
@@ -152,6 +200,7 @@ const ProfileScreen: React.FC = () => {
       
       const response = await fetch(`${API_BASE}/auth/update-profile`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,

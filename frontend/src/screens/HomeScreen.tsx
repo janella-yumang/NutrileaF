@@ -55,9 +55,9 @@ const HomeScreen: React.FC = () => {
             loop
             muted
             playsInline
+            preload="auto"
           >
             <source src="/videos/malunggay-plant.mp4" type="video/mp4" />
-            <source src="/videos/malunggay-plant.webm" type="video/webm" />
           </video>
         </div>
 
