@@ -1,35 +1,12 @@
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-
 from flask import Flask, send_from_directory
 from flask_cors import CORS
-from config import Config
+import os
 
 def create_app():
     app = Flask(__name__)
-    # Get allowed origins from environment or use defaults
-    cors_origins_env = os.environ.get('CORS_ORIGINS', 
-        'http://localhost:3000,https://nutrilea-f.vercel.app,https://nutrilea-f.vercel.app/'
-    )
-    allowed_origins = [origin.strip() for origin in cors_origins_env.split(',')]
-    
-    # Add development origins
-    if os.environ.get('FLASK_ENV') == 'development':
-        allowed_origins.extend([
-            'http://127.0.0.1:3000',
-            'http://localhost:3000',
-            'http://127.0.0.1:5000',
-            'http://localhost:5000'
-        ])
-    
-    CORS(app, 
-         supports_credentials=True, 
-         expose_headers=['Content-Type'],
-         origins=allowed_origins,
-         allow_headers=['Content-Type', 'Authorization'],
-         methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
+    CORS(app, supports_credentials=True, expose_headers=['Content-Type'])  # allows cross-origin requests with FormData support
 
-    app.config.from_object(Config)
+    app.config.from_object('config.Config')
 
     # Serve uploaded files
     @app.route('/uploads/<path:filename>')
@@ -41,7 +18,6 @@ def create_app():
                 'static',
                 'uploads',
             )
-        # Handle subdirectories in the filename path
         return send_from_directory(upload_folder, filename)
 
     # Register blueprints

@@ -1,9 +1,8 @@
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, current_app, send_from_directory
 import os
 from werkzeug.utils import secure_filename
 import numpy as np
 import cv2
-from flask import send_from_directory
 
 # Optional TensorFlow import
 try:
@@ -16,16 +15,36 @@ except ImportError:
 image_analysis_bp = Blueprint('image_analysis', __name__)
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+
 health_model = None
 
-def load_model():
+# Disease model variables
+disease_model = None
+CLASS_NAMES = ['bacterial leaf spot', 'cecospora leaf spot', 'yellow leaf']
+
+# ---------------- Load Models ----------------
+def load_health_model():
     global health_model
     if health_model is None and TF_AVAILABLE:
         try:
             health_model = tf.keras.models.load_model('app/models/malunggay_health_model_tf2.13')
+            print("Health model loaded successfully!")
         except Exception as e:
             print(f"Warning: Could not load health model: {e}")
 
+def load_disease_model():
+    global disease_model
+    if disease_model is None and TF_AVAILABLE:
+        try:
+            disease_model = tf.keras.models.load_model('app/models/malunggay_disease_model')
+            print("Disease model loaded successfully!")
+        except Exception as e:
+            print("Warning: Could not load disease model:", e)
+
+load_health_model()
+load_disease_model()
+
+# ---------------- Helpers ----------------
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -36,6 +55,7 @@ def preprocess_image(filepath):
     img = img / 255.0
     return np.expand_dims(img, axis=0)
 
+# ---------------- Routes ----------------
 @image_analysis_bp.route('/upload', methods=['POST'])
 def upload_image():
     if 'file' not in request.files:
@@ -51,22 +71,39 @@ def upload_image():
         os.makedirs(current_app.config['UPLOAD_FOLDER'], exist_ok=True)
         file.save(filepath)
 
-        # Run ML prediction if available
-        if TF_AVAILABLE and health_model is not None:
-            img = preprocess_image(filepath)
-            pred_prob = health_model.predict(img)[0][0]
-            label = 'good' if pred_prob > 0.5 else 'bad'
+        analysis_result = {}
 
-            analysis_result = {
-                'health_status': label,
-                'confidence': float(pred_prob)
-            }
+        if TF_AVAILABLE:
+            img = preprocess_image(filepath)
+
+            # -------- Health + Conditional Disease Prediction --------
+            if health_model and disease_model:
+                pred_prob = health_model.predict(img)[0][0]
+                health_status = 'good' if pred_prob > 0.5 else 'bad'
+                analysis_result['health_status'] = health_status
+                analysis_result['health_confidence'] = float(pred_prob)
+
+                if health_status == 'bad':
+                    preds = disease_model.predict(img)[0]
+                    class_idx = int(np.argmax(preds))
+                    analysis_result['disease_detected'] = CLASS_NAMES[class_idx]
+                    analysis_result['disease_confidence'] = float(preds[class_idx])
+                else:
+                    analysis_result['disease_detected'] = 'No disease detected'
+                    analysis_result['disease_confidence'] = 0.0
+            else:
+                # fallback if models not loaded
+                analysis_result['health_status'] = 'unknown'
+                analysis_result['health_confidence'] = 0.0
+                analysis_result['disease_detected'] = 'unknown'
+                analysis_result['disease_confidence'] = 0.0
+
         else:
-            analysis_result = {
-                'health_status': 'unknown',
-                'confidence': 0.0,
-                'note': 'TensorFlow not available - analysis skipped'
-            }
+            analysis_result['health_status'] = 'unknown'
+            analysis_result['health_confidence'] = 0.0
+            analysis_result['disease_detected'] = 'unknown'
+            analysis_result['disease_confidence'] = 0.0
+            analysis_result['note'] = 'TensorFlow not available'
 
         return jsonify({
             'success': True,
@@ -77,13 +114,6 @@ def upload_image():
     else:
         return jsonify({'error': 'File type not allowed'}), 400
 
-@image_analysis_bp.route('/health', methods=['GET'])
-def health_check():
-    return jsonify({
-        'status': 'running',
-        'service': 'image_analysis',
-        'version': '1.0.0'
-    }), 200
 
 @image_analysis_bp.route('/analyze/<filename>', methods=['GET'])
 def analyze_existing(filename):
@@ -91,28 +121,45 @@ def analyze_existing(filename):
     if not os.path.exists(filepath):
         return jsonify({'success': False, 'error': 'File not found'}), 404
 
-    # Run ML prediction on existing file if available
-    if TF_AVAILABLE and health_model is not None:
-        img = preprocess_image(filepath)
-        pred_prob = health_model.predict(img)[0][0]
-        label = 'good' if pred_prob > 0.5 else 'bad'
+    analysis_result = {}
 
-        analysis_result = {
-            'health_status': label,
-            'confidence': float(pred_prob)
-        }
+    if TF_AVAILABLE:
+        img = preprocess_image(filepath)
+
+        # -------- Health + Conditional Disease Prediction --------
+        if health_model and disease_model:
+            pred_prob = health_model.predict(img)[0][0]
+            health_status = 'good' if pred_prob > 0.5 else 'bad'
+            analysis_result['health_status'] = health_status
+            analysis_result['health_confidence'] = float(pred_prob)
+
+            if health_status == 'bad':
+                preds = disease_model.predict(img)[0]
+                class_idx = int(np.argmax(preds))
+                analysis_result['disease_detected'] = CLASS_NAMES[class_idx]
+                analysis_result['disease_confidence'] = float(preds[class_idx])
+            else:
+                analysis_result['disease_detected'] = 'No disease detected'
+                analysis_result['disease_confidence'] = 0.0
+        else:
+            # fallback if models not loaded
+            analysis_result['health_status'] = 'unknown'
+            analysis_result['health_confidence'] = 0.0
+            analysis_result['disease_detected'] = 'unknown'
+            analysis_result['disease_confidence'] = 0.0
     else:
-        analysis_result = {
-            'health_status': 'unknown',
-            'confidence': 0.0,
-            'note': 'TensorFlow not available - analysis skipped'
-        }
+        analysis_result['health_status'] = 'unknown'
+        analysis_result['health_confidence'] = 0.0
+        analysis_result['disease_detected'] = 'unknown'
+        analysis_result['disease_confidence'] = 0.0
+        analysis_result['note'] = 'TensorFlow not available'
 
     return jsonify({
         'success': True,
         'filename': filename,
         'analysis': analysis_result
     }), 200
+
 
 @image_analysis_bp.route('/uploads/<filename>')
 def uploaded_file(filename):

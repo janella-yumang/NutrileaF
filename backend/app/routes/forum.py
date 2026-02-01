@@ -11,38 +11,17 @@ forum_bp = Blueprint("forum", __name__)
 
 
 def _get_db_path() -> str:
-    """Get the absolute path to the database file."""
-    # Use the same logic as auth.py to ensure consistency
+    """Resolve the SQLite database path from the Flask config DATABASE_URI."""
     uri = current_app.config.get("DATABASE_URI", "sqlite:///data/database.db")
-    
+
     if uri.startswith("sqlite:///"):
         relative_path = uri[len("sqlite:///") :]
     else:
-        # If a full URI or something else is provided, just use it as a filesystem path
         relative_path = uri
 
-    # On Render, use /tmp directory for storage (best option for Render)
-    if os.environ.get('RENDER'):
-        # Use /tmp directory which is writable on Render
-        data_dir = "/tmp/nutrileaf_data"
-        try:
-            os.makedirs(data_dir, mode=0o777, exist_ok=True)
-            db_path = os.path.join(data_dir, "database.db")
-            print(f"DEBUG: Forum - Created/verified data directory: {data_dir}")
-        except Exception as e:
-            print(f"ERROR: Forum - Failed to create data directory: {e}")
-            # Ultimate fallback - use current working directory
-            db_path = "database.db"
-            print(f"DEBUG: Forum - Using fallback database path: {db_path}")
-    else:
-        # current_app.root_path -> backend/app
-        backend_root = os.path.abspath(os.path.join(current_app.root_path, ".."))
-        db_path = os.path.join(backend_root, relative_path)
-    
-    print(f"DEBUG: Forum - Database URI: {uri}")
-    print(f"DEBUG: Forum - Final database path: {db_path}")
-    print(f"DEBUG: Forum - Database file exists: {os.path.exists(db_path)}")
-    
+    backend_root = os.path.abspath(os.path.join(current_app.root_path, ".."))
+    db_path = os.path.join(backend_root, relative_path)
+
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
     return db_path
 
@@ -158,52 +137,30 @@ def _save_file(file) -> str:
 
 
 def _get_connection():
-    """Get a database connection (SQLite or PostgreSQL)."""
-    db_uri = current_app.config.get("DATABASE_URI", "sqlite:///data/database.db")
-    
-    if db_uri.startswith("postgresql://") or db_uri.startswith("postgres://"):
-        # PostgreSQL connection - import only when needed
-        try:
-            import psycopg2
-            conn = psycopg2.connect(db_uri)
-            conn.autocommit = True
-            return conn
-        except Exception as e:
-            print(f"ERROR: Forum - Failed to connect to PostgreSQL: {e}")
-            # Fallback to SQLite
-            db_uri = "sqlite:///data/database.db"
-    
-    # SQLite connection
-    if db_uri.startswith("sqlite:///"):
-        relative_path = db_uri[len("sqlite:///") :]
-    else:
-        relative_path = db_uri
-
-    # On Render, use /tmp directory for storage (best option for Render)
-    if os.environ.get('RENDER'):
-        # Use /tmp directory which is writable on Render
-        data_dir = "/tmp/nutrileaf_data"
-        try:
-            os.makedirs(data_dir, mode=0o777, exist_ok=True)
-            db_path = os.path.join(data_dir, "database.db")
-            print(f"DEBUG: Forum - Created/verified data directory: {data_dir}")
-        except Exception as e:
-            print(f"ERROR: Forum - Failed to create data directory: {e}")
-            # Ultimate fallback - use current working directory
-            db_path = "database.db"
-            print(f"DEBUG: Forum - Using fallback database path: {db_path}")
-    else:
-        # current_app.root_path -> backend/app
-        backend_root = os.path.abspath(os.path.join(current_app.root_path, ".."))
-        db_path = os.path.join(backend_root, relative_path)
-    
-    print(f"DEBUG: Forum - Database URI: {db_uri}")
-    print(f"DEBUG: Forum - Final database path: {db_path}")
-    print(f"DEBUG: Forum - Database file exists: {os.path.exists(db_path)}")
-    
+    """Get a database connection with row factory and ensure schema is up to date."""
+    db_path = _get_db_path()
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
+    
+    # Ensure database schema is up to date
+    cur = conn.cursor()
+    
+    # Check if attachments column exists in posts table
+    cur.execute("PRAGMA table_info(posts)")
+    columns = [column[1] for column in cur.fetchall()]
+    if 'attachments' not in columns:
+        cur.execute("ALTER TABLE posts ADD COLUMN attachments TEXT")
+        print("Added attachments column to posts table")
+    
+    # Check if profile_image column exists in users table
+    cur.execute("PRAGMA table_info(users)")
+    user_columns = [column[1] for column in cur.fetchall()]
+    if 'profile_image' not in user_columns:
+        cur.execute("ALTER TABLE users ADD COLUMN profile_image TEXT")
+        print("Added profile_image column to users table")
+    
+    conn.commit()
     return conn
 
 
@@ -211,119 +168,54 @@ def _init_db() -> None:
     """Ensure the forum tables exist."""
     conn = _get_connection()
     try:
-        cur = conn.cursor()
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS posts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                title TEXT NOT NULL,
+                content TEXT NOT NULL,
+                attachments TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )
+            """
+        )
         
-        # Check if using PostgreSQL
-        db_uri = current_app.config.get("DATABASE_URI", "sqlite:///data/database.db")
-        is_postgresql = db_uri.startswith("postgresql://") or db_uri.startswith("postgres://")
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS comments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                post_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                content TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (post_id) REFERENCES posts (id),
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )
+            """
+        )
         
-        if is_postgresql:
-            # PostgreSQL syntax
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS posts (
-                    id SERIAL PRIMARY KEY,
-                    user_id INTEGER NOT NULL,
-                    title TEXT NOT NULL,
-                    content TEXT NOT NULL,
-                    attachments TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (user_id) REFERENCES users (id)
-                )
-            """)
-            
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS comments (
-                    id SERIAL PRIMARY KEY,
-                    post_id INTEGER NOT NULL,
-                    user_id INTEGER NOT NULL,
-                    content TEXT NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (post_id) REFERENCES posts (id),
-                    FOREIGN KEY (user_id) REFERENCES users (id)
-                )
-            """)
-            
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS likes (
-                    id SERIAL PRIMARY KEY,
-                    post_id INTEGER,
-                    comment_id INTEGER,
-                    user_id INTEGER NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (post_id) REFERENCES posts (id),
-                    FOREIGN KEY (comment_id) REFERENCES comments (id),
-                    FOREIGN KEY (user_id) REFERENCES users (id)
-                )
-            """)
-            
-            # Check and add columns for PostgreSQL
-            cur.execute("""
-                SELECT column_name FROM information_schema.columns 
-                WHERE table_name = 'posts' AND column_name = 'attachments'
-            """)
-            if not cur.fetchone():
-                cur.execute("ALTER TABLE posts ADD COLUMN attachments TEXT")
-                print("Added attachments column to posts table")
-            
-            cur.execute("""
-                SELECT column_name FROM information_schema.columns 
-                WHERE table_name = 'users' AND column_name = 'profile_image'
-            """)
-            if not cur.fetchone():
-                cur.execute("ALTER TABLE users ADD COLUMN profile_image TEXT")
-                print("Added profile_image column to users table")
-                
-        else:
-            # SQLite syntax
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS posts (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER NOT NULL,
-                    title TEXT NOT NULL,
-                    content TEXT NOT NULL,
-                    attachments TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (user_id) REFERENCES users (id)
-                )
-            """)
-            
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS comments (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    post_id INTEGER NOT NULL,
-                    user_id INTEGER NOT NULL,
-                    content TEXT NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (post_id) REFERENCES posts (id),
-                    FOREIGN KEY (user_id) REFERENCES users (id)
-                )
-            """)
-            
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS likes (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    post_id INTEGER,
-                    comment_id INTEGER,
-                    user_id INTEGER NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (post_id) REFERENCES posts (id),
-                    FOREIGN KEY (comment_id) REFERENCES comments (id),
-                    FOREIGN KEY (user_id) REFERENCES users (id)
-                )
-            """)
-            
-            # Check and add columns for SQLite
-            cur.execute("PRAGMA table_info(posts)")
-            columns = [column[1] for column in cur.fetchall()]
-            if 'attachments' not in columns:
-                cur.execute("ALTER TABLE posts ADD COLUMN attachments TEXT")
-                print("Added attachments column to posts table")
-            
-            cur.execute("PRAGMA table_info(users)")
-            user_columns = [column[1] for column in cur.fetchall()]
-            if 'profile_image' not in user_columns:
-                cur.execute("ALTER TABLE users ADD COLUMN profile_image TEXT")
-                print("Added profile_image column to users table")
+        # Add profile_image column to users table if it doesn't exist
+        try:
+            conn.execute("ALTER TABLE users ADD COLUMN profile_image TEXT")
+        except sqlite3.OperationalError:
+            pass  # Column already exists
+        
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS likes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                post_id INTEGER,
+                comment_id INTEGER,
+                user_id INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (post_id) REFERENCES posts (id),
+                FOREIGN KEY (comment_id) REFERENCES comments (id),
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )
+            """
+        )
         
         conn.commit()
     finally:
@@ -527,9 +419,6 @@ def create_post():
         )
         conn.commit()
         post_id = cur.lastrowid
-        
-        print(f"DEBUG: Post created successfully with ID: {post_id}")
-        print(f"DEBUG: Post data: user_id={user_id}, title={title}, content={content}")
         
         # Get user name and profile image
         cur.execute("SELECT full_name, profile_image FROM users WHERE id = ?", (user_id,))

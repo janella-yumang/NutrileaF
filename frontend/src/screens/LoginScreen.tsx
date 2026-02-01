@@ -27,7 +27,7 @@ const LoginScreen: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
-  const API_BASE = process.env.REACT_APP_API_URL || 'https://webhook.site/token-id-here/api';
+  const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrileaf-backend.onrender.com/api';
 
   const validateForm = (): boolean => {
     const errors: FormErrors = {};
@@ -110,19 +110,7 @@ const LoginScreen: React.FC = () => {
       navigate('/');
     } catch (error) {
       console.error('Mobile login error:', error);
-      
-      // Show more detailed error for debugging
-      let errorMessage = 'Something went wrong while signing in. Please try again.';
-      
-      if (error instanceof TypeError) {
-        errorMessage = `Network error: ${error.message}`;
-      } else if (error instanceof SyntaxError) {
-        errorMessage = `Response error: ${error.message}`;
-      } else {
-        errorMessage = `Login error: ${error}`;
-      }
-      
-      setApiError(errorMessage);
+      setApiError('Something went wrong while signing in. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
