@@ -20,7 +20,7 @@ health_model = None
 
 # Disease model variables
 disease_model = None
-CLASS_NAMES = ['bacterial leaf spot', 'cecospora leaf spot', 'healthy leaf', 'yellow leaf']
+CLASS_NAMES = ['bacterial leaf spot', 'cecospora leaf spot', 'yellow leaf']
 
 # ---------------- Load Models ----------------
 def load_health_model():
@@ -76,24 +76,28 @@ def upload_image():
         if TF_AVAILABLE:
             img = preprocess_image(filepath)
 
-            # -------- Health Prediction --------
-            if health_model:
+            # -------- Health + Conditional Disease Prediction --------
+            if health_model and disease_model:
                 pred_prob = health_model.predict(img)[0][0]
-                analysis_result['health_status'] = 'good' if pred_prob > 0.5 else 'bad'
+                health_status = 'good' if pred_prob > 0.5 else 'bad'
+                analysis_result['health_status'] = health_status
                 analysis_result['health_confidence'] = float(pred_prob)
+
+                if health_status == 'bad':
+                    preds = disease_model.predict(img)[0]
+                    class_idx = int(np.argmax(preds))
+                    analysis_result['disease_detected'] = CLASS_NAMES[class_idx]
+                    analysis_result['disease_confidence'] = float(preds[class_idx])
+                else:
+                    analysis_result['disease_detected'] = 'No disease detected'
+                    analysis_result['disease_confidence'] = 0.0
             else:
+                # fallback if models not loaded
                 analysis_result['health_status'] = 'unknown'
                 analysis_result['health_confidence'] = 0.0
-
-            # -------- Disease Prediction --------
-            if disease_model:
-                preds = disease_model.predict(img)[0]
-                class_idx = int(np.argmax(preds))
-                analysis_result['disease_detected'] = CLASS_NAMES[class_idx]
-                analysis_result['disease_confidence'] = float(preds[class_idx])
-            else:
                 analysis_result['disease_detected'] = 'unknown'
                 analysis_result['disease_confidence'] = 0.0
+
         else:
             analysis_result['health_status'] = 'unknown'
             analysis_result['health_confidence'] = 0.0
@@ -110,13 +114,6 @@ def upload_image():
     else:
         return jsonify({'error': 'File type not allowed'}), 400
 
-@image_analysis_bp.route('/health', methods=['GET'])
-def health_check():
-    return jsonify({
-        'status': 'running',
-        'service': 'image_analysis',
-        'version': '1.0.0'
-    }), 200
 
 @image_analysis_bp.route('/analyze/<filename>', methods=['GET'])
 def analyze_existing(filename):
@@ -129,22 +126,25 @@ def analyze_existing(filename):
     if TF_AVAILABLE:
         img = preprocess_image(filepath)
 
-        # Health
-        if health_model:
+        # -------- Health + Conditional Disease Prediction --------
+        if health_model and disease_model:
             pred_prob = health_model.predict(img)[0][0]
-            analysis_result['health_status'] = 'good' if pred_prob > 0.5 else 'bad'
+            health_status = 'good' if pred_prob > 0.5 else 'bad'
+            analysis_result['health_status'] = health_status
             analysis_result['health_confidence'] = float(pred_prob)
+
+            if health_status == 'bad':
+                preds = disease_model.predict(img)[0]
+                class_idx = int(np.argmax(preds))
+                analysis_result['disease_detected'] = CLASS_NAMES[class_idx]
+                analysis_result['disease_confidence'] = float(preds[class_idx])
+            else:
+                analysis_result['disease_detected'] = 'No disease detected'
+                analysis_result['disease_confidence'] = 0.0
         else:
+            # fallback if models not loaded
             analysis_result['health_status'] = 'unknown'
             analysis_result['health_confidence'] = 0.0
-
-        # Disease
-        if disease_model:
-            preds = disease_model.predict(img)[0]
-            class_idx = int(np.argmax(preds))
-            analysis_result['disease_detected'] = CLASS_NAMES[class_idx]
-            analysis_result['disease_confidence'] = float(preds[class_idx])
-        else:
             analysis_result['disease_detected'] = 'unknown'
             analysis_result['disease_confidence'] = 0.0
     else:
@@ -159,6 +159,7 @@ def analyze_existing(filename):
         'filename': filename,
         'analysis': analysis_result
     }), 200
+
 
 @image_analysis_bp.route('/uploads/<filename>')
 def uploaded_file(filename):
