@@ -13,6 +13,13 @@ class Config:
     # Database configuration
     DATABASE_URI = os.environ.get('DATABASE_URI', 'sqlite:///data/database.db')
     
+    # On Render, use PostgreSQL if DATABASE_URL is provided
+    if os.environ.get('DATABASE_URL'):
+        DATABASE_URI = os.environ.get('DATABASE_URL')
+    elif os.environ.get('RENDER'):
+        # Use PostgreSQL on Render if DATABASE_URL is not set
+        DATABASE_URI = 'sqlite:///data/database.db'
+    
     # Model path (for future ML models)
     MODEL_PATH = os.path.join(os.path.dirname(__file__), 'models', 'moringa_model.h5')
     
