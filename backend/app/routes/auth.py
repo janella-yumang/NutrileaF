@@ -108,6 +108,15 @@ def register():
         )
 
 
+@auth_bp.route("/", methods=["GET"])
+def auth_root():
+    """Test endpoint to verify auth blueprint is working"""
+    return jsonify({
+        "message": "Auth blueprint is working",
+        "endpoints": ["/login", "/register", "/verify", "/health"],
+        "methods": ["POST", "GET"]
+    }), 200
+
 @auth_bp.route("/health", methods=["GET"])
 def health():
     """Health check endpoint for auth service"""

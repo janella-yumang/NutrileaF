@@ -102,7 +102,7 @@ def create_app():
     app.register_blueprint(analytics_bp, url_prefix='/api/analytics')
     app.register_blueprint(chatbot_bp, url_prefix='/api/chatbot')
     app.register_blueprint(guides_bp, url_prefix='/api/guides')
-    app.register_blueprint(auth_bp, url_prefix='/auth')
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(forum_bp)
     app.register_blueprint(orders_bp, url_prefix='/api/orders')
     app.register_blueprint(admin_bp)
