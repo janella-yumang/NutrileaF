@@ -12,6 +12,7 @@ const HeaderNav: React.FC = () => {
   const [userPhone, setUserPhone] = useState<string | null>(null);
   const [userId, setUserId] = useState<number | null>(null);
   const [profileIcon, setProfileIcon] = useState<string | null>(null);
+  const [userProfileImage, setUserProfileImage] = useState<string | null>(null);
   const [showProfileCard, setShowProfileCard] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const aboutRef = useRef<HTMLDivElement | null>(null);
@@ -31,7 +32,17 @@ const HeaderNav: React.FC = () => {
         setUserEmail(userData.email);
         setUserPhone(userData.phone);
         
-        // Load profile icon
+        // Set profile image from backend user data
+        if (userData.profileImage) {
+          const API_BASE = process.env.REACT_APP_API_URL || 'http://127.0.0.1:5000/api';
+          const BASE_URL = API_BASE.replace('/api', '');
+          const fullProfileImageUrl = userData.profileImage.startsWith('http') 
+            ? userData.profileImage 
+            : `${BASE_URL}${userData.profileImage}`;
+          setUserProfileImage(fullProfileImageUrl);
+        }
+        
+        // Load profile icon from localStorage (fallback)
         const userIcon = localStorage.getItem(`nutrileaf_profile_icon_${userData.id}`);
         if (userIcon) {
           setProfileIcon(userIcon);
@@ -57,7 +68,17 @@ const HeaderNav: React.FC = () => {
           setUserEmail(userData.email);
           setUserPhone(userData.phone);
           
-          // Load profile icon
+          // Set profile image from backend user data
+          if (userData.profileImage) {
+            const API_BASE = process.env.REACT_APP_API_URL || 'http://127.0.0.1:5000/api';
+            const BASE_URL = API_BASE.replace('/api', '');
+            const fullProfileImageUrl = userData.profileImage.startsWith('http') 
+              ? userData.profileImage 
+              : `${BASE_URL}${userData.profileImage}`;
+            setUserProfileImage(fullProfileImageUrl);
+          }
+          
+          // Load profile icon from localStorage (fallback)
           const userIcon = localStorage.getItem(`nutrileaf_profile_icon_${userData.id}`);
           if (userIcon) {
             setProfileIcon(userIcon);
@@ -71,6 +92,7 @@ const HeaderNav: React.FC = () => {
         setUserEmail(null);
         setUserPhone(null);
         setUserId(null);
+        setUserProfileImage(null);
       }
     };
 
@@ -91,6 +113,83 @@ const HeaderNav: React.FC = () => {
 
     return () => clearInterval(interval);
   }, [userId, isLoggedIn]);
+
+  // Refresh user data from backend to get latest profile image
+  useEffect(() => {
+    if (!isLoggedIn || !userId) return;
+
+    const refreshUserData = async () => {
+      try {
+        const token = localStorage.getItem('nutrileaf_token');
+        if (!token) return;
+
+        const API_BASE = process.env.REACT_APP_API_URL || 'http://127.0.0.1:5000/api';
+        const response = await fetch(`${API_BASE}/auth/verify`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.user) {
+            // Update localStorage with fresh user data
+            localStorage.setItem('nutrileaf_user', JSON.stringify(data.user));
+            
+            // Update state with profile image
+            if (data.user.profileImage) {
+              const BASE_URL = API_BASE.replace('/api', '');
+              const fullProfileImageUrl = data.user.profileImage.startsWith('http') 
+                ? data.user.profileImage 
+                : `${BASE_URL}${data.user.profileImage}`;
+              setUserProfileImage(fullProfileImageUrl);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error refreshing user data:', error);
+      }
+    };
+
+    refreshUserData();
+  }, [isLoggedIn, userId]);
+
+  // Also refresh user data on initial mount if logged in
+  useEffect(() => {
+    const token = localStorage.getItem('nutrileaf_token');
+    const user = localStorage.getItem('nutrileaf_user');
+    
+    if (token && user) {
+      setIsLoggedIn(true);
+      try {
+        const userData = JSON.parse(user);
+        setUserId(userData.id);
+        setUserName(userData.fullName);
+        setUserEmail(userData.email);
+        setUserPhone(userData.phone);
+        
+        // Set profile image from backend user data
+        if (userData.profileImage) {
+          const API_BASE = process.env.REACT_APP_API_URL || 'http://127.0.0.1:5000/api';
+          const BASE_URL = API_BASE.replace('/api', '');
+          const fullProfileImageUrl = userData.profileImage.startsWith('http') 
+            ? userData.profileImage 
+            : `${BASE_URL}${userData.profileImage}`;
+          setUserProfileImage(fullProfileImageUrl);
+        }
+        
+        // Load profile icon from localStorage (fallback)
+        const userIcon = localStorage.getItem(`nutrileaf_profile_icon_${userData.id}`);
+        if (userIcon) {
+          setProfileIcon(userIcon);
+        }
+      } catch (error) {
+        console.error('Failed to parse user data:', error);
+      }
+    }
+  }, []);
 
   const navItems = [
     { label: 'Home', path: '/' },
@@ -207,8 +306,8 @@ const HeaderNav: React.FC = () => {
                   onClick={handleProfile}
                   title="Go to profile"
                 >
-                  {profileIcon ? (
-                    <img src={profileIcon} alt="Profile" className="header-profile-icon" />
+                  {(userProfileImage || profileIcon) ? (
+                    <img src={(userProfileImage || profileIcon)!} alt="Profile" className="header-profile-icon" />
                   ) : (
                     <div className="header-profile-icon-placeholder">
                       <User size={24} />
@@ -219,8 +318,8 @@ const HeaderNav: React.FC = () => {
                 {showProfileCard && (
                   <div className="profile-card-popup">
                     <div className="profile-card-icon">
-                      {profileIcon ? (
-                        <img src={profileIcon} alt="Profile" />
+                      {(userProfileImage || profileIcon) ? (
+                        <img src={(userProfileImage || profileIcon)!} alt="Profile" />
                       ) : (
                         <div className="profile-card-placeholder">
                           <User size={32} />

@@ -23,9 +23,20 @@ interface Attachment {
   name: string;
 }
 
+interface Comment {
+  id: number;
+  userId: number;
+  userName: string;
+  userProfileImage?: string;
+  content: string;
+  createdAt: string;
+  likeCount: number;
+}
+
 const ForumScreen: React.FC = () => {
   const navigate = useNavigate();
   const API_BASE = process.env.REACT_APP_API_URL || 'http://127.0.0.1:5000/api';
+  const BASE_URL = API_BASE.replace('/api', '');
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +46,8 @@ const ForumScreen: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
   const [expandedPostId, setExpandedPostId] = useState<number | null>(null);
+  const [comments, setComments] = useState<{ [key: number]: Comment[] }>({});
+  const [newComment, setNewComment] = useState<{ [key: number]: string }>({});
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userId, setUserId] = useState<number | null>(null);
   const [activeFilter, setActiveFilter] = useState<'recent' | 'trending' | 'myPosts'>('recent');
@@ -88,6 +101,7 @@ const ForumScreen: React.FC = () => {
       if (data.success) {
         setPosts(data.posts || []);
         console.log('Forum - Posts loaded successfully:', data.posts?.length || 0);
+        console.log('Forum - Sample post data:', data.posts?.[0]);
       } else {
         setError(data.message || 'Failed to load posts');
       }
@@ -98,6 +112,88 @@ const ForumScreen: React.FC = () => {
       setLoading(false);
     }
   }, [API_BASE]);
+
+  const loadComments = async (postId: number) => {
+    try {
+      const response = await fetch(`${API_BASE}/forum/posts/${postId}/comments`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('nutrileaf_token')}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setComments(prev => ({ ...prev, [postId]: data.comments || [] }));
+        }
+      }
+    } catch (error) {
+      console.error('Error loading comments:', error);
+    }
+  };
+
+  const handleAddComment = async (postId: number) => {
+    const commentText = newComment[postId];
+    if (!commentText?.trim()) return;
+
+    try {
+      const response = await fetch(`${API_BASE}/forum/posts/${postId}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('nutrileaf_token')}`,
+        },
+        body: JSON.stringify({ content: commentText }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setComments(prev => ({ ...prev, [postId]: [...(prev[postId] || []), data.comment] }));
+          setNewComment(prev => ({ ...prev, [postId]: '' }));
+          
+          // Update post comment count
+          setPosts(prev => prev.map(post => 
+            post.id === postId 
+              ? { ...post, commentCount: post.commentCount + 1 }
+              : post
+          ));
+        }
+      }
+    } catch (error) {
+      console.error('Error adding comment:', error);
+    }
+  };
+
+  const handleLikeComment = async (postId: number, commentId: number) => {
+    try {
+      const response = await fetch(`${API_BASE}/forum/comments/${commentId}/like`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('nutrileaf_token')}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setComments(prev => ({
+            ...prev,
+            [postId]: prev[postId].map(comment =>
+              comment.id === commentId
+                ? { ...comment, likeCount: data.likeCount }
+                : comment
+            )
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Error liking comment:', error);
+    }
+  };
 
   // Load posts
   useEffect(() => {
@@ -173,7 +269,10 @@ const ForumScreen: React.FC = () => {
         body: formData,
       });
 
+      console.log('Forum - Create post response status:', response.status);
       const data = await response.json();
+      console.log('Forum - Create post response data:', data);
+      
       if (data.success) {
         setPosts([data.post, ...posts]);
         setNewPostTitle('');
@@ -184,6 +283,7 @@ const ForumScreen: React.FC = () => {
         }
         setError(null);
       } else {
+        console.error('Forum - Create post failed:', data);
         setError(data.message || 'Failed to create post');
       }
     } catch (error) {
@@ -330,11 +430,11 @@ const ForumScreen: React.FC = () => {
                     <div className="post-author-info">
                       {post.userProfileImage ? (
                         <img 
-                          src={post.userProfileImage.startsWith('http') ? post.userProfileImage : `${API_BASE.replace('/api', '')}${post.userProfileImage}`}
+                          src={post.userProfileImage.startsWith('http') ? post.userProfileImage : `${BASE_URL}${post.userProfileImage}`}
                           alt={post.userName}
                           className="user-avatar"
                           onError={(e) => {
-                            // Fallback to placeholder if image fails to load
+                            console.log('Failed to load user avatar:', post.userProfileImage);
                             const target = e.currentTarget;
                             const nextElement = target.nextElementSibling as HTMLElement;
                             target.style.display = 'none';
@@ -351,10 +451,14 @@ const ForumScreen: React.FC = () => {
                           background: `linear-gradient(135deg, #6bc98e, #2d7a50)`,
                           color: 'white',
                           fontWeight: '600',
-                          fontSize: '14px'
+                          width: '40px',
+                          height: '40px',
+                          borderRadius: '50%',
+                          alignItems: 'center',
+                          justifyContent: 'center'
                         }}
                       >
-                        {post.userName ? post.userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'U'}
+                        {post.userName.charAt(0).toUpperCase()}
                       </div>
                       <div>
                         <h3 className="post-title">{post.title}</h3>
@@ -371,38 +475,44 @@ const ForumScreen: React.FC = () => {
                 {/* Display attachments */}
                 {post.attachments && post.attachments.length > 0 && (
                   <div className="post-attachments">
-                    {post.attachments.map((attachment, index) => (
-                      <div key={index} className="attachment">
-                        {attachment.type === 'image' ? (
-                          <img 
-                            src={attachment.url.startsWith('http') ? attachment.url : `${API_BASE.replace('/api', '')}${attachment.url}`}
-                            alt={attachment.name}
-                            className="attachment-image"
-                            onClick={() => window.open(attachment.url.startsWith('http') ? attachment.url : `${API_BASE.replace('/api', '')}${attachment.url}`, '_blank')}
-                          />
-                        ) : attachment.type === 'video' ? (
-                          <video 
-                            controls 
-                            className="attachment-video"
-                            onClick={() => window.open(attachment.url.startsWith('http') ? attachment.url : `${API_BASE.replace('/api', '')}${attachment.url}`, '_blank')}
-                          >
-                            <source src={attachment.url.startsWith('http') ? attachment.url : `${API_BASE.replace('/api', '')}${attachment.url}`} />
-                            Your browser does not support the video tag.
-                          </video>
-                        ) : null}
-                      </div>
-                    ))}
+                    {post.attachments.map((attachment, index) => {
+                      const imageUrl = attachment.url.startsWith('http') ? attachment.url : `${BASE_URL}${attachment.url}`;
+                      return (
+                        <div key={index} className="attachment">
+                          {attachment.type === 'image' ? (
+                            <img 
+                              src={imageUrl}
+                              alt={attachment.name}
+                              className="attachment-image"
+                              onClick={() => window.open(imageUrl, '_blank')}
+                              style={{ maxWidth: '100%', height: 'auto', display: 'block' }}
+                            />
+                          ) : attachment.type === 'video' ? (
+                            <video 
+                              controls 
+                              className="attachment-video"
+                              onClick={() => window.open(imageUrl, '_blank')}
+                              style={{ maxWidth: '100%', height: 'auto' }}
+                            >
+                              <source src={imageUrl} />
+                              Your browser does not support the video tag.
+                            </video>
+                          ) : null}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
 
                 <div className="post-meta">
                   <span className="post-date">
-                    {new Date(post.createdAt).toLocaleString('en-US', {
+                    {new Date(post.createdAt + 'Z').toLocaleString('en-US', {
                       year: 'numeric',
                       month: 'short',
                       day: 'numeric',
                       hour: '2-digit',
-                      minute: '2-digit'
+                      minute: '2-digit',
+                      timeZoneName: 'short'
                     })}
                   </span>
                 </div>
@@ -416,11 +526,86 @@ const ForumScreen: React.FC = () => {
                   </button>
                   <button
                     className="action-btn"
-                    onClick={() => setExpandedPostId(expandedPostId === post.id ? null : post.id)}
+                    onClick={() => {
+                      setExpandedPostId(expandedPostId === post.id ? null : post.id);
+                      if (expandedPostId !== post.id) {
+                        loadComments(post.id);
+                      }
+                    }}
                   >
                     <MessageCircle size={16} /> {post.commentCount}
                   </button>
                 </div>
+
+                {/* Comments Section */}
+                {expandedPostId === post.id && (
+                  <div className="comments-section">
+                    <div className="comments-list">
+                      {comments[post.id]?.map((comment) => (
+                        <div key={comment.id} className="comment">
+                          <div className="comment-header">
+                            <div className="comment-author-info">
+                              {comment.userProfileImage ? (
+                                <img 
+                                  src={comment.userProfileImage.startsWith('http') ? comment.userProfileImage : `${BASE_URL}${comment.userProfileImage}`}
+                                  alt={comment.userName}
+                                  className="comment-avatar"
+                                />
+                              ) : (
+                                <div className="comment-avatar-placeholder">
+                                  {comment.userName.charAt(0).toUpperCase()}
+                                </div>
+                              )}
+                              <div className="comment-author-name">{comment.userName}</div>
+                            </div>
+                            <div className="comment-date">
+                              {new Date(comment.createdAt + 'Z').toLocaleString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                timeZoneName: 'short'
+                              })}
+                            </div>
+                          </div>
+                          <div className="comment-content">{comment.content}</div>
+                          <div className="comment-actions">
+                            <button
+                              className="comment-action-btn"
+                              onClick={() => handleLikeComment(post.id, comment.id)}
+                            >
+                              <Heart size={14} /> {comment.likeCount}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* Add Comment Form */}
+                    <div className="add-comment">
+                      <div className="comment-input-wrapper">
+                        <input
+                          type="text"
+                          placeholder="Write a comment..."
+                          value={newComment[post.id] || ''}
+                          onChange={(e) => setNewComment(prev => ({ ...prev, [post.id]: e.target.value }))}
+                          className="comment-input"
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              handleAddComment(post.id);
+                            }
+                          }}
+                        />
+                        <button
+                          onClick={() => handleAddComment(post.id)}
+                          className="comment-submit-btn"
+                        >
+                          Post
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ))
           )}

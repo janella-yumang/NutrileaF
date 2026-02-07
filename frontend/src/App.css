@@ -624,7 +624,7 @@ body::before {
   height: 100%;
   overflow: hidden;
   z-index: 2;
-  opacity: 0.25;
+  opacity: 0.4;
   mask-image: linear-gradient(to left, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.8) 50%, rgba(0, 0, 0, 0) 100%);
   -webkit-mask-image: linear-gradient(to left, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.8) 50%, rgba(0, 0, 0, 0) 100%);
 }
@@ -4120,12 +4120,15 @@ body::before {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background-color: #f0f0f0;
+  background: linear-gradient(135deg, #6bc98e, #2d7a50);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #999;
+  color: white;
   border: 2px solid #f0f0f0;
+  font-weight: 600;
+  font-size: 14px;
+  text-transform: uppercase;
 }
 
 .comment-author-info {
@@ -4403,4 +4406,118 @@ body::before {
 
 .filter-tab.active .count {
   background: rgba(255, 255, 255, 0.3);
+}
+
+/* Forum Attachments */
+.post-attachments {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.attachment {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.attachment:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.attachment-image {
+  width: 100%;
+  max-width: 300px;
+  height: auto;
+  max-height: 200px;
+  object-fit: cover;
+  cursor: pointer;
+  display: block;
+}
+
+.attachment-video {
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+  max-height: 300px;
+  cursor: pointer;
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .attachment-image {
+    max-width: 100%;
+    max-height: 250px;
+  }
+  
+  .attachment-video {
+    max-width: 100%;
+    max-height: 250px;
+  }
+}
+
+/* File Upload Styles */
+.file-upload-section {
+  margin: 16px 0;
+}
+
+.file-upload-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border: 2px dashed #6bc98e;
+  border-radius: 12px;
+  background: rgba(107, 201, 142, 0.05);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: #2d7a50;
+  font-weight: 500;
+}
+
+.file-upload-label:hover {
+  background: rgba(107, 201, 142, 0.1);
+  border-color: #2d7a50;
+}
+
+.selected-files {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.selected-file {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #f4f9f4;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #5a6c62;
+}
+
+.remove-file {
+  background: #ff6b6b;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+  transition: background 0.3s ease;
+}
+
+.remove-file:hover {
+  background: #ff5252;
 }
