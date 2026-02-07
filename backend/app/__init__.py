@@ -90,7 +90,7 @@ def create_app():
     from app.routes.forum_routes import forum_bp
     from app.routes.orders import orders_bp
     from app.routes.admin import admin_bp
-    from app.routes.products import products_bp
+    from .routes.products import products_bp
 
     app.register_blueprint(image_analysis_bp, url_prefix='/api/image')
     app.register_blueprint(growth_bp, url_prefix='/api/growth')
