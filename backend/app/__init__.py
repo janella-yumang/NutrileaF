@@ -31,9 +31,10 @@ def create_app():
          methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
 
     app.config.from_object(Config)
-    app.config['SQLALCHEMY_DATABASE_URI'] = app.config.get('DATABASE_URI', 'sqlite:///data/database.db')
+    app.config['SQLALCHEMY_DATABASE_URI'] = app.config.get('DATABASE_URI')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     db.init_app(app)
+    print(f"DEBUG: Using database: {app.config.get('SQLALCHEMY_DATABASE_URI')[:50]}..." if app.config.get('SQLALCHEMY_DATABASE_URI') else "ERROR: No database configured")
 
     # Serve uploaded files
     @app.route('/uploads/<path:filename>')

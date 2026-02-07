@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, current_app
-import sqlite3
+import psycopg2
 from typing import Tuple
 import jwt
 import datetime
@@ -9,42 +9,6 @@ from werkzeug.utils import secure_filename
 
 forum_bp = Blueprint("forum", __name__)
 
-
-def _get_db_path() -> str:
-    """Get the absolute path to the database file."""
-    # Use the same logic as auth.py to ensure consistency
-    uri = current_app.config.get("DATABASE_URI", "sqlite:///data/database.db")
-    
-    if uri.startswith("sqlite:///"):
-        relative_path = uri[len("sqlite:///") :]
-    else:
-        # If a full URI or something else is provided, just use it as a filesystem path
-        relative_path = uri
-
-    # On Render, use /tmp directory for storage (best option for Render)
-    if os.environ.get('RENDER'):
-        # Use /tmp directory which is writable on Render
-        data_dir = "/tmp/nutrileaf_data"
-        try:
-            os.makedirs(data_dir, mode=0o777, exist_ok=True)
-            db_path = os.path.join(data_dir, "database.db")
-            print(f"DEBUG: Forum - Created/verified data directory: {data_dir}")
-        except Exception as e:
-            print(f"ERROR: Forum - Failed to create data directory: {e}")
-            # Ultimate fallback - use current working directory
-            db_path = "database.db"
-            print(f"DEBUG: Forum - Using fallback database path: {db_path}")
-    else:
-        # current_app.root_path -> backend/app
-        backend_root = os.path.abspath(os.path.join(current_app.root_path, ".."))
-        db_path = os.path.join(backend_root, relative_path)
-    
-    print(f"DEBUG: Forum - Database URI: {uri}")
-    print(f"DEBUG: Forum - Final database path: {db_path}")
-    print(f"DEBUG: Forum - Database file exists: {os.path.exists(db_path)}")
-    
-    os.makedirs(os.path.dirname(db_path), exist_ok=True)
-    return db_path
 
 
 def _get_upload_folder() -> str:
@@ -128,7 +92,9 @@ def upload_profile_image_route():
     conn = _get_connection()
     try:
         cur = conn.cursor()
-        cur.execute("UPDATE users SET profile_image = ? WHERE id = ?", (saved_path, user_id))
+        
+        # Update user's profile image in database
+        cur.execute("UPDATE users SET profile_image = %s WHERE id = %s", (saved_path, user_id))
         conn.commit()
         
         return jsonify({
@@ -158,174 +124,92 @@ def _save_file(file) -> str:
 
 
 def _get_connection():
-    """Get a database connection (SQLite or PostgreSQL)."""
-    db_uri = current_app.config.get("DATABASE_URI", "sqlite:///data/database.db")
+    """Get a PostgreSQL database connection."""
+    db_uri = current_app.config.get("DATABASE_URI")
     
-    if db_uri.startswith("postgresql://") or db_uri.startswith("postgres://"):
-        # PostgreSQL connection - import only when needed
-        try:
-            import psycopg2
-            conn = psycopg2.connect(db_uri)
-            conn.autocommit = True
-            return conn
-        except Exception as e:
-            print(f"ERROR: Forum - Failed to connect to PostgreSQL: {e}")
-            # Fallback to SQLite
-            db_uri = "sqlite:///data/database.db"
+    if not db_uri:
+        raise ValueError(
+            "DATABASE_URI is not configured. Please set DATABASE_URL environment variable."
+        )
     
-    # SQLite connection
-    if db_uri.startswith("sqlite:///"):
-        relative_path = db_uri[len("sqlite:///") :]
-    else:
-        relative_path = db_uri
-
-    # On Render, use /tmp directory for storage (best option for Render)
-    if os.environ.get('RENDER'):
-        # Use /tmp directory which is writable on Render
-        data_dir = "/tmp/nutrileaf_data"
-        try:
-            os.makedirs(data_dir, mode=0o777, exist_ok=True)
-            db_path = os.path.join(data_dir, "database.db")
-            print(f"DEBUG: Forum - Created/verified data directory: {data_dir}")
-        except Exception as e:
-            print(f"ERROR: Forum - Failed to create data directory: {e}")
-            # Ultimate fallback - use current working directory
-            db_path = "database.db"
-            print(f"DEBUG: Forum - Using fallback database path: {db_path}")
-    else:
-        # current_app.root_path -> backend/app
-        backend_root = os.path.abspath(os.path.join(current_app.root_path, ".."))
-        db_path = os.path.join(backend_root, relative_path)
+    # Ensure it's PostgreSQL
+    if not (db_uri.startswith("postgresql://") or db_uri.startswith("postgres://")):
+        raise ValueError(
+            f"Invalid database URI. Only PostgreSQL is supported. Got: {db_uri[:50]}..."
+        )
     
-    print(f"DEBUG: Forum - Database URI: {db_uri}")
-    print(f"DEBUG: Forum - Final database path: {db_path}")
-    print(f"DEBUG: Forum - Database file exists: {os.path.exists(db_path)}")
-    
-    os.makedirs(os.path.dirname(db_path), exist_ok=True)
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-    return conn
+    try:
+        conn = psycopg2.connect(db_uri)
+        conn.autocommit = True
+        return conn
+    except psycopg2.Error as e:
+        print(f"ERROR: Forum - Failed to connect to PostgreSQL: {e}")
+        raise
 
 
 def _init_db() -> None:
-    """Ensure the forum tables exist."""
+    """Ensure the forum tables exist in PostgreSQL."""
     conn = _get_connection()
     try:
         cur = conn.cursor()
         
-        # Check if using PostgreSQL
-        db_uri = current_app.config.get("DATABASE_URI", "sqlite:///data/database.db")
-        is_postgresql = db_uri.startswith("postgresql://") or db_uri.startswith("postgres://")
+        # PostgreSQL syntax for creating forum tables
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS posts (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                title TEXT NOT NULL,
+                content TEXT NOT NULL,
+                attachments TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )
+        """)
         
-        if is_postgresql:
-            # PostgreSQL syntax
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS posts (
-                    id SERIAL PRIMARY KEY,
-                    user_id INTEGER NOT NULL,
-                    title TEXT NOT NULL,
-                    content TEXT NOT NULL,
-                    attachments TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (user_id) REFERENCES users (id)
-                )
-            """)
-            
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS comments (
-                    id SERIAL PRIMARY KEY,
-                    post_id INTEGER NOT NULL,
-                    user_id INTEGER NOT NULL,
-                    content TEXT NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (post_id) REFERENCES posts (id),
-                    FOREIGN KEY (user_id) REFERENCES users (id)
-                )
-            """)
-            
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS likes (
-                    id SERIAL PRIMARY KEY,
-                    post_id INTEGER,
-                    comment_id INTEGER,
-                    user_id INTEGER NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (post_id) REFERENCES posts (id),
-                    FOREIGN KEY (comment_id) REFERENCES comments (id),
-                    FOREIGN KEY (user_id) REFERENCES users (id)
-                )
-            """)
-            
-            # Check and add columns for PostgreSQL
-            cur.execute("""
-                SELECT column_name FROM information_schema.columns 
-                WHERE table_name = 'posts' AND column_name = 'attachments'
-            """)
-            if not cur.fetchone():
-                cur.execute("ALTER TABLE posts ADD COLUMN attachments TEXT")
-                print("Added attachments column to posts table")
-            
-            cur.execute("""
-                SELECT column_name FROM information_schema.columns 
-                WHERE table_name = 'users' AND column_name = 'profile_image'
-            """)
-            if not cur.fetchone():
-                cur.execute("ALTER TABLE users ADD COLUMN profile_image TEXT")
-                print("Added profile_image column to users table")
-                
-        else:
-            # SQLite syntax
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS posts (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER NOT NULL,
-                    title TEXT NOT NULL,
-                    content TEXT NOT NULL,
-                    attachments TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (user_id) REFERENCES users (id)
-                )
-            """)
-            
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS comments (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    post_id INTEGER NOT NULL,
-                    user_id INTEGER NOT NULL,
-                    content TEXT NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (post_id) REFERENCES posts (id),
-                    FOREIGN KEY (user_id) REFERENCES users (id)
-                )
-            """)
-            
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS likes (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    post_id INTEGER,
-                    comment_id INTEGER,
-                    user_id INTEGER NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (post_id) REFERENCES posts (id),
-                    FOREIGN KEY (comment_id) REFERENCES comments (id),
-                    FOREIGN KEY (user_id) REFERENCES users (id)
-                )
-            """)
-            
-            # Check and add columns for SQLite
-            cur.execute("PRAGMA table_info(posts)")
-            columns = [column[1] for column in cur.fetchall()]
-            if 'attachments' not in columns:
-                cur.execute("ALTER TABLE posts ADD COLUMN attachments TEXT")
-                print("Added attachments column to posts table")
-            
-            cur.execute("PRAGMA table_info(users)")
-            user_columns = [column[1] for column in cur.fetchall()]
-            if 'profile_image' not in user_columns:
-                cur.execute("ALTER TABLE users ADD COLUMN profile_image TEXT")
-                print("Added profile_image column to users table")
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS comments (
+                id SERIAL PRIMARY KEY,
+                post_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                content TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (post_id) REFERENCES posts (id),
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )
+        """)
+        
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS likes (
+                id SERIAL PRIMARY KEY,
+                post_id INTEGER,
+                comment_id INTEGER,
+                user_id INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (post_id) REFERENCES posts (id),
+                FOREIGN KEY (comment_id) REFERENCES comments (id),
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )
+        """)
+        
+        # Check and add columns for PostgreSQL if they don't exist
+        cur.execute("""
+            SELECT column_name FROM information_schema.columns 
+            WHERE table_name = 'posts' AND column_name = 'attachments'
+        """)
+        if not cur.fetchone():
+            cur.execute("ALTER TABLE posts ADD COLUMN attachments TEXT")
+            print("Added attachments column to posts table")
+        
+        cur.execute("""
+            SELECT column_name FROM information_schema.columns 
+            WHERE table_name = 'users' AND column_name = 'profile_image'
+        """)
+        if not cur.fetchone():
+            cur.execute("ALTER TABLE users ADD COLUMN profile_image TEXT")
+            print("Added profile_image column to users table")
         
         conn.commit()
+        print("Forum tables initialized successfully in PostgreSQL")
     finally:
         conn.close()
 
@@ -360,7 +244,7 @@ def get_posts():
         # Get all posts with user info
         cur.execute("""
             SELECT p.id, p.user_id, p.title, p.content, p.attachments, p.created_at, 
-                   u.full_name, u.profile_image
+                   u.name, u.profile_image
             FROM posts p
             JOIN users u ON p.user_id = u.id
             ORDER BY p.created_at DESC
@@ -368,35 +252,35 @@ def get_posts():
         
         posts = []
         for row in cur.fetchall():
-            post_id = row['id']
+            post_id = row[0]
             
             # Get like count
-            cur.execute("SELECT COUNT(*) as count FROM likes WHERE post_id = ?", (post_id,))
-            like_count = cur.fetchone()['count']
+            cur.execute("SELECT COUNT(*) as count FROM likes WHERE post_id = %s", (post_id,))
+            like_count = cur.fetchone()[0]
             
             # Get comment count
-            cur.execute("SELECT COUNT(*) as count FROM comments WHERE post_id = ?", (post_id,))
-            comment_count = cur.fetchone()['count']
+            cur.execute("SELECT COUNT(*) as count FROM comments WHERE post_id = %s", (post_id,))
+            comment_count = cur.fetchone()[0]
             
             # Parse attachments JSON if exists
             attachments = []
-            if row['attachments']:
+            if row[4]:  # row[4] is attachments
                 try:
                     import json
-                    attachments = json.loads(row['attachments'])
+                    attachments = json.loads(row[4])
                 except Exception as e:
                     print(f"Error parsing attachments: {e}")
                     attachments = []
             
             posts.append({
-                'id': post_id,
-                'userId': row['user_id'],
-                'userName': row['full_name'],
-                'userProfileImage': row['profile_image'],
-                'title': row['title'],
-                'content': row['content'],
+                'id': row[0],
+                'userId': row[1],
+                'userName': row[6],  # u.name
+                'userProfileImage': row[7],  # u.profile_image
+                'title': row[2],
+                'content': row[3],
                 'attachments': attachments,
-                'createdAt': row['created_at'],
+                'createdAt': str(row[5]),
                 'likeCount': like_count,
                 'commentCount': comment_count,
             })
@@ -521,21 +405,22 @@ def create_post():
         cur.execute(
             """
             INSERT INTO posts (user_id, title, content, attachments)
-            VALUES (?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s)
+            RETURNING id
             """,
             (user_id, title, content, attachments_json)
         )
+        post_id = cur.fetchone()[0]
         conn.commit()
-        post_id = cur.lastrowid
         
         print(f"DEBUG: Post created successfully with ID: {post_id}")
         print(f"DEBUG: Post data: user_id={user_id}, title={title}, content={content}")
         
         # Get user name and profile image
-        cur.execute("SELECT full_name, profile_image FROM users WHERE id = ?", (user_id,))
+        cur.execute("SELECT name, profile_image FROM users WHERE id = %s", (user_id,))
         user_row = cur.fetchone()
-        user_name = user_row['full_name'] if user_row else 'Unknown'
-        user_profile_image = user_row['profile_image'] if user_row else None
+        user_name = user_row[0] if user_row else 'Unknown'
+        user_profile_image = user_row[1] if user_row else None
         
         return jsonify({
             'success': True,
@@ -570,19 +455,19 @@ def delete_post(post_id: int):
         cur = conn.cursor()
         
         # Check if post exists and user is creator
-        cur.execute("SELECT user_id FROM posts WHERE id = ?", (post_id,))
+        cur.execute("SELECT user_id FROM posts WHERE id = %s", (post_id,))
         post = cur.fetchone()
         
         if not post:
             return jsonify({'success': False, 'message': 'Post not found'}), 404
         
-        if post['user_id'] != user_id:
+        if post[0] != user_id:
             return jsonify({'success': False, 'message': 'Cannot delete other users\' posts'}), 403
         
         # Delete associated likes and comments
-        cur.execute("DELETE FROM likes WHERE post_id = ?", (post_id,))
-        cur.execute("DELETE FROM comments WHERE post_id = ?", (post_id,))
-        cur.execute("DELETE FROM posts WHERE id = ?", (post_id,))
+        cur.execute("DELETE FROM likes WHERE post_id = %s", (post_id,))
+        cur.execute("DELETE FROM comments WHERE post_id = %s", (post_id,))
+        cur.execute("DELETE FROM posts WHERE id = %s", (post_id,))
         
         conn.commit()
         return jsonify({'success': True, 'message': 'Post deleted'})
@@ -604,17 +489,17 @@ def like_post(post_id: int):
         cur = conn.cursor()
         
         # Check if already liked
-        cur.execute("SELECT id FROM likes WHERE post_id = ? AND user_id = ?", (post_id, user_id))
+        cur.execute("SELECT id FROM likes WHERE post_id = %s AND user_id = %s", (post_id, user_id))
         existing_like = cur.fetchone()
         
         if existing_like:
             # Unlike
-            cur.execute("DELETE FROM likes WHERE post_id = ? AND user_id = ?", (post_id, user_id))
+            cur.execute("DELETE FROM likes WHERE post_id = %s AND user_id = %s", (post_id, user_id))
             liked = False
         else:
             # Like
             cur.execute(
-                "INSERT INTO likes (post_id, user_id) VALUES (?, ?)",
+                "INSERT INTO likes (post_id, user_id) VALUES (%s, %s)",
                 (post_id, user_id)
             )
             liked = True
@@ -622,33 +507,33 @@ def like_post(post_id: int):
         conn.commit()
         
         # Get updated like count
-        cur.execute("SELECT COUNT(*) as count FROM likes WHERE post_id = ?", (post_id,))
-        like_count = cur.fetchone()['count']
+        cur.execute("SELECT COUNT(*) as count FROM likes WHERE post_id = %s", (post_id,))
+        like_count = cur.fetchone()[0]
         
         # Get post owner info for notification
-        cur.execute("SELECT user_id, title FROM posts WHERE id = ?", (post_id,))
+        cur.execute("SELECT user_id, title FROM posts WHERE id = %s", (post_id,))
         post_info = cur.fetchone()
         
         # Send notification to post owner (if someone else liked their post)
-        if post_info and post_info['user_id'] != user_id and liked:
-            print(f"DEBUG: Sending like notification - Post owner: {post_info['user_id']}, Current user: {user_id}")
+        if post_info and post_info[0] != user_id and liked:
+            print(f"DEBUG: Sending like notification - Post owner: {post_info[0]}, Current user: {user_id}")
             # Get current user's name
-            cur.execute("SELECT full_name FROM users WHERE id = ?", (user_id,))
+            cur.execute("SELECT name FROM users WHERE id = %s", (user_id,))
             current_user = cur.fetchone()
-            user_name = current_user['full_name'] if current_user else 'Someone'
+            user_name = current_user[0] if current_user else 'Someone'
             
             # In a real app, you'd store this notification in a database
             # For now, we'll just return it in the response so the frontend can handle it
             notification = {
                 'type': 'like',
-                'message': f'liked your post "{post_info["title"]}"',
+                'message': f'liked your post "{post_info[1]}"',
                 'userName': user_name,
                 'postId': post_id
             }
             print(f"DEBUG: Notification data: {notification}")
             return jsonify({'success': True, 'liked': liked, 'likeCount': like_count, 'notification': notification})
         else:
-            print(f"DEBUG: No notification sent - Post owner: {post_info['user_id'] if post_info else 'None'}, Current user: {user_id}, Liked: {liked}")
+            print(f"DEBUG: No notification sent - Post owner: {post_info[0] if post_info else 'None'}, Current user: {user_id}, Liked: {liked}")
         
         return jsonify({'success': True, 'liked': liked, 'likeCount': like_count})
     finally:
@@ -663,28 +548,28 @@ def get_comments(post_id: int):
         cur = conn.cursor()
         
         cur.execute("""
-            SELECT c.id, c.user_id, c.content, c.created_at, u.full_name, u.profile_image
+            SELECT c.id, c.user_id, c.content, c.created_at, u.name, u.profile_image
             FROM comments c
             JOIN users u ON c.user_id = u.id
-            WHERE c.post_id = ?
+            WHERE c.post_id = %s
             ORDER BY c.created_at ASC
         """, (post_id,))
         
         comments = []
         for row in cur.fetchall():
-            comment_id = row['id']
+            comment_id = row[0]
             
             # Get like count for comment
-            cur.execute("SELECT COUNT(*) as count FROM likes WHERE comment_id = ?", (comment_id,))
-            like_count = cur.fetchone()['count']
+            cur.execute("SELECT COUNT(*) as count FROM likes WHERE comment_id = %s", (comment_id,))
+            like_count = cur.fetchone()[0]
             
             comments.append({
                 'id': comment_id,
-                'userId': row['user_id'],
-                'userName': row['full_name'],
-                'userProfileImage': row['profile_image'],
-                'content': row['content'],
-                'createdAt': row['created_at'],
+                'userId': row[1],
+                'userName': row[4],
+                'userProfileImage': row[5],
+                'content': row[2],
+                'createdAt': str(row[3]),
                 'likeCount': like_count,
             })
         
@@ -719,48 +604,49 @@ def create_comment(post_id: int):
         cur = conn.cursor()
         
         # Check if post exists
-        cur.execute("SELECT id FROM posts WHERE id = ?", (post_id,))
+        cur.execute("SELECT id FROM posts WHERE id = %s", (post_id,))
         if not cur.fetchone():
             return jsonify({'success': False, 'message': 'Post not found'}), 404
         
         cur.execute(
             """
             INSERT INTO comments (post_id, user_id, content)
-            VALUES (?, ?, ?)
+            VALUES (%s, %s, %s)
+            RETURNING id
             """,
             (post_id, user_id, content)
         )
+        comment_id = cur.fetchone()[0]
         conn.commit()
-        comment_id = cur.lastrowid
         
         # Get user name and profile image
-        cur.execute("SELECT full_name, profile_image FROM users WHERE id = ?", (user_id,))
+        cur.execute("SELECT name, profile_image FROM users WHERE id = %s", (user_id,))
         user_row = cur.fetchone()
-        user_name = user_row['full_name'] if user_row else 'Unknown'
-        user_profile_image = user_row['profile_image'] if user_row else None
+        user_name = user_row[0] if user_row else 'Unknown'
+        user_profile_image = user_row[1] if user_row else None
         
         # Get post owner info for notification
-        cur.execute("SELECT user_id, title FROM posts WHERE id = ?", (post_id,))
+        cur.execute("SELECT user_id, title FROM posts WHERE id = %s", (post_id,))
         post_info = cur.fetchone()
         
-        print(f"DEBUG: Post info - user_id: {post_info['user_id'] if post_info else 'None'}, title: {post_info['title'] if post_info else 'None'}")
+        print(f"DEBUG: Post info - user_id: {post_info[0] if post_info else 'None'}, title: {post_info[1] if post_info else 'None'}")
         print(f"DEBUG: Current user_id: {user_id}")
         
         # Send notification to post owner (if someone else commented on their post)
         notification = None
-        if post_info and post_info['user_id'] != user_id:
-            print(f"DEBUG: Sending comment notification - Post owner: {post_info['user_id']}, Current user: {user_id}")
+        if post_info and post_info[0] != user_id:
+            print(f"DEBUG: Sending comment notification - Post owner: {post_info[0]}, Current user: {user_id}")
             notification = {
                 'type': 'comment',
-                'message': f'commented on your post "{post_info["title"]}"',
+                'message': f'commented on your post "{post_info[1]}"',
                 'userName': user_name,
                 'postId': post_id
             }
             print(f"DEBUG: Comment notification data: {notification}")
         else:
-            print(f"DEBUG: No comment notification sent - Post owner: {post_info['user_id'] if post_info else 'None'}, Current user: {user_id}")
+            print(f"DEBUG: No comment notification sent - Post owner: {post_info[0] if post_info else 'None'}, Current user: {user_id}")
             if post_info:
-                print(f"DEBUG: User IDs equal? {post_info['user_id'] == user_id}")
+                print(f"DEBUG: User IDs equal? {post_info[0] == user_id}")
             else:
                 print("DEBUG: post_info is None")
         
@@ -801,18 +687,18 @@ def delete_comment(comment_id: int):
         cur = conn.cursor()
         
         # Check if comment exists and user is creator
-        cur.execute("SELECT user_id FROM comments WHERE id = ?", (comment_id,))
+        cur.execute("SELECT user_id FROM comments WHERE id = %s", (comment_id,))
         comment = cur.fetchone()
         
         if not comment:
             return jsonify({'success': False, 'message': 'Comment not found'}), 404
         
-        if comment['user_id'] != user_id:
+        if comment[0] != user_id:
             return jsonify({'success': False, 'message': 'Cannot delete other users\' comments'}), 403
         
         # Delete associated likes
-        cur.execute("DELETE FROM likes WHERE comment_id = ?", (comment_id,))
-        cur.execute("DELETE FROM comments WHERE id = ?", (comment_id,))
+        cur.execute("DELETE FROM likes WHERE comment_id = %s", (comment_id,))
+        cur.execute("DELETE FROM comments WHERE id = %s", (comment_id,))
         
         conn.commit()
         return jsonify({'success': True, 'message': 'Comment deleted'})
@@ -834,17 +720,17 @@ def like_comment(comment_id: int):
         cur = conn.cursor()
         
         # Check if already liked
-        cur.execute("SELECT id FROM likes WHERE comment_id = ? AND user_id = ?", (comment_id, user_id))
+        cur.execute("SELECT id FROM likes WHERE comment_id = %s AND user_id = %s", (comment_id, user_id))
         existing_like = cur.fetchone()
         
         if existing_like:
             # Unlike
-            cur.execute("DELETE FROM likes WHERE comment_id = ? AND user_id = ?", (comment_id, user_id))
+            cur.execute("DELETE FROM likes WHERE comment_id = %s AND user_id = %s", (comment_id, user_id))
             liked = False
         else:
             # Like
             cur.execute(
-                "INSERT INTO likes (comment_id, user_id) VALUES (?, ?)",
+                "INSERT INTO likes (comment_id, user_id) VALUES (%s, %s)",
                 (comment_id, user_id)
             )
             liked = True
@@ -852,8 +738,8 @@ def like_comment(comment_id: int):
         conn.commit()
         
         # Get updated like count
-        cur.execute("SELECT COUNT(*) as count FROM likes WHERE comment_id = ?", (comment_id,))
-        like_count = cur.fetchone()['count']
+        cur.execute("SELECT COUNT(*) as count FROM likes WHERE comment_id = %s", (comment_id,))
+        like_count = cur.fetchone()[0]
         
         return jsonify({'success': True, 'liked': liked, 'likeCount': like_count})
     finally:

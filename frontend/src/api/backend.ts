@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // Base URL for Flask backend
-const API_BASE = process.env.REACT_APP_API_URL || "https://nutrileaf-10.onrender.com/api";
+const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
 
 // Create axios instance with default configuration
 const api = axios.create({
