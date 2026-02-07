@@ -108,15 +108,32 @@ def register():
         )
 
 
+@auth_bp.route("/health", methods=["GET"])
+def health():
+    """Health check endpoint for auth service"""
+    return jsonify({
+        "status": "healthy",
+        "service": "auth",
+        "timestamp": datetime.datetime.utcnow().isoformat()
+    }), 200
+
 @auth_bp.route("/login", methods=["POST"])
 def login():
     """Login with email and password against PostgreSQL."""
+    print(f"DEBUG: Login endpoint called")
+    print(f"DEBUG: Request method: {request.method}")
+    print(f"DEBUG: Request headers: {dict(request.headers)}")
+    
     data = request.get_json(silent=True) or {}
+    print(f"DEBUG: Request data: {data}")
 
     email = (data.get("email") or "").strip().lower()
     password = data.get("password") or ""
+    
+    print(f"DEBUG: Extracted email: {email}, password: {'*' * len(password) if password else 'None'}")
 
     if not email or not password:
+        print("DEBUG: Missing email or password")
         return (
             jsonify(
                 {

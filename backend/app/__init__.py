@@ -5,6 +5,7 @@ from flask import Flask, send_from_directory, jsonify
 from flask_cors import CORS
 from config import Config
 from app.models import db
+import datetime
 
 def create_app():
     app = Flask(__name__)
@@ -110,5 +111,13 @@ def create_app():
     @app.route("/")
     def home():
         return "API is running!"
+    
+    @app.route("/test")
+    def test():
+        return jsonify({
+            "message": "Test endpoint working",
+            "timestamp": datetime.datetime.utcnow().isoformat(),
+            "routes": [str(rule) for rule in app.url_map.iter_rules()]
+        }), 200
     
     return app
