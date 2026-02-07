@@ -46,13 +46,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const API_BASE = process.env.REACT_APP_API_URL?.replace('/api', '') || 'https://nutrilea-backend.onrender.com';
       const response = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ email, password }),
       });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
 
       const data = await response.json();
       if (!data.success) throw new Error(data.message);
@@ -61,6 +66,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('nutrileaf_token', data.token);
       setUser(data.user);
       setToken(data.token);
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -69,13 +77,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (userData: any) => {
     setIsLoading(true);
     try {
-      const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const API_BASE = process.env.REACT_APP_API_URL?.replace('/api', '') || 'https://nutrilea-backend.onrender.com';
       const response = await fetch(`${API_BASE}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify(userData),
       });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
 
       const data = await response.json();
       if (!data.success) throw new Error(data.message);
@@ -84,6 +97,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('nutrileaf_token', data.token);
       setUser(data.user);
       setToken(data.token);
+    } catch (error) {
+      console.error('Register error:', error);
+      throw error;
     } finally {
       setIsLoading(false);
     }

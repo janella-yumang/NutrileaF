@@ -17,7 +17,7 @@ class Product(db.Model):
     price = db.Column(db.Float, nullable=False)
     original_price = db.Column(db.Float)
     description = db.Column(db.Text)
-    image = db.Column(db.String(50))
+    image = db.Column(db.JSON)  # Array of image URLs
     quantity = db.Column(db.String(100))
     benefits = db.Column(db.JSON)
     uses = db.Column(db.JSON)
@@ -140,4 +140,58 @@ class ForumReply(db.Model):
             'userName': self.user_name,
             'createdAt': self.created_at.isoformat() if self.created_at else None,
             'updatedAt': self.updated_at.isoformat() if self.updated_at else None
+        }
+
+class ProductCategory(db.Model):
+    __tablename__ = 'product_categories'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False, unique=True)
+    description = db.Column(db.Text)
+    image = db.Column(db.String(255))
+    status = db.Column(db.String(50), default='active')  # active, inactive
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'image': self.image,
+            'status': self.status,
+            'createdAt': self.created_at.isoformat() if self.created_at else None,
+            'updatedAt': self.updated_at.isoformat() if self.updated_at else None
+        }
+
+class Review(db.Model):
+    __tablename__ = 'reviews'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    rating = db.Column(db.Integer, nullable=False)  # 1-5 stars
+    title = db.Column(db.String(255))
+    content = db.Column(db.Text, nullable=False)
+    status = db.Column(db.String(50), default='active')  # active, hidden, reported
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    product = db.relationship('Product', backref='product_reviews')
+    user = db.relationship('User', backref='user_reviews')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'productId': self.product_id,
+            'userId': self.user_id,
+            'rating': self.rating,
+            'title': self.title,
+            'content': self.content,
+            'status': self.status,
+            'createdAt': self.created_at.isoformat() if self.created_at else None,
+            'updatedAt': self.updated_at.isoformat() if self.updated_at else None,
+            'productName': self.product.name if self.product else None,
+            'userName': self.user.name if self.user else None
         }

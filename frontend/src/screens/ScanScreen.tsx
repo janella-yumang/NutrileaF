@@ -20,7 +20,7 @@ const ScanScreen = () => {
         growthStage?: string;
         growthConfidence?: number;
     } | null>(null);
-    const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:5000";
+    const API_BASE = process.env.REACT_APP_API_URL || "https://nutrilea-backend.onrender.com/api";
 
 
 

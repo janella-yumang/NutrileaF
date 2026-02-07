@@ -1,13 +1,26 @@
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, jsonify
 from flask_cors import CORS
 from config import Config
 from app.models import db
 
 def create_app():
     app = Flask(__name__)
+    
+    # Error handling middleware
+    @app.errorhandler(404)
+    def not_found(error):
+        return jsonify({'success': False, 'error': 'Endpoint not found'}), 404
+    
+    @app.errorhandler(500)
+    def internal_error(error):
+        return jsonify({'success': False, 'error': 'Internal server error'}), 500
+    
+    @app.errorhandler(Exception)
+    def handle_exception(e):
+        return jsonify({'success': False, 'error': str(e)}), 500
     # Get allowed origins from environment or use defaults
     cors_origins_env = os.environ.get('CORS_ORIGINS', 
         'http://localhost:3000,https://nutrilea-f.vercel.app,https://nutrilea-f.vercel.app/'
@@ -27,8 +40,9 @@ def create_app():
          supports_credentials=True, 
          expose_headers=['Content-Type'],
          origins=allowed_origins,
-         allow_headers=['Content-Type', 'Authorization'],
-         methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
+         allow_headers=['Content-Type', 'Authorization', 'X-Admin-Role'],
+         methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+         max_age=600)
 
     app.config.from_object(Config)
     app.config['SQLALCHEMY_DATABASE_URI'] = app.config.get('DATABASE_URI')
@@ -49,6 +63,19 @@ def create_app():
         # Handle subdirectories in the filename path
         return send_from_directory(upload_folder, filename)
 
+    # Explicit OPTIONS handlers for CORS preflight
+    @app.route('/api/<path:path>', methods=['OPTIONS'])
+    def handle_api_options(path):
+        return '', 200
+    
+    @app.route('/auth/<path:path>', methods=['OPTIONS'])
+    def handle_auth_options(path):
+        return '', 200
+    
+    @app.route('/<path:path>', methods=['OPTIONS'])
+    def handle_global_options(path):
+        return '', 200
+
     # Register blueprints
     from app.routes.image_analysis import image_analysis_bp
     from app.routes.growth_classification import growth_bp
@@ -63,6 +90,7 @@ def create_app():
     from app.routes.forum_routes import forum_bp
     from app.routes.orders import orders_bp
     from app.routes.admin import admin_bp
+    from app.routes.products import products_bp
 
     app.register_blueprint(image_analysis_bp, url_prefix='/api/image')
     app.register_blueprint(growth_bp, url_prefix='/api/growth')
@@ -73,10 +101,11 @@ def create_app():
     app.register_blueprint(analytics_bp, url_prefix='/api/analytics')
     app.register_blueprint(chatbot_bp, url_prefix='/api/chatbot')
     app.register_blueprint(guides_bp, url_prefix='/api/guides')
-    app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(forum_bp)
     app.register_blueprint(orders_bp, url_prefix='/api/orders')
     app.register_blueprint(admin_bp)
+    app.register_blueprint(products_bp)
 
     @app.route("/")
     def home():

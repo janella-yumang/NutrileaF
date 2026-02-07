@@ -16,12 +16,23 @@ const AdminScreen: React.FC = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [forumThreads, setForumThreads] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<any[]>([]);
   
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editData, setEditData] = useState<any>({});
   const [loading, setLoading] = useState(false);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [forumLoading, setForumLoading] = useState(false);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createType, setCreateType] = useState<'product' | 'user' | 'category' | null>(null);
+  const [createData, setCreateData] = useState<any>({});
   
-  const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+  const apiUrl = process.env.REACT_APP_API_URL || 'https://nutrilea-backend.onrender.com/api';
   const adminHeaders = {
     'Content-Type': 'application/json',
     'X-Admin-Role': 'true'
@@ -34,21 +45,80 @@ const AdminScreen: React.FC = () => {
     }
   }, [activeTab]);
 
+  // Fetch categories for dropdown
+  const fetchCategoriesForDropdown = async () => {
+    try {
+      const res = await fetch(`${apiUrl}/api/products/categories`, {
+        headers: adminHeaders
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCategories(data.categories);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
+  // Fetch data when component mounts and when switching tabs
+  useEffect(() => {
+    console.log('Active tab changed to:', activeTab);
+    if (activeTab === 'products') {
+      fetchProducts();
+    } else if (activeTab === 'users') {
+      console.log('Triggering fetchUsers for users tab');
+      fetchUsers();
+    } else if (activeTab === 'orders') {
+      fetchOrders();
+    } else if (activeTab === 'forum') {
+      fetchForumThreads();
+    } else if (activeTab === 'categories') {
+      fetchCategories();
+    } else if (activeTab === 'reviews') {
+      fetchReviews();
+    }
+  }, [activeTab]);
+
+  // Fetch categories for dropdown on component mount
+  useEffect(() => {
+    fetchCategoriesForDropdown();
+  }, []);
+
   const fetchStats = async () => {
     try {
-      const res = await fetch(`${apiUrl}/api/admin/stats`, { headers: adminHeaders });
+      console.log('Fetching stats from:', `${apiUrl}/api/admin/stats`);
+      const res = await fetch(`${apiUrl}/api/admin/stats`, { 
+        headers: adminHeaders,
+        method: 'GET'
+      });
+      console.log('Stats response status:', res.status);
+      
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      
       const data = await res.json();
+      console.log('Stats response data:', data);
       if (data.success) {
         setStats(data.stats);
       }
     } catch (error) {
       console.error('Error fetching stats:', error);
+      // Set default stats on error
+      setStats({
+        totalUsers: 0,
+        totalProducts: 0,
+        totalOrders: 0,
+        pendingOrders: 0,
+        totalForumThreads: 0,
+        totalRevenue: 0
+      });
     }
   };
 
   // Fetch Products
   const fetchProducts = async () => {
-    setLoading(true);
+    setProductsLoading(true);
     try {
       const res = await fetch(`${apiUrl}/api/admin/products`, { headers: adminHeaders });
       const data = await res.json();
@@ -58,27 +128,53 @@ const AdminScreen: React.FC = () => {
     } catch (error) {
       console.error('Error fetching products:', error);
     }
-    setLoading(false);
+    setProductsLoading(false);
   };
 
   // Fetch Users
   const fetchUsers = async () => {
-    setLoading(true);
+    setUsersLoading(true);
     try {
-      const res = await fetch(`${apiUrl}/api/admin/users`, { headers: adminHeaders });
+      const timestamp = Date.now(); // Cache-busting
+      const fullUrl = `${apiUrl}/api/admin/users?t=${timestamp}`;
+      console.log('=== FETCH USERS DEBUG ===');
+      console.log('API URL:', apiUrl);
+      console.log('Full URL:', fullUrl);
+      console.log('Headers:', adminHeaders);
+      
+      const res = await fetch(fullUrl, { 
+        headers: adminHeaders,
+        method: 'GET'
+      });
+      console.log('Response status:', res.status);
+      console.log('Response headers:', res.headers);
+      
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      
       const data = await res.json();
-      if (data.success) {
+      console.log('Raw response data:', data);
+      console.log('Data.success:', data.success);
+      console.log('Data.users length:', data.users ? data.users.length : 'undefined');
+      
+      if (data.success && data.users) {
         setUsers(data.users);
+        console.log('Users set successfully:', data.users);
+        console.log('Number of users received:', data.users.length);
+      } else {
+        console.error('API returned error or no users:', data);
       }
     } catch (error) {
       console.error('Error fetching users:', error);
+      setUsers([]); // Set empty array on error
     }
-    setLoading(false);
+    setUsersLoading(false);
   };
 
   // Fetch Orders
   const fetchOrders = async () => {
-    setLoading(true);
+    setOrdersLoading(true);
     try {
       const res = await fetch(`${apiUrl}/api/admin/orders`, { headers: adminHeaders });
       const data = await res.json();
@@ -88,12 +184,12 @@ const AdminScreen: React.FC = () => {
     } catch (error) {
       console.error('Error fetching orders:', error);
     }
-    setLoading(false);
+    setOrdersLoading(false);
   };
 
   // Fetch Forum Threads
   const fetchForumThreads = async () => {
-    setLoading(true);
+    setForumLoading(true);
     try {
       const res = await fetch(`${apiUrl}/api/admin/forum/threads`, { headers: adminHeaders });
       const data = await res.json();
@@ -103,7 +199,37 @@ const AdminScreen: React.FC = () => {
     } catch (error) {
       console.error('Error fetching forum threads:', error);
     }
-    setLoading(false);
+    setForumLoading(false);
+  };
+
+  // Fetch Categories
+  const fetchCategories = async () => {
+    setCategoriesLoading(true);
+    try {
+      const res = await fetch(`${apiUrl}/api/admin/categories`, { headers: adminHeaders });
+      const data = await res.json();
+      if (data.success) {
+        setCategories(data.categories);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+    setCategoriesLoading(false);
+  };
+
+  // Fetch Reviews
+  const fetchReviews = async () => {
+    setReviewsLoading(true);
+    try {
+      const res = await fetch(`${apiUrl}/api/admin/reviews`, { headers: adminHeaders });
+      const data = await res.json();
+      if (data.success) {
+        setReviews(data.reviews);
+      }
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+    }
+    setReviewsLoading(false);
   };
 
   // Edit handler
@@ -116,15 +242,12 @@ const AdminScreen: React.FC = () => {
   const handleUpdate = async (id: number, type: string) => {
     try {
       let endpoint = '';
-      if (type === 'product') {
-        endpoint = `/api/admin/products/${id}`;
-      } else if (type === 'user') {
-        endpoint = `/api/admin/users/${id}`;
-      } else if (type === 'order') {
-        endpoint = `/api/admin/orders/${id}`;
-      } else if (type === 'thread') {
-        endpoint = `/api/admin/forum/threads/${id}`;
-      }
+      if (type === 'product') endpoint = `/api/admin/products/${id}`;
+      else if (type === 'user') endpoint = `/api/admin/users/${id}`;
+      else if (type === 'order') endpoint = `/api/admin/orders/${id}`;
+      else if (type === 'thread') endpoint = `/api/admin/forum/threads/${id}`;
+      else if (type === 'category') endpoint = `/api/admin/categories/${id}`;
+      else if (type === 'review') endpoint = `/api/admin/reviews/${id}`;
 
       const res = await fetch(`${apiUrl}${endpoint}`, {
         method: 'PUT',
@@ -138,6 +261,8 @@ const AdminScreen: React.FC = () => {
         else if (type === 'user') fetchUsers();
         else if (type === 'order') fetchOrders();
         else if (type === 'thread') fetchForumThreads();
+        else if (type === 'category') fetchCategories();
+        else if (type === 'review') fetchReviews();
         setEditingId(null);
       }
     } catch (error) {
@@ -155,6 +280,8 @@ const AdminScreen: React.FC = () => {
       else if (type === 'user') endpoint = `/api/admin/users/${id}`;
       else if (type === 'order') endpoint = `/api/admin/orders/${id}`;
       else if (type === 'thread') endpoint = `/api/admin/forum/threads/${id}`;
+      else if (type === 'category') endpoint = `/api/admin/categories/${id}`;
+      else if (type === 'review') endpoint = `/api/admin/reviews/${id}`;
 
       const res = await fetch(`${apiUrl}${endpoint}`, {
         method: 'DELETE',
@@ -167,9 +294,47 @@ const AdminScreen: React.FC = () => {
         else if (type === 'user') fetchUsers();
         else if (type === 'order') fetchOrders();
         else if (type === 'thread') fetchForumThreads();
+        else if (type === 'category') fetchCategories();
+        else if (type === 'review') fetchReviews();
       }
     } catch (error) {
       console.error('Error deleting:', error);
+    }
+  };
+
+  // Create handlers
+  const handleCreate = (type: 'product' | 'user' | 'category') => {
+    setCreateType(type);
+    setCreateData({});
+    setShowCreateModal(true);
+  };
+
+  const handleCreateSubmit = async () => {
+    try {
+      let endpoint = '';
+      if (createType === 'product') endpoint = '/api/admin/products';
+      else if (createType === 'user') endpoint = '/api/admin/users';
+      else if (createType === 'category') endpoint = '/api/admin/categories';
+      
+      if (!endpoint) return;
+
+      const res = await fetch(`${apiUrl}${endpoint}`, {
+        method: 'POST',
+        headers: adminHeaders,
+        body: JSON.stringify(createData)
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        if (createType === 'product') fetchProducts();
+        else if (createType === 'user') fetchUsers();
+        else if (createType === 'category') fetchCategories();
+        setShowCreateModal(false);
+        setCreateData({});
+        setCreateType(null);
+      }
+    } catch (error) {
+      console.error('Error creating:', error);
     }
   };
 
@@ -182,15 +347,11 @@ const AdminScreen: React.FC = () => {
 
       {/* Tabs */}
       <div style={styles.tabContainer}>
-        {['dashboard', 'products', 'users', 'orders', 'forum'].map(tab => (
+        {['dashboard', 'products', 'users', 'orders', 'forum', 'categories', 'reviews'].map(tab => (
           <button
             key={tab}
             onClick={() => {
               setActiveTab(tab);
-              if (tab === 'products') fetchProducts();
-              else if (tab === 'users') fetchUsers();
-              else if (tab === 'orders') fetchOrders();
-              else if (tab === 'forum') fetchForumThreads();
             }}
             style={{
               ...styles.tab,
@@ -238,8 +399,16 @@ const AdminScreen: React.FC = () => {
       {/* Products Tab */}
       {activeTab === 'products' && (
         <div style={styles.section}>
-          <h2>Manage Products</h2>
-          {loading ? <p>Loading...</p> : (
+          <div style={styles.sectionHeader}>
+            <h2>Manage Products</h2>
+            <button 
+              onClick={() => handleCreate('product')}
+              style={styles.createBtn}
+            >
+              + Create Product
+            </button>
+          </div>
+          {productsLoading ? <p>Loading...</p> : (
             <table style={styles.table}>
               <thead>
                 <tr>
@@ -336,8 +505,16 @@ const AdminScreen: React.FC = () => {
       {/* Users Tab */}
       {activeTab === 'users' && (
         <div style={styles.section}>
-          <h2>Manage Users</h2>
-          {loading ? <p>Loading...</p> : (
+          <div style={styles.sectionHeader}>
+            <h2>Manage Users</h2>
+            <button 
+              onClick={() => handleCreate('user')}
+              style={styles.createBtn}
+            >
+              + Create User
+            </button>
+          </div>
+          {usersLoading ? <p>Loading...</p> : (
             <table style={styles.table}>
               <thead>
                 <tr>
@@ -444,7 +621,7 @@ const AdminScreen: React.FC = () => {
       {activeTab === 'orders' && (
         <div style={styles.section}>
           <h2>Manage Orders</h2>
-          {loading ? <p>Loading...</p> : (
+          {ordersLoading ? <p>Loading...</p> : (
             <table style={styles.table}>
               <thead>
                 <tr>
@@ -527,7 +704,7 @@ const AdminScreen: React.FC = () => {
       {activeTab === 'forum' && (
         <div style={styles.section}>
           <h2>Manage Forum Threads</h2>
-          {loading ? <p>Loading...</p> : (
+          {forumLoading ? <p>Loading...</p> : (
             <table style={styles.table}>
               <thead>
                 <tr>
@@ -605,6 +782,233 @@ const AdminScreen: React.FC = () => {
           )}
         </div>
       )}
+
+      {/* Categories Tab */}
+      {activeTab === 'categories' && (
+        <div style={styles.section}>
+          <div style={styles.sectionHeader}>
+            <h2>Manage Categories</h2>
+            <button 
+              onClick={() => handleCreate('category')}
+              style={styles.createBtn}
+            >
+              + Create Category
+            </button>
+          </div>
+          {categoriesLoading ? <p>Loading...</p> : (
+            <table style={styles.table}>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Description</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {categories.map(category => (
+                  <tr key={category.id}>
+                    <td>{category.id}</td>
+                    <td>{category.name}</td>
+                    <td>{category.description}</td>
+                    <td>{category.status}</td>
+                    <td style={styles.actions}>
+                      <button
+                        onClick={() => handleEdit(category, 'category')}
+                        style={styles.editBtn}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(category.id, 'category')}
+                        style={styles.deleteBtn}
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {/* Reviews Tab */}
+      {activeTab === 'reviews' && (
+        <div style={styles.section}>
+          <h2>Manage Reviews</h2>
+          {reviewsLoading ? <p>Loading...</p> : (
+            <table style={styles.table}>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Product</th>
+                  <th>User</th>
+                  <th>Rating</th>
+                  <th>Title</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reviews.map(review => (
+                  <tr key={review.id}>
+                    <td>{review.id}</td>
+                    <td>{review.productName}</td>
+                    <td>{review.userName}</td>
+                    <td>{'⭐'.repeat(review.rating)}</td>
+                    <td>{review.title}</td>
+                    <td>{review.status}</td>
+                    <td style={styles.actions}>
+                      <button
+                        onClick={() => handleEdit(review, 'review')}
+                        style={styles.editBtn}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(review.id, 'review')}
+                        style={styles.deleteBtn}
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {/* Create Modal */}
+      {showCreateModal && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modal}>
+            <h3>Create New {createType === 'product' ? 'Product' : 'User'}</h3>
+            
+            {createType === 'product' && (
+              <div>
+                <input
+                  type="text"
+                  placeholder="Product Name"
+                  value={createData.name || ''}
+                  onChange={e => setCreateData({ ...createData, name: e.target.value })}
+                  style={styles.modalInput}
+                />
+                <select
+                  value={createData.category || ''}
+                  onChange={e => setCreateData({ ...createData, category: e.target.value })}
+                  style={styles.modalInput}
+                >
+                  <option value="">Select Category</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.name}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  placeholder="Price"
+                  value={createData.price || ''}
+                  onChange={e => setCreateData({ ...createData, price: parseFloat(e.target.value) })}
+                  style={styles.modalInput}
+                />
+                <input
+                  type="number"
+                  placeholder="Quantity"
+                  value={createData.quantity || ''}
+                  onChange={e => setCreateData({ ...createData, quantity: parseInt(e.target.value) })}
+                  style={styles.modalInput}
+                />
+                <textarea
+                  placeholder="Description"
+                  value={createData.description || ''}
+                  onChange={e => setCreateData({ ...createData, description: e.target.value })}
+                  style={styles.modalTextarea}
+                />
+                <input
+                  type="text"
+                  placeholder="Image URLs (comma-separated)"
+                  value={createData.image ? (Array.isArray(createData.image) ? createData.image.join(', ') : createData.image) : ''}
+                  onChange={e => setCreateData({ ...createData, image: e.target.value.split(',').map(url => url.trim()).filter(url => url) })}
+                  style={styles.modalInput}
+                />
+              </div>
+            )}
+
+            {createType === 'user' && (
+              <div>
+                <input
+                  type="text"
+                  placeholder="Full Name"
+                  value={createData.name || ''}
+                  onChange={e => setCreateData({ ...createData, name: e.target.value })}
+                  style={styles.modalInput}
+                />
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={createData.email || ''}
+                  onChange={e => setCreateData({ ...createData, email: e.target.value })}
+                  style={styles.modalInput}
+                />
+                <input
+                  type="tel"
+                  placeholder="Phone"
+                  value={createData.phone || ''}
+                  onChange={e => setCreateData({ ...createData, phone: e.target.value })}
+                  style={styles.modalInput}
+                />
+                <input
+                  type="text"
+                  placeholder="Address"
+                  value={createData.address || ''}
+                  onChange={e => setCreateData({ ...createData, address: e.target.value })}
+                  style={styles.modalInput}
+                />
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={createData.password || ''}
+                  onChange={e => setCreateData({ ...createData, password: e.target.value })}
+                  style={styles.modalInput}
+                />
+                <select
+                  value={createData.role || 'user'}
+                  onChange={e => setCreateData({ ...createData, role: e.target.value })}
+                  style={styles.modalInput}
+                >
+                  <option value="user">User</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+            )}
+
+            <div style={styles.modalActions}>
+              <button
+                onClick={handleCreateSubmit}
+                style={styles.saveBtn}
+              >
+                Create
+              </button>
+              <button
+                onClick={() => {
+                  setShowCreateModal(false);
+                  setCreateData({});
+                  setCreateType(null);
+                }}
+                style={styles.cancelBtn}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -646,6 +1050,67 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: '8px',
     padding: '20px',
     boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+  },
+  sectionHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '20px'
+  },
+  createBtn: {
+    padding: '8px 16px',
+    backgroundColor: '#2ecc71',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: 'bold'
+  },
+  modalOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000
+  },
+  modal: {
+    backgroundColor: 'white',
+    borderRadius: '8px',
+    padding: '30px',
+    width: '500px',
+    maxWidth: '90vw',
+    maxHeight: '80vh',
+    overflowY: 'auto'
+  },
+  modalInput: {
+    width: '100%',
+    padding: '10px',
+    margin: '8px 0',
+    border: '1px solid #ddd',
+    borderRadius: '4px',
+    fontSize: '14px'
+  },
+  modalTextarea: {
+    width: '100%',
+    padding: '10px',
+    margin: '8px 0',
+    border: '1px solid #ddd',
+    borderRadius: '4px',
+    fontSize: '14px',
+    minHeight: '80px',
+    resize: 'vertical'
+  },
+  modalActions: {
+    display: 'flex',
+    gap: '10px',
+    justifyContent: 'flex-end',
+    marginTop: '20px'
   },
   statsGrid: {
     display: 'grid',

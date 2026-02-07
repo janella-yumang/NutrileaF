@@ -1,6 +1,10 @@
 from app import create_app
 import os
 
+# Set environment variables for development
+os.environ['FLASK_ENV'] = 'development'
+os.environ['FLASK_DEBUG'] = '1'
+
 app = create_app()
 
 # Ensure upload folders exist
@@ -14,8 +18,15 @@ with app.app_context():
 # Print all registered routes (for debugging)
 print("\n=== Registered Routes ===")
 for rule in app.url_map.iter_rules():
-    print(f"{rule.endpoint}: {rule.rule} [{', '.join(rule.methods - {'HEAD', 'OPTIONS'})}]")
+    methods = rule.methods - {'HEAD', 'OPTIONS'}
+    if methods:
+        print(f"{rule.endpoint}: {rule.rule} [{', '.join(methods)}]")
+print("========================\n")
+
+# Print CORS configuration
+print("=== CORS Configuration ===")
+print(f"Allowed origins: {app.config.get('CORS_ORIGINS', 'localhost:3000')}")
 print("========================\n")
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    app.run(host='0.0.0.0', port=5000, debug=True)

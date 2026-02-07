@@ -32,7 +32,7 @@ const CheckoutScreen: React.FC = () => {
 
         try {
             // Call backend API to save order to PostgreSQL
-            const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+            const apiUrl = process.env.REACT_APP_API_URL || 'https://nutrilea-backend.onrender.com/api';
             const response = await fetch(`${apiUrl}/api/orders/create`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

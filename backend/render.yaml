@@ -1,0 +1,19 @@
+services:
+  # Python Web Service
+  - type: web
+    name: nutrilea-backend
+    runtime: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt && python init_render_db.py"
+    startCommand: "gunicorn --bind 0.0.0.0 --port $PORT server:app"
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: PYTHON_VERSION
+        value: 3.9.0
+      - key: CORS_ORIGINS
+        value: https://nutrilea-f.vercel.app,https://nutrilea-f.vercel.app/
+      # Add your existing DATABASE_URL here
+      - key: DATABASE_URL
+        sync: false # Don't sync this value, set it manually in Render dashboard
+    autoDeploy: true

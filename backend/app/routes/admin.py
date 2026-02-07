@@ -5,7 +5,7 @@ Requires admin role to access.
 
 from flask import Blueprint, request, jsonify
 from functools import wraps
-from app.models import db, Product, User, Order, ForumThread, ForumReply
+from app.models import db, Product, User, Order, ForumThread, ForumReply, ProductCategory, Review
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/api/admin')
 
@@ -358,4 +358,187 @@ def get_dashboard_stats():
             }
         }), 200
     except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ==================== PRODUCT CATEGORIES ====================
+
+@admin_bp.route('/categories', methods=['GET'])
+@admin_required
+def get_all_categories():
+    """Get all product categories."""
+    categories = ProductCategory.query.all()
+    
+    return jsonify({
+        'success': True,
+        'categories': [c.to_dict() for c in categories],
+        'total': len(categories)
+    }), 200
+
+@admin_bp.route('/categories', methods=['POST'])
+@admin_required
+def create_category():
+    """Create a new product category."""
+    data = request.get_json()
+    
+    try:
+        category = ProductCategory(
+            name=data.get('name'),
+            description=data.get('description'),
+            image=data.get('image'),
+            status=data.get('status', 'active')
+        )
+        db.session.add(category)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Category created',
+            'categoryId': category.id,
+            'category': category.to_dict()
+        }), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@admin_bp.route('/categories/<int:category_id>', methods=['PUT'])
+@admin_required
+def update_category(category_id):
+    """Update a product category."""
+    data = request.get_json()
+    category = ProductCategory.query.get(category_id)
+    
+    if not category:
+        return jsonify({'success': False, 'error': 'Category not found'}), 404
+    
+    try:
+        if 'name' in data:
+            category.name = data['name']
+        if 'description' in data:
+            category.description = data['description']
+        if 'image' in data:
+            category.image = data['image']
+        if 'status' in data:
+            category.status = data['status']
+        
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'message': 'Category updated',
+            'category': category.to_dict()
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@admin_bp.route('/categories/<int:category_id>', methods=['DELETE'])
+@admin_required
+def delete_category(category_id):
+    """Delete a product category."""
+    category = ProductCategory.query.get(category_id)
+    
+    if not category:
+        return jsonify({'success': False, 'error': 'Category not found'}), 404
+    
+    try:
+        db.session.delete(category)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Category deleted'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ==================== REVIEWS ====================
+
+@admin_bp.route('/reviews', methods=['GET'])
+@admin_required
+def get_all_reviews():
+    """Get all reviews with pagination."""
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    
+    reviews = Review.query.order_by(Review.created_at.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    
+    return jsonify({
+        'success': True,
+        'reviews': [r.to_dict() for r in reviews.items],
+        'total': reviews.total,
+        'pages': reviews.pages,
+        'current_page': page
+    }), 200
+
+@admin_bp.route('/reviews', methods=['POST'])
+@admin_required
+def create_review():
+    """Create a new review."""
+    data = request.get_json()
+    
+    try:
+        review = Review(
+            product_id=data.get('product_id'),
+            user_id=data.get('user_id'),
+            rating=data.get('rating'),
+            title=data.get('title'),
+            content=data.get('content'),
+            status=data.get('status', 'active')
+        )
+        db.session.add(review)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Review created',
+            'reviewId': review.id,
+            'review': review.to_dict()
+        }), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@admin_bp.route('/reviews/<int:review_id>', methods=['PUT'])
+@admin_required
+def update_review(review_id):
+    """Update a review."""
+    data = request.get_json()
+    review = Review.query.get(review_id)
+    
+    if not review:
+        return jsonify({'success': False, 'error': 'Review not found'}), 404
+    
+    try:
+        if 'rating' in data:
+            review.rating = data['rating']
+        if 'title' in data:
+            review.title = data['title']
+        if 'content' in data:
+            review.content = data['content']
+        if 'status' in data:
+            review.status = data['status']
+        
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'message': 'Review updated',
+            'review': review.to_dict()
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@admin_bp.route('/reviews/<int:review_id>', methods=['DELETE'])
+@admin_required
+def delete_review(review_id):
+    """Delete a review."""
+    review = Review.query.get(review_id)
+    
+    if not review:
+        return jsonify({'success': False, 'error': 'Review not found'}), 404
+    
+    try:
+        db.session.delete(review)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Review deleted'}), 200
+    except Exception as e:
+        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500

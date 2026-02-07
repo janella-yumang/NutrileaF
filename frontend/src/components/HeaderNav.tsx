@@ -11,6 +11,7 @@ const HeaderNav: React.FC = () => {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userPhone, setUserPhone] = useState<string | null>(null);
   const [userId, setUserId] = useState<number | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [profileIcon, setProfileIcon] = useState<string | null>(null);
   const [userProfileImage, setUserProfileImage] = useState<string | null>(null);
   const [showProfileCard, setShowProfileCard] = useState(false);
@@ -28,9 +29,10 @@ const HeaderNav: React.FC = () => {
       try {
         const userData = JSON.parse(user);
         setUserId(userData.id);
-        setUserName(userData.fullName);
+        setUserName(userData.name || userData.fullName);
         setUserEmail(userData.email);
         setUserPhone(userData.phone);
+        setUserRole(userData.role || 'user');
         
         // Set profile image from backend user data
         if (userData.profileImage) {
@@ -67,6 +69,7 @@ const HeaderNav: React.FC = () => {
           setUserName(userData.fullName);
           setUserEmail(userData.email);
           setUserPhone(userData.phone);
+        setUserRole(userData.role || 'user');
           
           // Set profile image from backend user data
           if (userData.profileImage) {
@@ -91,7 +94,7 @@ const HeaderNav: React.FC = () => {
         setUserName(null);
         setUserEmail(null);
         setUserPhone(null);
-        setUserId(null);
+        setUserRole(null);
         setUserProfileImage(null);
       }
     };
@@ -123,7 +126,7 @@ const HeaderNav: React.FC = () => {
         const token = localStorage.getItem('nutrileaf_token');
         if (!token) return;
 
-        const API_BASE = process.env.REACT_APP_API_URL || 'http://127.0.0.1:5000/api';
+        const API_BASE = process.env.REACT_APP_API_URL?.replace('/api', '') || 'https://nutrilea-backend.onrender.com';
         const response = await fetch(`${API_BASE}/auth/verify`, {
           method: 'GET',
           headers: {
@@ -132,20 +135,22 @@ const HeaderNav: React.FC = () => {
           },
         });
 
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.user) {
-            // Update localStorage with fresh user data
-            localStorage.setItem('nutrileaf_user', JSON.stringify(data.user));
-            
-            // Update state with profile image
-            if (data.user.profileImage) {
-              const BASE_URL = API_BASE.replace('/api', '');
-              const fullProfileImageUrl = data.user.profileImage.startsWith('http') 
-                ? data.user.profileImage 
-                : `${BASE_URL}${data.user.profileImage}`;
-              setUserProfileImage(fullProfileImageUrl);
-            }
+        if (!response.ok) {
+          console.error(`Auth verify failed: ${response.status}`);
+          return;
+        }
+
+        const data = await response.json();
+        if (data.success && data.user) {
+          // Update localStorage with fresh user data
+          localStorage.setItem('nutrileaf_user', JSON.stringify(data.user));
+          
+          // Update state with profile image
+          if (data.user.profileImage) {
+            const fullProfileImageUrl = data.user.profileImage.startsWith('http') 
+              ? data.user.profileImage 
+              : `${API_BASE}${data.user.profileImage}`;
+            setUserProfileImage(fullProfileImageUrl);
           }
         }
       } catch (error) {
@@ -166,9 +171,10 @@ const HeaderNav: React.FC = () => {
       try {
         const userData = JSON.parse(user);
         setUserId(userData.id);
-        setUserName(userData.fullName);
+        setUserName(userData.name || userData.fullName);
         setUserEmail(userData.email);
         setUserPhone(userData.phone);
+        setUserRole(userData.role || 'user');
         
         // Set profile image from backend user data
         if (userData.profileImage) {
@@ -197,6 +203,7 @@ const HeaderNav: React.FC = () => {
     { label: 'Market', path: '/market' },
     { label: 'Chat', path: '/chat' },
     { label: 'Forum', path: '/forum' },
+    ...(userRole === 'admin' ? [{ label: 'Admin Dashboard', path: '/admin' }] : []),
   ];
 
   const aboutItems = [
@@ -226,6 +233,7 @@ const HeaderNav: React.FC = () => {
     localStorage.removeItem('nutrileaf_user');
     setIsLoggedIn(false);
     setUserName(null);
+    setUserRole(null);
     navigate('/login');
   };
 
@@ -330,6 +338,30 @@ const HeaderNav: React.FC = () => {
                       <div className="profile-card-name">{userName}</div>
                       <div className="profile-card-email">{userEmail}</div>
                       {userPhone && <div className="profile-card-phone">{userPhone}</div>}
+                      {userRole === 'admin' && (
+                        <button 
+                          className="profile-card-admin-btn"
+                          type="button"
+                          onClick={() => {
+                            setShowProfileCard(false);
+                            navigate('/admin');
+                          }}
+                          style={{
+                            marginTop: '8px',
+                            width: '100%',
+                            padding: '8px 12px',
+                            background: '#6f42c1',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            fontWeight: 'bold'
+                          }}
+                        >
+                          👑 Admin Dashboard
+                        </button>
+                      )}
                       <button 
                         className="profile-card-edit-btn"
                         type="button"
