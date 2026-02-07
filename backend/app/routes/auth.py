@@ -124,33 +124,35 @@ def login():
     print(f"DEBUG: Request method: {request.method}")
     print(f"DEBUG: Request headers: {dict(request.headers)}")
     
-    data = request.get_json(silent=True) or {}
-    print(f"DEBUG: Request data: {data}")
-
-    email = (data.get("email") or "").strip().lower()
-    password = data.get("password") or ""
-    
-    print(f"DEBUG: Extracted email: {email}, password: {'*' * len(password) if password else 'None'}")
-
-    if not email or not password:
-        print("DEBUG: Missing email or password")
-        return (
-            jsonify(
-                {
-                    "success": False,
-                    "message": "Email and password are required.",
-                }
-            ),
-            400,
-        )
-
     try:
+        data = request.get_json(silent=True) or {}
+        print(f"DEBUG: Request data: {data}")
+
+        email = (data.get("email") or "").strip().lower()
+        password = data.get("password") or ""
+        
+        print(f"DEBUG: Extracted email: {email}, password: {'*' * len(password) if password else 'None'}")
+
+        if not email or not password:
+            print("DEBUG: Missing email or password")
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "message": "Email and password are required.",
+                    }
+                ),
+                400,
+            )
+
         # Use SQLAlchemy to query PostgreSQL
         from app.models import db, User
         
         user = User.query.filter_by(email=email).first()
+        print(f"DEBUG: User found: {user is not None}")
 
         if not user or not check_password_hash(user.password_hash, password):
+            print("DEBUG: Invalid credentials")
             return (
                 jsonify(
                     {
@@ -163,6 +165,7 @@ def login():
 
         # Check if user is active
         if user.status != 'active':
+            print(f"DEBUG: User not active: {user.status}")
             return (
                 jsonify(
                     {
@@ -194,7 +197,8 @@ def login():
             secret_key,
             algorithm='HS256'
         )
-
+        
+        print(f"DEBUG: Login successful for user: {email}")
         return (
             jsonify(
                 {
@@ -208,12 +212,16 @@ def login():
         )
 
     except Exception as e:
-        print(f"Login error: {e}")
+        print(f"ERROR: Login failed with exception: {str(e)}")
+        print(f"ERROR: Exception type: {type(e).__name__}")
+        import traceback
+        traceback.print_exc()
         return (
             jsonify(
                 {
                     "success": False,
-                    "message": f"Login error: {str(e)}",
+                    "message": "Login failed due to server error.",
+                    "error": str(e)
                 }
             ),
             500,

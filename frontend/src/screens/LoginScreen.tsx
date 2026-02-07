@@ -96,8 +96,19 @@ const LoginScreen: React.FC = () => {
       console.log('Mobile login - Response data:', data);
 
       if (!response.ok || !data.success) {
-        const message = data?.message || 'Login failed. Please check your credentials.';
-        setApiError(message);
+        let errorMessage = 'Login failed. Please check your credentials.';
+        
+        // Better error messages based on status code
+        if (response.status === 401) {
+          errorMessage = data?.message || 'Invalid email or password.';
+        } else if (response.status === 500) {
+          errorMessage = 'Server error. Please try again later.';
+          console.error('Server error details:', data);
+        } else if (data?.message) {
+          errorMessage = data.message;
+        }
+        
+        setApiError(errorMessage);
         return;
       }
 
