@@ -4,6 +4,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from flask import Flask, send_from_directory
 from flask_cors import CORS
 from config import Config
+from app.models import db
 
 def create_app():
     app = Flask(__name__)
@@ -30,6 +31,9 @@ def create_app():
          methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
 
     app.config.from_object(Config)
+    app.config['SQLALCHEMY_DATABASE_URI'] = app.config.get('DATABASE_URI', 'sqlite:///data/database.db')
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    db.init_app(app)
 
     # Serve uploaded files
     @app.route('/uploads/<path:filename>')
@@ -55,7 +59,9 @@ def create_app():
     from app.routes.chatbot import chatbot_bp
     from app.routes.guides_resources import guides_bp
     from app.routes.auth import auth_bp
-    from app.routes.forum import forum_bp
+    from app.routes.forum_routes import forum_bp
+    from app.routes.orders import orders_bp
+    from app.routes.admin import admin_bp
 
     app.register_blueprint(image_analysis_bp, url_prefix='/api/image')
     app.register_blueprint(growth_bp, url_prefix='/api/growth')
@@ -67,7 +73,9 @@ def create_app():
     app.register_blueprint(chatbot_bp, url_prefix='/api/chatbot')
     app.register_blueprint(guides_bp, url_prefix='/api/guides')
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    app.register_blueprint(forum_bp, url_prefix='/api/forum')
+    app.register_blueprint(forum_bp)
+    app.register_blueprint(orders_bp, url_prefix='/api/orders')
+    app.register_blueprint(admin_bp)
 
     @app.route("/")
     def home():

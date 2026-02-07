@@ -12,8 +12,9 @@ root.render(
   </React.StrictMode>
 );
 
-// Register service worker
-if ('serviceWorker' in navigator) {
+// Only register service worker in production. In development we unregister
+// any existing service worker to avoid stale caches and failed fetches.
+if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register('/service-worker.js')
@@ -24,6 +25,11 @@ if ('serviceWorker' in navigator) {
         console.log('SW registration failed: ', registrationError);
       });
   });
+} else if ('serviceWorker' in navigator) {
+  // In dev, attempt to unregister any previously-registered service workers.
+  navigator.serviceWorker.getRegistrations().then(registrations => {
+    registrations.forEach(reg => reg.unregister());
+  }).catch(() => {});
 }
 
 export {};

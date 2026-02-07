@@ -160,33 +160,32 @@ def ensure_db_initialized() -> None:
 
 @auth_bp.route("/register", methods=["POST"])
 def register():
+    """Register a new user in PostgreSQL."""
     data = request.get_json(silent=True) or {}
 
-    full_name = (data.get("fullName") or "").strip()
+    name = (data.get("name") or data.get("fullName") or "").strip()
     email = (data.get("email") or "").strip().lower()
     phone = (data.get("phone") or "").strip()
     address = (data.get("address") or "").strip()
     password = data.get("password") or ""
 
-    if not full_name or not email or not password:
+    if not name or not email or not password:
         return (
             jsonify(
                 {
                     "success": False,
-                    "message": "Full name, email, and password are required.",
+                    "message": "Name, email, and password are required.",
                 }
             ),
             400,
         )
 
-    conn = _get_connection()
     try:
-        cur = conn.cursor()
-
+        from app.models import db, User
+        
         # Check if user already exists
-        cur.execute("SELECT id FROM users WHERE email = ?", (email,))
-        existing = cur.fetchone()
-        if existing:
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
             return (
                 jsonify(
                     {
@@ -200,25 +199,30 @@ def register():
 
         password_hash = generate_password_hash(password)
 
-        cur.execute(
-            """
-            INSERT INTO users (full_name, email, phone, address, password_hash)
-            VALUES (?, ?, ?, ?, ?)
-            """,
-            (full_name, email, phone, address, password_hash),
+        # Create new user with default role='user' and status='active'
+        new_user = User(
+            name=name,
+            email=email,
+            phone=phone,
+            address=address,
+            password_hash=password_hash,
+            role='user',
+            status='active'
         )
-        conn.commit()
-        user_id = cur.lastrowid
         
-        print(f"DEBUG: User registered successfully with ID: {user_id}")
-        print(f"DEBUG: User data: {full_name}, {email}")
+        db.session.add(new_user)
+        db.session.commit()
+        
+        print(f"DEBUG: User registered successfully with ID: {new_user.id}")
+        print(f"DEBUG: User data: {name}, {email}")
 
         # Generate JWT token
         secret_key = current_app.config.get('SECRET_KEY', 'supersecretkey')
         token = jwt.encode(
             {
-                'user_id': user_id,
+                'user_id': new_user.id,
                 'email': email,
+                'role': 'user',
                 'exp': datetime.datetime.utcnow() + datetime.timedelta(days=30)
             },
             secret_key,
@@ -230,23 +234,35 @@ def register():
                 {
                     "success": True,
                     "user": {
-                        "id": user_id,
-                        "fullName": full_name,
+                        "id": new_user.id,
+                        "name": name,
                         "email": email,
                         "phone": phone,
                         "address": address,
+                        "role": "user"
                     },
                     "token": token,
                 }
             ),
             201,
         )
-    finally:
-        conn.close()
+    except Exception as e:
+        db.session.rollback()
+        print(f"Registration error: {e}")
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "message": f"Registration error: {str(e)}",
+                }
+            ),
+            500,
+        )
 
 
 @auth_bp.route("/login", methods=["POST"])
 def login():
+    """Login with email and password against PostgreSQL."""
     data = request.get_json(silent=True) or {}
 
     email = (data.get("email") or "").strip().lower()
@@ -263,16 +279,13 @@ def login():
             400,
         )
 
-    conn = _get_connection()
     try:
-        cur = conn.cursor()
-        cur.execute(
-            "SELECT id, full_name, email, phone, address, password_hash FROM users WHERE email = ?",
-            (email,),
-        )
-        row = cur.fetchone()
+        # Use SQLAlchemy to query PostgreSQL
+        from app.models import db, User
+        
+        user = User.query.filter_by(email=email).first()
 
-        if not row or not check_password_hash(row["password_hash"], password):
+        if not user or not check_password_hash(user.password_hash, password):
             return (
                 jsonify(
                     {
@@ -283,33 +296,63 @@ def login():
                 401,
             )
 
-        user = {
-            "id": row["id"],
-            "fullName": row["full_name"],
-            "email": row["email"],
-            "phone": row["phone"],
-            "address": row["address"],
+        # Check if user is active
+        if user.status != 'active':
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "message": f"Account is {user.status}.",
+                    }
+                ),
+                401,
+            )
+
+        user_data = {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "phone": user.phone,
+            "address": user.address,
+            "role": user.role
         }
 
         # Generate JWT token
         secret_key = current_app.config.get('SECRET_KEY', 'supersecretkey')
         token = jwt.encode(
             {
-                'user_id': row['id'],
-                'email': row['email'],
+                'user_id': user.id,
+                'email': user.email,
+                'role': user.role,
                 'exp': datetime.datetime.utcnow() + datetime.timedelta(days=30)
             },
             secret_key,
             algorithm='HS256'
         )
 
-        return jsonify({
-            "success": True,
-            "user": user,
-            "token": token
-        })
-    finally:
-        conn.close()
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "message": "Login successful.",
+                    "user": user_data,
+                    "token": token,
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        print(f"Login error: {e}")
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "message": f"Login error: {str(e)}",
+                }
+            ),
+            500,
+        )
 
 
 @auth_bp.route("/verify", methods=["GET"])

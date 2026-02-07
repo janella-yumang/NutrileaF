@@ -10,8 +10,11 @@ import MoringaScreen from './screens/MoringaScreen';
 import ScanScreen from './screens/ScanScreen';
 import AnalysisScreen from './screens/AnalysisScreen';
 import MarketScreen from './screens/MarketScreen';
+import CheckoutScreen from './screens/CheckoutScreen';
+import CartScreen from './screens/CartScreen';
 import ChatScreen from './screens/ChatScreen';
 import AnalyticsScreen from './screens/AnalyticsScreen';
+import AdminScreen from './screens/AdminScreen';
 import './App.css';
 
 function App() {
@@ -29,8 +32,11 @@ function App() {
                     <Route path="/scan" element={<ScanScreen />} />
                     <Route path="/analysis/:id" element={<AnalysisScreen />} />
                     <Route path="/market" element={<MarketScreen />} />
+                    <Route path="/cart" element={<CartScreen />} />
+                    <Route path="/checkout" element={<CheckoutScreen />} />
                     <Route path="/chat" element={<ChatScreen />} />
                     <Route path="/analytics" element={<AnalyticsScreen />} />
+                    <Route path="/admin" element={<AdminScreen />} />
                 </Routes>
             </div>
         </Router>
