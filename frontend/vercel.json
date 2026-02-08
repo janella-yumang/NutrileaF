@@ -17,5 +17,11 @@
     "REACT_APP_API_URL": "https://nutrilea-backend.onrender.com/api",
     "ESLINT_NO_DEV_ERRORS": "true",
     "SKIP_TYPE_CHECK": "true"
-  }
+  },
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
 }
