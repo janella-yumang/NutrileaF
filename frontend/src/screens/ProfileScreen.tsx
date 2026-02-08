@@ -10,6 +10,7 @@ interface UserData {
   email: string;
   phone: string;
   address: string;
+  role: string;
 }
 
 interface FormErrors {
@@ -26,6 +27,7 @@ const ProfileScreen: React.FC = () => {
     email: '',
     phone: '',
     address: '',
+    role: '',
   });
 
   const [profileIcon, setProfileIcon] = useState<string | null>(null);
@@ -53,6 +55,7 @@ const ProfileScreen: React.FC = () => {
         email: userData.email,
         phone: userData.phone,
         address: userData.address,
+        role: userData.role || 'user',
       });
 
       // Load profile icon from localStorage if it exists, otherwise check backend
@@ -322,6 +325,15 @@ const ProfileScreen: React.FC = () => {
                 value={formData.email}
                 disabled
               />
+            </div>
+
+            <div className="profile-form-group">
+              <label>Role</label>
+              <div className="profile-role-display">
+                <span className={`role-badge ${formData.role === 'admin' ? 'admin-role' : 'user-role'}`}>
+                  {formData.role === 'admin' ? '👑 Admin' : '👤 User'}
+                </span>
+              </div>
             </div>
 
             <div className="profile-form-group">

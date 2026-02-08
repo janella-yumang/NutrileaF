@@ -468,6 +468,33 @@ body::before {
   color: var(--white);
 }
 
+/* Profile Role Display */
+.profile-role-display {
+  padding: 8px 0;
+}
+
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: var(--border-radius-sm);
+  text-transform: capitalize;
+  letter-spacing: 0.5px;
+}
+
+.admin-role {
+  background-color: var(--primary-green);
+  color: var(--white);
+}
+
+.user-role {
+  background-color: var(--text-light);
+  color: var(--white);
+}
+
 /* Mobile Menu Button */
 .mobile-menu-btn {
   display: none;
