@@ -1,7 +1,7 @@
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from flask import Flask, send_from_directory, jsonify
+from flask import Flask, send_from_directory, jsonify, request
 from flask_cors import CORS
 from config import Config
 from app.models import db
@@ -28,6 +28,13 @@ def create_app():
     )
     allowed_origins = [origin.strip() for origin in cors_origins_env.split(',')]
     
+    # Explicitly add Vercel domain
+    vercel_domain = 'https://nutrilea-f.vercel.app'
+    if vercel_domain not in allowed_origins:
+        allowed_origins.append(vercel_domain)
+    
+    print(f"CORS allowed origins: {allowed_origins}")
+    
     # Add development origins
     if os.environ.get('FLASK_ENV') == 'development':
         allowed_origins.extend([
@@ -44,6 +51,17 @@ def create_app():
          allow_headers=['Content-Type', 'Authorization', 'X-Admin-Role'],
          methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
          max_age=600)
+    
+    # Add explicit OPTIONS handler for preflight requests
+    @app.before_request
+    def handle_options():
+        if request.method == 'OPTIONS':
+            response = jsonify({'status': 'ok'})
+            response.headers.add('Access-Control-Allow-Origin', request.headers.get('Origin', '*'))
+            response.headers.add('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Admin-Role')
+            response.headers.add('Access-Control-Allow-Credentials', 'true')
+            return response
 
     app.config.from_object(Config)
     app.config['SQLALCHEMY_DATABASE_URI'] = app.config.get('DATABASE_URI')
