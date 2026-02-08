@@ -31,17 +31,21 @@ const AdminScreen: React.FC = () => {
   const [createType, setCreateType] = useState<'product' | 'user' | 'category' | null>(null);
   const [createData, setCreateData] = useState<any>({});
   
-  const apiUrl = process.env.REACT_APP_API_URL || 'https://nutrilea-backend.onrender.com/api';
-  const adminHeaders = {
-    'Content-Type': 'application/json',
-    'X-Admin-Role': 'true'
+  const apiBase = (process.env.REACT_APP_API_URL || 'https://nutrilea-backend.onrender.com/api').replace(/\/api\/?$/, '');
+  const getAdminHeaders = () => {
+    const token = localStorage.getItem('nutrileaf_token');
+    return {
+      'Content-Type': 'application/json',
+      'X-Admin-Role': 'true',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    };
   };
 
   const fetchStats = async () => {
     try {
-      console.log('Fetching stats from:', `${apiUrl}/api/admin/stats`);
-      const res = await fetch(`${apiUrl}/api/admin/stats`, { 
-        headers: adminHeaders,
+      console.log('Fetching stats from:', `${apiBase}/api/admin/stats`);
+      const res = await fetch(`${apiBase}/api/admin/stats`, { 
+        headers: getAdminHeaders(),
         method: 'GET'
       });
       console.log('Stats response status:', res.status);
@@ -81,8 +85,8 @@ const AdminScreen: React.FC = () => {
   // Fetch categories for dropdown
   const fetchCategoriesForDropdown = async () => {
     try {
-      const res = await fetch(`${apiUrl}/api/products/categories`, {
-        headers: adminHeaders
+      const res = await fetch(`${apiBase}/api/products/categories`, {
+        headers: getAdminHeaders()
       });
       const data = await res.json();
       if (data.success) {
@@ -121,7 +125,7 @@ const AdminScreen: React.FC = () => {
   const fetchProducts = async () => {
     setProductsLoading(true);
     try {
-      const res = await fetch(`${apiUrl}/api/admin/products`, { headers: adminHeaders });
+      const res = await fetch(`${apiBase}/api/admin/products`, { headers: getAdminHeaders() });
       const data = await res.json();
       if (data.success) {
         setProducts(data.products);
@@ -137,14 +141,14 @@ const AdminScreen: React.FC = () => {
     setUsersLoading(true);
     try {
       const timestamp = Date.now(); // Cache-busting
-      const fullUrl = `${apiUrl}/api/admin/users?t=${timestamp}`;
+      const fullUrl = `${apiBase}/api/admin/users?t=${timestamp}`;
       console.log('=== FETCH USERS DEBUG ===');
-      console.log('API URL:', apiUrl);
+      console.log('API URL:', apiBase);
       console.log('Full URL:', fullUrl);
-      console.log('Headers:', adminHeaders);
+      console.log('Headers:', getAdminHeaders());
       
       const res = await fetch(fullUrl, { 
-        headers: adminHeaders,
+        headers: getAdminHeaders(),
         method: 'GET'
       });
       console.log('Response status:', res.status);
@@ -177,7 +181,7 @@ const AdminScreen: React.FC = () => {
   const fetchOrders = async () => {
     setOrdersLoading(true);
     try {
-      const res = await fetch(`${apiUrl}/api/admin/orders`, { headers: adminHeaders });
+      const res = await fetch(`${apiBase}/api/admin/orders`, { headers: getAdminHeaders() });
       const data = await res.json();
       if (data.success) {
         setOrders(data.orders);
@@ -192,7 +196,7 @@ const AdminScreen: React.FC = () => {
   const fetchForumThreads = async () => {
     setForumLoading(true);
     try {
-      const res = await fetch(`${apiUrl}/api/admin/forum/threads`, { headers: adminHeaders });
+      const res = await fetch(`${apiBase}/api/admin/forum/threads`, { headers: getAdminHeaders() });
       const data = await res.json();
       if (data.success) {
         setForumThreads(data.threads);
@@ -207,7 +211,7 @@ const AdminScreen: React.FC = () => {
   const fetchCategories = async () => {
     setCategoriesLoading(true);
     try {
-      const res = await fetch(`${apiUrl}/api/admin/categories`, { headers: adminHeaders });
+      const res = await fetch(`${apiBase}/api/admin/categories`, { headers: getAdminHeaders() });
       const data = await res.json();
       if (data.success) {
         setCategories(data.categories);
@@ -222,7 +226,7 @@ const AdminScreen: React.FC = () => {
   const fetchReviews = async () => {
     setReviewsLoading(true);
     try {
-      const res = await fetch(`${apiUrl}/api/admin/reviews`, { headers: adminHeaders });
+      const res = await fetch(`${apiBase}/api/admin/reviews`, { headers: getAdminHeaders() });
       const data = await res.json();
       if (data.success) {
         setReviews(data.reviews);
@@ -250,9 +254,9 @@ const AdminScreen: React.FC = () => {
       else if (type === 'category') endpoint = `/api/admin/categories/${id}`;
       else if (type === 'review') endpoint = `/api/admin/reviews/${id}`;
 
-      const res = await fetch(`${apiUrl}${endpoint}`, {
+      const res = await fetch(`${apiBase}${endpoint}`, {
         method: 'PUT',
-        headers: adminHeaders,
+        headers: getAdminHeaders(),
         body: JSON.stringify(editData)
       });
 
@@ -284,9 +288,9 @@ const AdminScreen: React.FC = () => {
       else if (type === 'category') endpoint = `/api/admin/categories/${id}`;
       else if (type === 'review') endpoint = `/api/admin/reviews/${id}`;
 
-      const res = await fetch(`${apiUrl}${endpoint}`, {
+      const res = await fetch(`${apiBase}${endpoint}`, {
         method: 'DELETE',
-        headers: adminHeaders
+        headers: getAdminHeaders()
       });
 
       const data = await res.json();
@@ -319,9 +323,9 @@ const AdminScreen: React.FC = () => {
       
       if (!endpoint) return;
 
-      const res = await fetch(`${apiUrl}${endpoint}`, {
+      const res = await fetch(`${apiBase}${endpoint}`, {
         method: 'POST',
-        headers: adminHeaders,
+        headers: getAdminHeaders(),
         body: JSON.stringify(createData)
       });
 
@@ -343,10 +347,10 @@ const AdminScreen: React.FC = () => {
     <div>
       <HeaderNav />
       <div style={styles.container}>
-      <div style={styles.header}>
-        <h1>👑 Admin Dashboard</h1>
-        <p>Manage products, users, orders, and forum content</p>
-      </div>
+        <div style={styles.header}>
+          <h1>Admin Dashboard</h1>
+          <p>Manage products, users, orders, categories, and reviews</p>
+        </div>
 
       {/* Tabs */}
       <div style={styles.tabContainer}>
@@ -1020,41 +1024,49 @@ const AdminScreen: React.FC = () => {
 
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
-    padding: '20px',
+    padding: '24px',
+    paddingTop: '140px',
     maxWidth: '1400px',
     margin: '0 auto',
-    backgroundColor: '#f8f9fa'
+    backgroundColor: 'transparent'
   },
   header: {
-    textAlign: 'center',
-    marginBottom: '30px',
-    borderBottom: '3px solid #2ecc71',
-    paddingBottom: '15px'
+    textAlign: 'left',
+    marginBottom: '18px',
+    borderBottom: '1px solid rgba(15, 36, 25, 0.12)',
+    paddingBottom: '12px'
   },
   tabContainer: {
     display: 'flex',
     gap: '10px',
-    marginBottom: '20px',
-    borderBottom: '1px solid #ddd'
+    marginBottom: '16px',
+    borderBottom: '1px solid rgba(15, 36, 25, 0.10)',
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    backdropFilter: 'blur(8px)',
+    borderRadius: '12px',
+    padding: '8px'
   },
   tab: {
-    padding: '10px 20px',
+    padding: '10px 16px',
     border: 'none',
-    backgroundColor: '#f0f0f0',
+    backgroundColor: 'transparent',
     cursor: 'pointer',
     fontWeight: 'bold',
-    transition: 'all 0.3s'
+    transition: 'all 0.2s',
+    borderRadius: '10px',
+    color: '#0f2419'
   },
   activeTab: {
-    backgroundColor: '#2ecc71',
+    backgroundColor: '#1a5f3a',
     color: 'white',
-    borderBottom: '3px solid #27ae60'
+    boxShadow: '0 8px 16px rgba(15, 36, 25, 0.12)'
   },
   section: {
     backgroundColor: 'white',
-    borderRadius: '8px',
+    borderRadius: '16px',
     padding: '20px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+    boxShadow: '0 14px 30px rgba(15, 36, 25, 0.10)',
+    border: '1px solid rgba(15, 36, 25, 0.08)'
   },
   sectionHeader: {
     display: 'flex',
@@ -1064,7 +1076,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   createBtn: {
     padding: '8px 16px',
-    backgroundColor: '#2ecc71',
+    backgroundColor: '#1a5f3a',
     color: 'white',
     border: 'none',
     borderRadius: '4px',
@@ -1124,12 +1136,12 @@ const styles: { [key: string]: React.CSSProperties } = {
     marginTop: '20px'
   },
   statCard: {
-    backgroundColor: '#2ecc71',
+    background: 'linear-gradient(135deg, #1a5f3a 0%, #2d7a50 60%, #3a8f60 100%)',
     color: 'white',
     padding: '20px',
-    borderRadius: '8px',
-    textAlign: 'center',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+    borderRadius: '14px',
+    textAlign: 'left',
+    boxShadow: '0 12px 22px rgba(15, 36, 25, 0.18)'
   },
   statValue: {
     fontSize: '32px',
@@ -1143,7 +1155,10 @@ const styles: { [key: string]: React.CSSProperties } = {
   table: {
     width: '100%',
     borderCollapse: 'collapse',
-    marginTop: '15px'
+    marginTop: '12px',
+    overflow: 'hidden',
+    borderRadius: '12px',
+    border: '1px solid rgba(15, 36, 25, 0.08)'
   },
   input: {
     width: '100%',

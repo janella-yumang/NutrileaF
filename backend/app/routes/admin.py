@@ -5,6 +5,7 @@ Requires admin role to access.
 
 from flask import Blueprint, request, jsonify
 from functools import wraps
+from werkzeug.security import generate_password_hash
 from app.models import db, Product, User, Order, ForumThread, ForumReply, ProductCategory, Review
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/api/admin')
@@ -39,6 +40,46 @@ def get_all_products():
         'pages': products.pages,
         'current_page': page
     }), 200
+
+@admin_bp.route('/users', methods=['POST'])
+@admin_required
+def create_user():
+    """Create a new user."""
+    data = request.get_json() or {}
+
+    email = data.get('email')
+    if not email:
+        return jsonify({'success': False, 'error': 'Email is required'}), 400
+
+    existing = User.query.filter_by(email=email).first()
+    if existing:
+        return jsonify({'success': False, 'error': 'Email already exists'}), 409
+
+    try:
+        password = data.get('password')
+        password_hash = generate_password_hash(password) if password else None
+
+        user = User(
+            email=email,
+            name=data.get('name'),
+            phone=data.get('phone'),
+            address=data.get('address'),
+            role=data.get('role', 'user'),
+            status=data.get('status', 'active'),
+            password_hash=password_hash,
+        )
+        db.session.add(user)
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': 'User created',
+            'userId': user.id,
+            'user': user.to_dict(),
+        }), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @admin_bp.route('/products', methods=['POST'])
 @admin_required
