@@ -49,6 +49,9 @@ const ProfileScreen: React.FC = () => {
 
     try {
       const userData = JSON.parse(userJson);
+      console.log('ProfileScreen - User data loaded:', userData);
+      console.log('ProfileScreen - User role:', userData.role);
+      
       setFormData({
         id: userData.id,
         fullName: userData.fullName,
@@ -333,6 +336,9 @@ const ProfileScreen: React.FC = () => {
                 <span className={`role-badge ${formData.role === 'admin' ? 'admin-role' : 'user-role'}`}>
                   {formData.role === 'admin' ? '👑 Admin' : '👤 User'}
                 </span>
+                <small style={{color: '#666', marginLeft: '10px'}}>
+                  Debug: role = "{formData.role}"
+                </small>
               </div>
             </div>
 
