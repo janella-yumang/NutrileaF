@@ -126,6 +126,53 @@ def health():
         "timestamp": datetime.datetime.utcnow().isoformat()
     }), 200
 
+@auth_bp.route("/create-admin", methods=["POST"])
+def create_admin():
+    """Create admin user manually - for debugging"""
+    try:
+        from app.models import db, User
+        from werkzeug.security import generate_password_hash
+        
+        admin_email = "admin@nutrilea.com"
+        
+        # Check if admin already exists
+        existing_admin = User.query.filter_by(email=admin_email).first()
+        if existing_admin:
+            return jsonify({
+                "success": False,
+                "message": "Admin user already exists"
+            }), 400
+        
+        # Create admin user
+        admin_user = User(
+            name="Admin User",
+            email=admin_email,
+            password_hash=generate_password_hash("admin123"),
+            role='admin',
+            status='active',
+            phone="",
+            address=""
+        )
+        
+        db.session.add(admin_user)
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": "Admin user created successfully",
+            "admin": {
+                "email": admin_email,
+                "password": "admin123",
+                "role": "admin"
+            }
+        }), 201
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
 @auth_bp.route("/debug/users", methods=["GET"])
 def debug_users():
     """Debug endpoint to check user roles"""
