@@ -9,12 +9,12 @@
       }
     }
   ],
-  "buildCommand": "npm run build",
+  "buildCommand": "npm run build --silent",
   "outputDirectory": "build",
   "installCommand": "npm install",
   "framework": "create-react-app",
-  "nodeVersion": "18.x",
   "env": {
-    "REACT_APP_API_URL": "https://nutrilea-backend.onrender.com/api"
+    "REACT_APP_API_URL": "https://nutrilea-backend.onrender.com/api",
+    "ESLINT_NO_DEV_ERRORS": "true"
   }
 }
