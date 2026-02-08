@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import HeaderNav from '../components/HeaderNav';
 import '../App.css';
 
 const AdminScreen: React.FC = () => {
@@ -339,7 +340,9 @@ const AdminScreen: React.FC = () => {
   };
 
   return (
-    <div style={styles.container}>
+    <div>
+      <HeaderNav />
+      <div style={styles.container}>
       <div style={styles.header}>
         <h1>👑 Admin Dashboard</h1>
         <p>Manage products, users, orders, and forum content</p>
@@ -1008,8 +1011,9 @@ const AdminScreen: React.FC = () => {
             </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
+  </div>
   );
 };
 
