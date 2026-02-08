@@ -18,10 +18,8 @@ const AdminScreen: React.FC = () => {
   const [forumThreads, setForumThreads] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
-  
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editData, setEditData] = useState<any>({});
-  const [loading, setLoading] = useState(false);
   const [usersLoading, setUsersLoading] = useState(false);
   const [productsLoading, setProductsLoading] = useState(false);
   const [ordersLoading, setOrdersLoading] = useState(false);
@@ -46,7 +44,16 @@ const AdminScreen: React.FC = () => {
   }, [activeTab]);
 
   // Fetch categories for dropdown
-  const fetchCategoriesForDropdown = async () => {
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalProducts: 0,
+    totalOrders: 0,
+    pendingOrders: 0,
+    totalForumThreads: 0,
+    totalRevenue: 0
+  });
+
+  const fetchStats = async () => {
     try {
       const res = await fetch(`${apiUrl}/api/products/categories`, {
         headers: adminHeaders
@@ -83,38 +90,6 @@ const AdminScreen: React.FC = () => {
   useEffect(() => {
     fetchCategoriesForDropdown();
   }, []);
-
-  const fetchStats = async () => {
-    try {
-      console.log('Fetching stats from:', `${apiUrl}/api/admin/stats`);
-      const res = await fetch(`${apiUrl}/api/admin/stats`, { 
-        headers: adminHeaders,
-        method: 'GET'
-      });
-      console.log('Stats response status:', res.status);
-      
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
-      
-      const data = await res.json();
-      console.log('Stats response data:', data);
-      if (data.success) {
-        setStats(data.stats);
-      }
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-      // Set default stats on error
-      setStats({
-        totalUsers: 0,
-        totalProducts: 0,
-        totalOrders: 0,
-        pendingOrders: 0,
-        totalForumThreads: 0,
-        totalRevenue: 0
-      });
-    }
-  };
 
   // Fetch Products
   const fetchProducts = async () => {
