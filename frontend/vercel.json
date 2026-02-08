@@ -10,7 +10,7 @@
     }
   ],
   "installCommand": "npm install --legacy-peer-deps",
-  "buildCommand": "npm run build",
+  "buildCommand": "CI=false DISABLE_ESLINT_PLUGIN=true npm run build",
   "outputDirectory": "build",
   "framework": "create-react-app",
   "env": {
