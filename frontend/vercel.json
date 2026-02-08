@@ -9,9 +9,9 @@
       }
     }
   ],
+  "installCommand": "npm install --legacy-peer-deps",
   "buildCommand": "npm run build --silent",
   "outputDirectory": "build",
-  "installCommand": "npm install",
   "framework": "create-react-app",
   "env": {
     "REACT_APP_API_URL": "https://nutrilea-backend.onrender.com/api",
