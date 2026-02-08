@@ -31,6 +31,34 @@ def create_app():
          allow_headers=['Content-Type', 'Authorization', 'X-Admin-Role'],
          methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
 
+    @app.before_request
+    def _cors_preflight():
+        if os.environ.get('DISABLE_CORS_FALLBACK') == 'true':
+            return None
+        if app.config.get('TESTING'):
+            return None
+        if getattr(__import__('flask'), 'request').method == 'OPTIONS':
+            return app.make_default_options_response()
+        return None
+
+    @app.after_request
+    def _cors_after_request(response):
+        if os.environ.get('DISABLE_CORS_FALLBACK') == 'true':
+            return response
+        if app.config.get('TESTING'):
+            return response
+
+        from flask import request
+
+        origin = request.headers.get('Origin')
+        if origin and origin in allowed_origins:
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Vary'] = 'Origin'
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Admin-Role'
+            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        return response
+
     app.config.from_object(Config)
     app.config['SQLALCHEMY_DATABASE_URI'] = app.config.get('DATABASE_URI')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
