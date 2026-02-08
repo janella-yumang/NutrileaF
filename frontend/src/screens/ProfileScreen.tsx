@@ -42,7 +42,9 @@ const ProfileScreen: React.FC = () => {
   // Load user data on mount
   useEffect(() => {
     const userJson = localStorage.getItem('nutrileaf_user');
-    if (!userJson) {
+    const token = localStorage.getItem('nutrileaf_token');
+    
+    if (!userJson || !token) {
       navigate('/login');
       return;
     }
@@ -52,13 +54,59 @@ const ProfileScreen: React.FC = () => {
       console.log('ProfileScreen - User data loaded:', userData);
       console.log('ProfileScreen - User role:', userData.role);
       
-      setFormData({
-        id: userData.id,
-        fullName: userData.fullName,
-        email: userData.email,
-        phone: userData.phone,
-        address: userData.address,
-        role: userData.role || 'user',
+      // Verify role from database instead of trusting localStorage
+      const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrilea-backend.onrender.com/api';
+      
+      fetch(`${API_BASE}/auth/verify-role`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      .then(response => response.json())
+      .then(roleData => {
+        console.log('ProfileScreen - Role verification from database:', roleData);
+        
+        if (roleData.success) {
+          const freshUserData = {
+            ...userData,
+            role: roleData.user.role,
+            status: roleData.user.status
+          };
+          
+          // Update localStorage with fresh data
+          localStorage.setItem('nutrileaf_user', JSON.stringify(freshUserData));
+          
+          setFormData({
+            id: userData.id,
+            fullName: userData.fullName,
+            email: userData.email,
+            phone: userData.phone,
+            address: userData.address,
+            role: roleData.user.role,
+          });
+        } else {
+          // Fallback to localStorage if verification fails
+          setFormData({
+            id: userData.id,
+            fullName: userData.fullName,
+            email: userData.email,
+            phone: userData.phone,
+            address: userData.address,
+            role: userData.role || 'user',
+          });
+        }
+      })
+      .catch(error => {
+        console.error('ProfileScreen - Role verification failed:', error);
+        // Fallback to localStorage
+        setFormData({
+          id: userData.id,
+          fullName: userData.fullName,
+          email: userData.email,
+          phone: userData.phone,
+          address: userData.address,
+          role: userData.role || 'user',
+        });
       });
 
       // Load profile icon from localStorage if it exists, otherwise check backend

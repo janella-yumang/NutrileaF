@@ -29,15 +29,48 @@ const HeaderNav: React.FC = () => {
       try {
         const userData = JSON.parse(user);
         console.log('HeaderNav - User data from localStorage:', userData);
-        console.log('HeaderNav - User role:', userData.role);
         
-        setUserId(userData.id);
-        setUserName(userData.name || userData.fullName);
-        setUserEmail(userData.email);
-        setUserPhone(userData.phone);
-        setUserRole(userData.role || 'user');
+        // Verify role from database instead of trusting localStorage
+        const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrilea-backend.onrender.com/api';
+        const BASE_URL = API_BASE.replace('/api', '');
         
-        console.log('HeaderNav - Set userRole to:', userData.role || 'user');
+        fetch(`${BASE_URL}/auth/verify-role`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        .then(response => response.json())
+        .then(roleData => {
+          console.log('HeaderNav - Role verification from database:', roleData);
+          
+          if (roleData.success) {
+            const freshUserData = {
+              ...userData,
+              role: roleData.user.role,
+              status: roleData.user.status
+            };
+            
+            // Update localStorage with fresh data
+            localStorage.setItem('nutrileaf_user', JSON.stringify(freshUserData));
+            
+            setUserId(userData.id);
+            setUserName(userData.name || userData.fullName);
+            setUserEmail(userData.email);
+            setUserPhone(userData.phone);
+            setUserRole(roleData.user.role);
+            
+            console.log('HeaderNav - Set userRole from database:', roleData.user.role);
+          } else {
+            // Fallback to localStorage if verification fails
+            setUserRole(userData.role || 'user');
+            console.log('HeaderNav - Fallback to localStorage role:', userData.role || 'user');
+          }
+        })
+        .catch(error => {
+          console.error('HeaderNav - Role verification failed:', error);
+          // Fallback to localStorage
+          setUserRole(userData.role || 'user');
+        });
         
         // Set profile image from backend user data
         if (userData.profileImage) {

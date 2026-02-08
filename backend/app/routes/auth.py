@@ -126,6 +126,87 @@ def health():
         "timestamp": datetime.datetime.utcnow().isoformat()
     }), 200
 
+@auth_bp.route("/verify-role", methods=["GET"])
+def verify_role():
+    """Verify user role from database (not localStorage)"""
+    try:
+        auth_header = request.headers.get('Authorization')
+        
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return jsonify({'success': False, 'message': 'Missing or invalid token'}), 401
+        
+        token = auth_header.split(' ')[1]
+        secret_key = current_app.config.get('SECRET_KEY', 'supersecretkey')
+        
+        # Decode token
+        payload = jwt.decode(token, secret_key, algorithms=['HS256'])
+        user_id = payload.get('user_id')
+        
+        # Get fresh user data from database
+        from app.models import User
+        user = User.query.get(user_id)
+        
+        if not user:
+            return jsonify({'success': False, 'message': 'User not found'}), 404
+        
+        return jsonify({
+            'success': True,
+            'user': {
+                'id': user.id,
+                'name': user.name,
+                'email': user.email,
+                'phone': user.phone,
+                'address': user.address,
+                'role': user.role,
+                'status': user.status
+            }
+        })
+        
+    except jwt.ExpiredSignatureError:
+        return jsonify({'success': False, 'message': 'Token expired'}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({'success': False, 'message': 'Invalid token'}), 401
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@auth_bp.route("/reset-admin-password", methods=["POST"])
+def reset_admin_password():
+    """Reset admin password to admin123"""
+    try:
+        from app.models import db, User
+        from werkzeug.security import generate_password_hash
+        
+        data = request.get_json(silent=True) or {}
+        email = data.get('email', 'may@gmail.com')
+        
+        # Find user
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            return jsonify({
+                "success": False,
+                "message": "User not found"
+            }), 404
+        
+        # Reset password
+        user.password_hash = generate_password_hash("admin123")
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": f"Password reset for {email}",
+            "credentials": {
+                "email": email,
+                "password": "admin123",
+                "role": user.role
+            }
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
 @auth_bp.route("/create-admin", methods=["POST"])
 def create_admin():
     """Create admin user manually - for debugging"""
