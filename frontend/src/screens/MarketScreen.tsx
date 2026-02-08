@@ -8,7 +8,7 @@ interface Product {
     category: string;
     price: number;
     originalPrice?: number;
-    image: string;
+    image: string | string[];
     description: string;
     benefits: string[];
     quantity?: string;
@@ -28,6 +28,24 @@ const MarketScreen: React.FC = () => {
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [showSuggestions, setShowSuggestions] = useState(false);
+
+    // Helper function to get image URL
+    const getImageUrl = (image: string | string[] | undefined) => {
+        if (!image) return '🌿'; // Default emoji if no image
+        
+        // If image is an array, take the first one
+        const imageUrl = Array.isArray(image) ? image[0] : image;
+        
+        // If it's already a full URL or starts with /uploads/, return as is
+        if (imageUrl.startsWith('http') || imageUrl.startsWith('/uploads/')) {
+            return imageUrl;
+        }
+        
+        // If it's just a filename, construct the URL
+        const apiUrl = process.env.REACT_APP_API_URL || 'https://nutrilea-backend.onrender.com/api';
+        const baseUrl = apiUrl.replace('/api', '');
+        return `${baseUrl}/uploads/${imageUrl}`;
+    };
 
     // Load cart from localStorage on mount
     useEffect(() => {
@@ -314,7 +332,21 @@ const MarketScreen: React.FC = () => {
                                             style={{ padding: '12px 16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #fafafa' }}
                                         >
                                             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                                                <div style={{ fontSize: '20px' }}>{p.image}</div>
+                                                <img 
+                                                    src={getImageUrl(p.image)} 
+                                                    alt={p.name}
+                                                    style={{ 
+                                                        width: '24px', 
+                                                        height: '24px', 
+                                                        objectFit: 'cover',
+                                                        borderRadius: '4px'
+                                                    }}
+                                                    onError={(e) => {
+                                                        // Fallback to emoji if image fails to load
+                                                        e.currentTarget.style.display = 'none';
+                                                        e.currentTarget.nextElementSibling?.removeAttribute('style');
+                                                    }}
+                                                />
                                                 <div style={{ fontSize: '14px', color: '#222' }}>{p.name}</div>
                                             </div>
                                             <div style={{ color: '#1a5f3a', fontWeight: 700 }}>₱{p.price}</div>
@@ -422,9 +454,29 @@ const MarketScreen: React.FC = () => {
                                             minHeight: '180px',
                                             display: 'flex',
                                             alignItems: 'center',
-                                            justifyContent: 'center'
+                                            justifyContent: 'center',
+                                            position: 'relative'
                                         }}>
-                                            {product.image}
+                                            <img 
+                                                src={getImageUrl(product.image)} 
+                                                alt={product.name}
+                                                style={{ 
+                                                    maxWidth: '100%',
+                                                    maxHeight: '100%',
+                                                    objectFit: 'contain'
+                                                }}
+                                                onError={(e) => {
+                                                    // Fallback to emoji if image fails to load
+                                                    e.currentTarget.style.display = 'none';
+                                                }}
+                                            />
+                                            <div style={{ 
+                                                position: 'absolute',
+                                                fontSize: '48px',
+                                                display: 'none' // Hidden by default, shown if image fails
+                                            }}>
+                                                {typeof product.image === 'string' && product.image.length > 0 && !product.image.startsWith('http') && !product.image.startsWith('/uploads/') ? product.image : '🌿'}
+                                            </div>
                                         </div>
 
                                         {/* Product Info */}
@@ -571,7 +623,27 @@ const MarketScreen: React.FC = () => {
                     >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
                             <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                                <div style={{ fontSize: '48px' }}>{selectedProduct.image}</div>
+                                <img 
+                                    src={getImageUrl(selectedProduct.image)} 
+                                    alt={selectedProduct.name}
+                                    style={{ 
+                                        width: '80px',
+                                        height: '80px',
+                                        objectFit: 'cover',
+                                        borderRadius: '8px'
+                                    }}
+                                    onError={(e) => {
+                                        // Fallback to emoji if image fails to load
+                                        e.currentTarget.style.display = 'none';
+                                        e.currentTarget.nextElementSibling?.removeAttribute('style');
+                                    }}
+                                />
+                                <div style={{ 
+                                    fontSize: '48px',
+                                    display: 'none' // Hidden by default, shown if image fails
+                                }}>
+                                    {typeof selectedProduct.image === 'string' && selectedProduct.image.length > 0 && !selectedProduct.image.startsWith('http') && !selectedProduct.image.startsWith('/uploads/') ? selectedProduct.image : '🌿'}
+                                </div>
                                 <div>
                                     <h2 style={{ margin: 0 }}>{selectedProduct.name}</h2>
                                     <div style={{ color: '#666', fontSize: '14px' }}>{selectedProduct.quantity}</div>

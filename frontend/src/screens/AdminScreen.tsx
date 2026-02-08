@@ -28,8 +28,11 @@ const AdminScreen: React.FC = () => {
   const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [createType, setCreateType] = useState<'product' | 'user' | 'category' | null>(null);
+  const [editType, setEditType] = useState<'product' | 'user' | 'category' | null>(null);
   const [createData, setCreateData] = useState<any>({});
+  const [editModalData, setEditModalData] = useState<any>({});
   
   const apiBase = (process.env.REACT_APP_API_URL || 'https://nutrilea-backend.onrender.com/api').replace(/\/api\/?$/, '');
   const getAdminHeaders = () => {
@@ -239,11 +242,124 @@ const AdminScreen: React.FC = () => {
 
   // Edit handler
   const handleEdit = (item: any, type: string) => {
-    setEditingId(item.id);
-    setEditData({ ...item });
+    setEditType(type as 'product' | 'user' | 'category');
+    setEditModalData({ ...item });
+    setShowEditModal(true);
   };
 
-  // Update handler
+  // Update handler for modal
+  const handleModalUpdate = async () => {
+    console.log('Modal update clicked', { editType, editModalData });
+    
+    // Basic validation
+    if (editType === 'product') {
+      if (!editModalData.name || !editModalData.category || !editModalData.price) {
+        alert('Please fill in required fields: Name, Category, and Price');
+        return;
+      }
+    }
+    
+    if (editType === 'user') {
+      if (!editModalData.email || !editModalData.name) {
+        alert('Please fill in required fields: Email and Name');
+        return;
+      }
+    }
+    
+    if (editType === 'category') {
+      if (!editModalData.name) {
+        alert('Please fill in required field: Name');
+        return;
+      }
+    }
+    
+    try {
+      let endpoint = '';
+      if (editType === 'product') endpoint = `/api/admin/products/${editModalData.id}`;
+      else if (editType === 'user') endpoint = `/api/admin/users/${editModalData.id}`;
+      else if (editType === 'category') endpoint = `/api/admin/categories/${editModalData.id}`;
+      
+      if (!endpoint) {
+        console.error('No endpoint found for edit type:', editType);
+        return;
+      }
+
+      // For products with images, use FormData
+      if (editType === 'product' && editModalData.imageFile) {
+        console.log('Using FormData for product edit with image');
+        const formData = new FormData();
+        
+        // Add all product fields except imageFile
+        Object.keys(editModalData).forEach(key => {
+          if (key !== 'imageFile' && key !== 'image') {
+            console.log('Adding field:', key, editModalData[key]);
+            formData.append(key, editModalData[key]);
+          }
+        });
+        
+        // Add image file if exists
+        if (editModalData.imageFile) {
+          console.log('Adding image file:', editModalData.imageFile.name);
+          formData.append('image', editModalData.imageFile);
+        }
+        
+        console.log('Sending FormData to:', `${apiBase}${endpoint}`);
+        const res = await fetch(`${apiBase}${endpoint}`, {
+          method: 'PUT',
+          headers: {
+            'X-Admin-Role': 'true',
+            ...(localStorage.getItem('nutrileaf_token') ? { 'Authorization': `Bearer ${localStorage.getItem('nutrileaf_token')}` } : {})
+          },
+          body: formData
+        });
+
+        console.log('Response status:', res.status);
+        const data = await res.json();
+        console.log('Response data:', data);
+        
+        if (data.success) {
+          if (editType === 'product') fetchProducts();
+          else if (editType === 'user') fetchUsers();
+          else if (editType === 'category') fetchCategories();
+          setShowEditModal(false);
+          setEditModalData({});
+          setEditType(null);
+        } else {
+          console.error('Update failed:', data);
+          alert('Update failed: ' + (data.error || 'Unknown error'));
+        }
+      } else {
+        console.log('Using JSON for', editType);
+        // Regular JSON update for other cases
+        const res = await fetch(`${apiBase}${endpoint}`, {
+          method: 'PUT',
+          headers: getAdminHeaders(),
+          body: JSON.stringify(editModalData)
+        });
+
+        console.log('Response status:', res.status);
+        const data = await res.json();
+        console.log('Response data:', data);
+        
+        if (data.success) {
+          if (editType === 'product') fetchProducts();
+          else if (editType === 'user') fetchUsers();
+          else if (editType === 'category') fetchCategories();
+          setShowEditModal(false);
+          setEditModalData({});
+          setEditType(null);
+        } else {
+          console.error('Update failed:', data);
+          alert('Update failed: ' + (data.error || 'Unknown error'));
+        }
+      }
+    } catch (error) {
+      console.error('Error updating:', error);
+      alert('Error updating: ' + (error as any).message);
+    }
+  };
+
+  // Update handler (legacy for inline editing)
   const handleUpdate = async (id: number, type: string) => {
     try {
       let endpoint = '';
@@ -315,31 +431,113 @@ const AdminScreen: React.FC = () => {
   };
 
   const handleCreateSubmit = async () => {
+    console.log('Create submit clicked', { createType, createData });
+    
+    // Basic validation
+    if (createType === 'product') {
+      if (!createData.name || !createData.category || !createData.price) {
+        alert('Please fill in required fields: Name, Category, and Price');
+        return;
+      }
+    }
+    
+    if (createType === 'user') {
+      if (!createData.email || !createData.name) {
+        alert('Please fill in required fields: Email and Name');
+        return;
+      }
+    }
+    
+    if (createType === 'category') {
+      if (!createData.name) {
+        alert('Please fill in required field: Name');
+        return;
+      }
+    }
+    
     try {
       let endpoint = '';
       if (createType === 'product') endpoint = '/api/admin/products';
       else if (createType === 'user') endpoint = '/api/admin/users';
       else if (createType === 'category') endpoint = '/api/admin/categories';
       
-      if (!endpoint) return;
+      if (!endpoint) {
+        console.error('No endpoint found for type:', createType);
+        return;
+      }
 
-      const res = await fetch(`${apiBase}${endpoint}`, {
-        method: 'POST',
-        headers: getAdminHeaders(),
-        body: JSON.stringify(createData)
-      });
+      // For products with images, use FormData
+      if (createType === 'product' && createData.imageFile) {
+        console.log('Using FormData for product with image');
+        const formData = new FormData();
+        
+        // Add all product fields except imageFile
+        Object.keys(createData).forEach(key => {
+          if (key !== 'imageFile' && key !== 'image') {
+            console.log('Adding field:', key, createData[key]);
+            formData.append(key, createData[key]);
+          }
+        });
+        
+        // Add image file if exists
+        if (createData.imageFile) {
+          console.log('Adding image file:', createData.imageFile.name);
+          formData.append('image', createData.imageFile);
+        }
+        
+        console.log('Sending FormData to:', `${apiBase}${endpoint}`);
+        const res = await fetch(`${apiBase}${endpoint}`, {
+          method: 'POST',
+          headers: {
+            'X-Admin-Role': 'true',
+            ...(localStorage.getItem('nutrileaf_token') ? { 'Authorization': `Bearer ${localStorage.getItem('nutrileaf_token')}` } : {})
+          },
+          body: formData
+        });
 
-      const data = await res.json();
-      if (data.success) {
-        if (createType === 'product') fetchProducts();
-        else if (createType === 'user') fetchUsers();
-        else if (createType === 'category') fetchCategories();
-        setShowCreateModal(false);
-        setCreateData({});
-        setCreateType(null);
+        console.log('Response status:', res.status);
+        const data = await res.json();
+        console.log('Response data:', data);
+        
+        if (data.success) {
+          if (createType === 'product') fetchProducts();
+          else if (createType === 'user') fetchUsers();
+          else if (createType === 'category') fetchCategories();
+          setShowCreateModal(false);
+          setCreateData({});
+          setCreateType(null);
+        } else {
+          console.error('Create failed:', data);
+          alert('Create failed: ' + (data.error || 'Unknown error'));
+        }
+      } else {
+        console.log('Using JSON for', createType);
+        // Regular JSON submission for other cases
+        const res = await fetch(`${apiBase}${endpoint}`, {
+          method: 'POST',
+          headers: getAdminHeaders(),
+          body: JSON.stringify(createData)
+        });
+
+        console.log('Response status:', res.status);
+        const data = await res.json();
+        console.log('Response data:', data);
+        
+        if (data.success) {
+          if (createType === 'product') fetchProducts();
+          else if (createType === 'user') fetchUsers();
+          else if (createType === 'category') fetchCategories();
+          setShowCreateModal(false);
+          setCreateData({});
+          setCreateType(null);
+        } else {
+          console.error('Create failed:', data);
+          alert('Create failed: ' + (data.error || 'Unknown error'));
+        }
       }
     } catch (error) {
       console.error('Error creating:', error);
+      alert('Error creating: ' + (error as any).message);
     }
   };
 
@@ -419,87 +617,35 @@ const AdminScreen: React.FC = () => {
             <table style={styles.table}>
               <thead>
                 <tr>
-                  <th>ID</th>
-                  <th>Name</th>
-                  <th>Category</th>
-                  <th>Price</th>
-                  <th>Stock</th>
-                  <th>Actions</th>
+                  <th style={styles.tableHeader}>ID</th>
+                  <th style={styles.tableHeader}>Name</th>
+                  <th style={styles.tableHeader}>Category</th>
+                  <th style={styles.tableHeader}>Price</th>
+                  <th style={styles.tableHeader}>Stock</th>
+                  <th style={styles.tableHeader}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {products.map(product => (
-                  <tr key={product.id}>
-                    <td>{product.id}</td>
-                    <td>
-                      {editingId === product.id ? (
-                        <input
-                          type="text"
-                          value={editData.name}
-                          onChange={e => setEditData({ ...editData, name: e.target.value })}
-                          style={styles.input}
-                        />
-                      ) : (
-                        product.name
-                      )}
-                    </td>
-                    <td>
-                      {editingId === product.id ? (
-                        <input
-                          type="text"
-                          value={editData.category}
-                          onChange={e => setEditData({ ...editData, category: e.target.value })}
-                          style={styles.input}
-                        />
-                      ) : (
-                        product.category
-                      )}
-                    </td>
-                    <td>
-                      {editingId === product.id ? (
-                        <input
-                          type="number"
-                          value={editData.price}
-                          onChange={e => setEditData({ ...editData, price: parseFloat(e.target.value) })}
-                          style={styles.input}
-                        />
-                      ) : (
-                        `₱${product.price}`
-                      )}
-                    </td>
-                    <td>{product.quantity}</td>
-                    <td style={styles.actions}>
-                      {editingId === product.id ? (
-                        <>
-                          <button
-                            onClick={() => handleUpdate(product.id, 'product')}
-                            style={styles.saveBtn}
-                          >
-                            Save
-                          </button>
-                          <button
-                            onClick={() => setEditingId(null)}
-                            style={styles.cancelBtn}
-                          >
-                            Cancel
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            onClick={() => handleEdit(product, 'product')}
-                            style={styles.editBtn}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDelete(product.id, 'product')}
-                            style={styles.deleteBtn}
-                          >
-                            Delete
-                          </button>
-                        </>
-                      )}
+                  <tr key={product.id} style={styles.tableRow}>
+                    <td style={styles.tableCell}>{product.id}</td>
+                    <td style={styles.tableCell}>{product.name}</td>
+                    <td style={styles.tableCell}>{product.category}</td>
+                    <td style={styles.tableCell}>₱{product.price}</td>
+                    <td style={styles.tableCell}>{product.quantity}</td>
+                    <td style={{...styles.tableCell, ...styles.actions}}>
+                      <button
+                        onClick={() => handleEdit(product, 'product')}
+                        style={styles.editBtn}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(product.id, 'product')}
+                        style={styles.deleteBtn}
+                      >
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -525,96 +671,43 @@ const AdminScreen: React.FC = () => {
             <table style={styles.table}>
               <thead>
                 <tr>
-                  <th>ID</th>
-                  <th>Email</th>
-                  <th>Name</th>
-                  <th>Role</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+                  <th style={styles.tableHeader}>ID</th>
+                  <th style={styles.tableHeader}>Email</th>
+                  <th style={styles.tableHeader}>Name</th>
+                  <th style={styles.tableHeader}>Role</th>
+                  <th style={styles.tableHeader}>Status</th>
+                  <th style={styles.tableHeader}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {users.map(user => (
-                  <tr key={user.id}>
-                    <td>{user.id}</td>
-                    <td>{user.email}</td>
-                    <td>
-                      {editingId === user.id ? (
-                        <input
-                          type="text"
-                          value={editData.name || ''}
-                          onChange={e => setEditData({ ...editData, name: e.target.value })}
-                          style={styles.input}
-                        />
-                      ) : (
-                        user.name
-                      )}
+                  <tr key={user.id} style={styles.tableRow}>
+                    <td style={styles.tableCell}>{user.id}</td>
+                    <td style={styles.tableCell}>{user.email}</td>
+                    <td style={styles.tableCell}>{user.name}</td>
+                    <td style={styles.tableCell}>
+                      <span style={{ fontWeight: user.role === 'admin' ? 'bold' : 'normal' }}>
+                        {user.role === 'admin' ? '👑' : '👤'} {user.role}
+                      </span>
                     </td>
-                    <td>
-                      {editingId === user.id ? (
-                        <select
-                          value={editData.role}
-                          onChange={e => setEditData({ ...editData, role: e.target.value })}
-                          style={styles.input}
-                        >
-                          <option value="user">user</option>
-                          <option value="admin">admin</option>
-                        </select>
-                      ) : (
-                        <span style={{ fontWeight: user.role === 'admin' ? 'bold' : 'normal' }}>
-                          {user.role === 'admin' ? '👑' : '👤'} {user.role}
-                        </span>
-                      )}
+                    <td style={styles.tableCell}>
+                      <span style={{ color: user.status === 'active' ? 'green' : 'red' }}>
+                        {user.status}
+                      </span>
                     </td>
-                    <td>
-                      {editingId === user.id ? (
-                        <select
-                          value={editData.status}
-                          onChange={e => setEditData({ ...editData, status: e.target.value })}
-                          style={styles.input}
-                        >
-                          <option value="active">active</option>
-                          <option value="inactive">inactive</option>
-                          <option value="suspended">suspended</option>
-                        </select>
-                      ) : (
-                        <span style={{ color: user.status === 'active' ? 'green' : 'red' }}>
-                          {user.status}
-                        </span>
-                      )}
-                    </td>
-                    <td style={styles.actions}>
-                      {editingId === user.id ? (
-                        <>
-                          <button
-                            onClick={() => handleUpdate(user.id, 'user')}
-                            style={styles.saveBtn}
-                          >
-                            Save
-                          </button>
-                          <button
-                            onClick={() => setEditingId(null)}
-                            style={styles.cancelBtn}
-                          >
-                            Cancel
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            onClick={() => handleEdit(user, 'user')}
-                            style={styles.editBtn}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDelete(user.id, 'user')}
-                            style={styles.deleteBtn}
-                          >
-                            Delete
-                          </button>
-                        </>
-                      )}
+                    <td style={{...styles.tableCell, ...styles.actions}}>
+                      <button
+                        onClick={() => handleEdit(user, 'user')}
+                        style={styles.editBtn}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(user.id, 'user')}
+                        style={styles.deleteBtn}
+                      >
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -632,21 +725,21 @@ const AdminScreen: React.FC = () => {
             <table style={styles.table}>
               <thead>
                 <tr>
-                  <th>ID</th>
-                  <th>Customer</th>
-                  <th>Total</th>
-                  <th>Status</th>
-                  <th>Date</th>
-                  <th>Actions</th>
+                  <th style={styles.tableHeader}>ID</th>
+                  <th style={styles.tableHeader}>Customer</th>
+                  <th style={styles.tableHeader}>Total</th>
+                  <th style={styles.tableHeader}>Status</th>
+                  <th style={styles.tableHeader}>Date</th>
+                  <th style={styles.tableHeader}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {orders.map(order => (
-                  <tr key={order.id}>
-                    <td>{order.id}</td>
-                    <td>{order.userName}</td>
-                    <td>₱{order.totalAmount}</td>
-                    <td>
+                  <tr key={order.id} style={styles.tableRow}>
+                    <td style={styles.tableCell}>{order.id}</td>
+                    <td style={styles.tableCell}>{order.userName}</td>
+                    <td style={styles.tableCell}>₱{order.totalAmount}</td>
+                    <td style={styles.tableCell}>
                       {editingId === order.id ? (
                         <select
                           value={editData.status}
@@ -665,8 +758,8 @@ const AdminScreen: React.FC = () => {
                         </span>
                       )}
                     </td>
-                    <td>{new Date(order.createdAt).toLocaleDateString()}</td>
-                    <td style={styles.actions}>
+                    <td style={styles.tableCell}>{new Date(order.createdAt).toLocaleDateString()}</td>
+                    <td style={{...styles.tableCell, ...styles.actions}}>
                       {editingId === order.id ? (
                         <>
                           <button
@@ -715,23 +808,23 @@ const AdminScreen: React.FC = () => {
             <table style={styles.table}>
               <thead>
                 <tr>
-                  <th>ID</th>
-                  <th>Title</th>
-                  <th>Author</th>
-                  <th>Category</th>
-                  <th>Status</th>
-                  <th>Replies</th>
-                  <th>Actions</th>
+                  <th style={styles.tableHeader}>ID</th>
+                  <th style={styles.tableHeader}>Title</th>
+                  <th style={styles.tableHeader}>Author</th>
+                  <th style={styles.tableHeader}>Category</th>
+                  <th style={styles.tableHeader}>Status</th>
+                  <th style={styles.tableHeader}>Replies</th>
+                  <th style={styles.tableHeader}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {forumThreads.map(thread => (
-                  <tr key={thread.id}>
-                    <td>{thread.id}</td>
-                    <td>{thread.title}</td>
-                    <td>{thread.userName}</td>
-                    <td>{thread.category}</td>
-                    <td>
+                  <tr key={thread.id} style={styles.tableRow}>
+                    <td style={styles.tableCell}>{thread.id}</td>
+                    <td style={styles.tableCell}>{thread.title}</td>
+                    <td style={styles.tableCell}>{thread.userName}</td>
+                    <td style={styles.tableCell}>{thread.category}</td>
+                    <td style={styles.tableCell}>
                       {editingId === thread.id ? (
                         <select
                           value={editData.status}
@@ -748,8 +841,8 @@ const AdminScreen: React.FC = () => {
                         </span>
                       )}
                     </td>
-                    <td>{thread.repliesCount}</td>
-                    <td style={styles.actions}>
+                    <td style={styles.tableCell}>{thread.repliesCount}</td>
+                    <td style={{...styles.tableCell, ...styles.actions}}>
                       {editingId === thread.id ? (
                         <>
                           <button
@@ -806,21 +899,21 @@ const AdminScreen: React.FC = () => {
             <table style={styles.table}>
               <thead>
                 <tr>
-                  <th>ID</th>
-                  <th>Name</th>
-                  <th>Description</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+                  <th style={styles.tableHeader}>ID</th>
+                  <th style={styles.tableHeader}>Name</th>
+                  <th style={styles.tableHeader}>Description</th>
+                  <th style={styles.tableHeader}>Status</th>
+                  <th style={styles.tableHeader}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {categories.map(category => (
-                  <tr key={category.id}>
-                    <td>{category.id}</td>
-                    <td>{category.name}</td>
-                    <td>{category.description}</td>
-                    <td>{category.status}</td>
-                    <td style={styles.actions}>
+                  <tr key={category.id} style={styles.tableRow}>
+                    <td style={styles.tableCell}>{category.id}</td>
+                    <td style={styles.tableCell}>{category.name}</td>
+                    <td style={styles.tableCell}>{category.description}</td>
+                    <td style={styles.tableCell}>{category.status}</td>
+                    <td style={{...styles.tableCell, ...styles.actions}}>
                       <button
                         onClick={() => handleEdit(category, 'category')}
                         style={styles.editBtn}
@@ -850,25 +943,25 @@ const AdminScreen: React.FC = () => {
             <table style={styles.table}>
               <thead>
                 <tr>
-                  <th>ID</th>
-                  <th>Product</th>
-                  <th>User</th>
-                  <th>Rating</th>
-                  <th>Title</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+                  <th style={styles.tableHeader}>ID</th>
+                  <th style={styles.tableHeader}>Product</th>
+                  <th style={styles.tableHeader}>User</th>
+                  <th style={styles.tableHeader}>Rating</th>
+                  <th style={styles.tableHeader}>Title</th>
+                  <th style={styles.tableHeader}>Status</th>
+                  <th style={styles.tableHeader}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {reviews.map(review => (
-                  <tr key={review.id}>
-                    <td>{review.id}</td>
-                    <td>{review.productName}</td>
-                    <td>{review.userName}</td>
-                    <td>{'⭐'.repeat(review.rating)}</td>
-                    <td>{review.title}</td>
-                    <td>{review.status}</td>
-                    <td style={styles.actions}>
+                  <tr key={review.id} style={styles.tableRow}>
+                    <td style={styles.tableCell}>{review.id}</td>
+                    <td style={styles.tableCell}>{review.productName}</td>
+                    <td style={styles.tableCell}>{review.userName}</td>
+                    <td style={styles.tableCell}>{'⭐'.repeat(review.rating)}</td>
+                    <td style={styles.tableCell}>{review.title}</td>
+                    <td style={styles.tableCell}>{review.status}</td>
+                    <td style={{...styles.tableCell, ...styles.actions}}>
                       <button
                         onClick={() => handleEdit(review, 'review')}
                         style={styles.editBtn}
@@ -937,13 +1030,22 @@ const AdminScreen: React.FC = () => {
                   onChange={e => setCreateData({ ...createData, description: e.target.value })}
                   style={styles.modalTextarea}
                 />
-                <input
-                  type="text"
-                  placeholder="Image URLs (comma-separated)"
-                  value={createData.image ? (Array.isArray(createData.image) ? createData.image.join(', ') : createData.image) : ''}
-                  onChange={e => setCreateData({ ...createData, image: e.target.value.split(',').map(url => url.trim()).filter(url => url) })}
-                  style={styles.modalInput}
-                />
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>
+                    Product Image:
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={e => setCreateData({ ...createData, imageFile: e.target.files?.[0] })}
+                    style={styles.modalInput}
+                  />
+                  {createData.imageFile && (
+                    <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
+                      Selected: {createData.imageFile.name}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -1007,6 +1109,191 @@ const AdminScreen: React.FC = () => {
                   setShowCreateModal(false);
                   setCreateData({});
                   setCreateType(null);
+                }}
+                style={styles.cancelBtn}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEditModal && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modal}>
+            <h3>Edit {editType === 'product' ? 'Product' : editType === 'user' ? 'User' : 'Category'}</h3>
+            
+            {editType === 'product' && (
+              <div>
+                <input
+                  type="text"
+                  placeholder="Product Name"
+                  value={editModalData.name || ''}
+                  onChange={e => setEditModalData({ ...editModalData, name: e.target.value })}
+                  style={styles.modalInput}
+                />
+                <select
+                  value={editModalData.category || ''}
+                  onChange={e => setEditModalData({ ...editModalData, category: e.target.value })}
+                  style={styles.modalInput}
+                >
+                  <option value="">Select Category</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.name}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  placeholder="Price"
+                  value={editModalData.price || ''}
+                  onChange={e => setEditModalData({ ...editModalData, price: parseFloat(e.target.value) })}
+                  style={styles.modalInput}
+                />
+                <input
+                  type="number"
+                  placeholder="Quantity"
+                  value={editModalData.quantity || ''}
+                  onChange={e => setEditModalData({ ...editModalData, quantity: parseInt(e.target.value) })}
+                  style={styles.modalInput}
+                />
+                <textarea
+                  placeholder="Description"
+                  value={editModalData.description || ''}
+                  onChange={e => setEditModalData({ ...editModalData, description: e.target.value })}
+                  style={styles.modalTextarea}
+                />
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>
+                    Product Image (leave empty to keep current):
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={e => setEditModalData({ ...editModalData, imageFile: e.target.files?.[0] })}
+                    style={styles.modalInput}
+                  />
+                  {editModalData.imageFile && (
+                    <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
+                      New image: {editModalData.imageFile.name}
+                    </div>
+                  )}
+                  {editModalData.image && Array.isArray(editModalData.image) && editModalData.image.length > 0 && (
+                    <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
+                      Current: {editModalData.image.length} image(s)
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {editType === 'user' && (
+              <div>
+                <input
+                  type="text"
+                  placeholder="Full Name"
+                  value={editModalData.name || ''}
+                  onChange={e => setEditModalData({ ...editModalData, name: e.target.value })}
+                  style={styles.modalInput}
+                />
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={editModalData.email || ''}
+                  onChange={e => setEditModalData({ ...editModalData, email: e.target.value })}
+                  style={styles.modalInput}
+                />
+                <input
+                  type="tel"
+                  placeholder="Phone"
+                  value={editModalData.phone || ''}
+                  onChange={e => setEditModalData({ ...editModalData, phone: e.target.value })}
+                  style={styles.modalInput}
+                />
+                <input
+                  type="text"
+                  placeholder="Address"
+                  value={editModalData.address || ''}
+                  onChange={e => setEditModalData({ ...editModalData, address: e.target.value })}
+                  style={styles.modalInput}
+                />
+                <select
+                  value={editModalData.role || 'user'}
+                  onChange={e => setEditModalData({ ...editModalData, role: e.target.value })}
+                  style={styles.modalInput}
+                >
+                  <option value="user">User</option>
+                  <option value="admin">Admin</option>
+                </select>
+                <select
+                  value={editModalData.status || 'active'}
+                  onChange={e => setEditModalData({ ...editModalData, status: e.target.value })}
+                  style={styles.modalInput}
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="suspended">Suspended</option>
+                </select>
+              </div>
+            )}
+
+            {editType === 'category' && (
+              <div>
+                <input
+                  type="text"
+                  placeholder="Category Name"
+                  value={editModalData.name || ''}
+                  onChange={e => setEditModalData({ ...editModalData, name: e.target.value })}
+                  style={styles.modalInput}
+                />
+                <textarea
+                  placeholder="Description"
+                  value={editModalData.description || ''}
+                  onChange={e => setEditModalData({ ...editModalData, description: e.target.value })}
+                  style={styles.modalTextarea}
+                />
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>
+                    Category Image (leave empty to keep current):
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={e => setEditModalData({ ...editModalData, imageFile: e.target.files?.[0] })}
+                    style={styles.modalInput}
+                  />
+                  {editModalData.imageFile && (
+                    <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
+                      New image: {editModalData.imageFile.name}
+                    </div>
+                  )}
+                </div>
+                <select
+                  value={editModalData.status || 'active'}
+                  onChange={e => setEditModalData({ ...editModalData, status: e.target.value })}
+                  style={styles.modalInput}
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+            )}
+
+            <div style={styles.modalActions}>
+              <button
+                onClick={handleModalUpdate}
+                style={styles.saveBtn}
+              >
+                Update
+              </button>
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditModalData({});
+                  setEditType(null);
                 }}
                 style={styles.cancelBtn}
               >
@@ -1158,7 +1445,9 @@ const styles: { [key: string]: React.CSSProperties } = {
     marginTop: '12px',
     overflow: 'hidden',
     borderRadius: '12px',
-    border: '1px solid rgba(15, 36, 25, 0.08)'
+    border: '1px solid rgba(15, 36, 25, 0.08)',
+    fontSize: '14px',
+    backgroundColor: 'white'
   },
   input: {
     width: '100%',
@@ -1206,6 +1495,30 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: '4px',
     cursor: 'pointer',
     fontSize: '12px'
+  },
+  tableCell: {
+    padding: '16px 12px',
+    textAlign: 'left',
+    borderBottom: '1px solid rgba(15, 36, 25, 0.06)',
+    verticalAlign: 'middle',
+    lineHeight: '1.5'
+  },
+  tableHeader: {
+    padding: '18px 12px',
+    textAlign: 'left',
+    backgroundColor: '#f8faf9',
+    fontWeight: '600',
+    color: '#0f2419',
+    borderBottom: '2px solid rgba(15, 36, 25, 0.12)',
+    fontSize: '13px',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px'
+  },
+  tableRow: {
+    transition: 'background-color 0.2s ease'
+  },
+  tableRowHover: {
+    backgroundColor: '#f8faf9'
   }
 };
 
