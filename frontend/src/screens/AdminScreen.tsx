@@ -36,24 +36,49 @@ const AdminScreen: React.FC = () => {
     'X-Admin-Role': 'true'
   };
 
+  const fetchStats = async () => {
+    try {
+      console.log('Fetching stats from:', `${apiUrl}/api/admin/stats`);
+      const res = await fetch(`${apiUrl}/api/admin/stats`, { 
+        headers: adminHeaders,
+        method: 'GET'
+      });
+      console.log('Stats response status:', res.status);
+      
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      
+      const data = await res.json();
+      console.log('Stats response data:', data);
+      
+      if (data.success) {
+        setStats(data.stats);
+      } else {
+        console.error('Failed to fetch stats:', data);
+      }
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+      setStats({
+        totalUsers: 0,
+        totalProducts: 0,
+        totalOrders: 0,
+        pendingOrders: 0,
+        totalForumThreads: 0,
+        totalRevenue: 0
+      });
+    }
+  };
+
   // Fetch dashboard stats
   useEffect(() => {
     if (activeTab === 'dashboard') {
       fetchStats();
     }
-  }, [activeTab]);
+  }, [activeTab, fetchStats]);
 
   // Fetch categories for dropdown
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    totalProducts: 0,
-    totalOrders: 0,
-    pendingOrders: 0,
-    totalForumThreads: 0,
-    totalRevenue: 0
-  });
-
-  const fetchStats = async () => {
+  const fetchCategoriesForDropdown = async () => {
     try {
       const res = await fetch(`${apiUrl}/api/products/categories`, {
         headers: adminHeaders
