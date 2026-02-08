@@ -8,6 +8,7 @@ import os
 import sys
 from app import create_app, db
 from app.models import User, Product, ProductCategory
+from werkzeug.security import generate_password_hash
 
 def init_database():
     """Initialize database with tables and seed data"""
@@ -81,6 +82,25 @@ def init_database():
             db.session.add(product)
         
         db.session.commit()
+        
+        # Create admin user if it doesn't exist
+        admin_email = "admin@nutrilea.com"
+        existing_admin = User.query.filter_by(email=admin_email).first()
+        if not existing_admin:
+            admin_user = User(
+                name="Admin User",
+                email=admin_email,
+                password_hash=generate_password_hash("admin123"),
+                role='admin',
+                status='active',
+                phone="",
+                address=""
+            )
+            db.session.add(admin_user)
+            db.session.commit()
+            print(f"Created admin user: {admin_email}")
+        else:
+            print(f"Admin user already exists: {admin_email}")
         
         print(f"Successfully created {len(categories)} categories and {len(products)} products")
 

@@ -126,6 +126,30 @@ def health():
         "timestamp": datetime.datetime.utcnow().isoformat()
     }), 200
 
+@auth_bp.route("/debug/users", methods=["GET"])
+def debug_users():
+    """Debug endpoint to check user roles"""
+    try:
+        from app.models import User
+        users = User.query.all()
+        return jsonify({
+            "success": True,
+            "users": [
+                {
+                    "id": user.id,
+                    "email": user.email,
+                    "name": user.name,
+                    "role": user.role,
+                    "status": user.status
+                } for user in users
+            ]
+        }), 200
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
 @auth_bp.route("/login", methods=["POST"])
 def login():
     """Login with email and password against PostgreSQL."""
