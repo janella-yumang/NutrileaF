@@ -32,9 +32,8 @@ const HeaderNav: React.FC = () => {
         
         // Verify role from database instead of trusting localStorage
         const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrilea-backend.onrender.com/api';
-        const BASE_URL = API_BASE.replace('/api', '');
         
-        fetch(`${BASE_URL}/auth/verify-role`, {
+        fetch(`${API_BASE}/auth/verify-role`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
