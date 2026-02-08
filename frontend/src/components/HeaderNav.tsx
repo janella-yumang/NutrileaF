@@ -28,11 +28,16 @@ const HeaderNav: React.FC = () => {
       setIsLoggedIn(true);
       try {
         const userData = JSON.parse(user);
+        console.log('HeaderNav - User data from localStorage:', userData);
+        console.log('HeaderNav - User role:', userData.role);
+        
         setUserId(userData.id);
         setUserName(userData.name || userData.fullName);
         setUserEmail(userData.email);
         setUserPhone(userData.phone);
         setUserRole(userData.role || 'user');
+        
+        console.log('HeaderNav - Set userRole to:', userData.role || 'user');
         
         // Set profile image from backend user data
         if (userData.profileImage) {
@@ -205,6 +210,9 @@ const HeaderNav: React.FC = () => {
     { label: 'Forum', path: '/forum' },
     ...(userRole === 'admin' ? [{ label: 'Admin Dashboard', path: '/admin' }] : []),
   ];
+
+  console.log('HeaderNav - Current userRole:', userRole);
+  console.log('HeaderNav - Nav items:', navItems);
 
   const aboutItems = [
     { label: 'About us', path: '/about' },
