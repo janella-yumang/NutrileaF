@@ -1011,7 +1011,8 @@ const AdminScreen: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
+      )}
+
     </div>
   </div>
   );
