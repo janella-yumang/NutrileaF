@@ -3,9 +3,11 @@ Admin CRUD routes for managing products, users, orders, and forum.
 Requires admin role to access.
 """
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from functools import wraps
 from werkzeug.security import generate_password_hash
+from werkzeug.utils import secure_filename
+import os
 from app.models import db, Product, User, Order, ForumThread, ForumReply, ProductCategory, Review
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/api/admin')
@@ -103,22 +105,54 @@ def create_user():
 @admin_bp.route('/products', methods=['POST'])
 @admin_required
 def create_product():
-    """Create a new product."""
-    data = request.get_json()
+    """Create a new product with optional image upload."""
+    data = request.form if request.files else request.get_json()
     
     try:
+        # Handle image upload
+        image_urls = []
+        if 'images' in request.files:
+            files = request.files.getlist('images')
+            upload_folder = current_app.config.get('UPLOAD_FOLDER', 'app/static/uploads')
+            os.makedirs(upload_folder, exist_ok=True)
+            
+            for file in files:
+                if file and file.filename:
+                    filename = secure_filename(file.filename)
+                    file_path = os.path.join(upload_folder, filename)
+                    file.save(file_path)
+                    # Store relative URL for frontend access
+                    image_urls.append(f'/uploads/{filename}')
+        
+        # Handle single image upload
+        if 'image' in request.files and request.files['image'].filename:
+            file = request.files['image']
+            filename = secure_filename(file.filename)
+            upload_folder = current_app.config.get('UPLOAD_FOLDER', 'app/static/uploads')
+            os.makedirs(upload_folder, exist_ok=True)
+            file_path = os.path.join(upload_folder, filename)
+            file.save(file_path)
+            image_urls = [f'/uploads/{filename}']
+        
+        # If no images uploaded but image URLs provided in JSON
+        if not image_urls and data.get('image'):
+            if isinstance(data.get('image'), str):
+                image_urls = [data.get('image')]
+            elif isinstance(data.get('image'), list):
+                image_urls = data.get('image')
+        
         product = Product(
             name=data.get('name'),
             category=data.get('category'),
-            price=data.get('price'),
-            original_price=data.get('original_price'),
+            price=float(data.get('price', 0)),
+            original_price=float(data.get('original_price', 0)) if data.get('original_price') else None,
             description=data.get('description'),
-            image=data.get('image'),
+            image=image_urls if image_urls else [],
             quantity=data.get('quantity'),
-            benefits=data.get('benefits'),
-            uses=data.get('uses'),
-            how_to_use=data.get('how_to_use'),
-            reviews=data.get('reviews')
+            benefits=data.get('benefits', []),
+            uses=data.get('uses', []),
+            how_to_use=data.get('how_to_use', []),
+            reviews=data.get('reviews', [])
         )
         db.session.add(product)
         db.session.commit()
@@ -136,26 +170,59 @@ def create_product():
 @admin_bp.route('/products/<int:product_id>', methods=['PUT'])
 @admin_required
 def update_product(product_id):
-    """Update a product."""
-    data = request.get_json()
+    """Update a product with optional image upload."""
+    data = request.form if request.files else request.get_json()
     product = Product.query.get(product_id)
     
     if not product:
         return jsonify({'success': False, 'error': 'Product not found'}), 404
     
     try:
+        # Handle image upload
+        image_urls = product.image or []
+        if 'images' in request.files:
+            files = request.files.getlist('images')
+            upload_folder = current_app.config.get('UPLOAD_FOLDER', 'app/static/uploads')
+            os.makedirs(upload_folder, exist_ok=True)
+            
+            for file in files:
+                if file and file.filename:
+                    filename = secure_filename(file.filename)
+                    file_path = os.path.join(upload_folder, filename)
+                    file.save(file_path)
+                    image_urls.append(f'/uploads/{filename}')
+        
+        # Handle single image upload
+        if 'image' in request.files and request.files['image'].filename:
+            file = request.files['image']
+            filename = secure_filename(file.filename)
+            upload_folder = current_app.config.get('UPLOAD_FOLDER', 'app/static/uploads')
+            os.makedirs(upload_folder, exist_ok=True)
+            file_path = os.path.join(upload_folder, filename)
+            file.save(file_path)
+            image_urls = [f'/uploads/{filename}']
+        
+        # Update fields
         if 'name' in data:
             product.name = data['name']
         if 'category' in data:
             product.category = data['category']
         if 'price' in data:
-            product.price = data['price']
+            product.price = float(data['price'])
         if 'original_price' in data:
-            product.original_price = data['original_price']
+            product.original_price = float(data['original_price']) if data['original_price'] else None
         if 'description' in data:
             product.description = data['description']
-        if 'image' in data:
-            product.image = data['image']
+        if 'image' in data and not request.files:
+            # Handle image URLs from JSON (not file upload)
+            if isinstance(data['image'], str):
+                image_urls = [data['image']]
+            elif isinstance(data['image'], list):
+                image_urls = data['image']
+            product.image = image_urls
+        elif request.files:
+            # Update with uploaded images
+            product.image = image_urls
         if 'quantity' in data:
             product.quantity = data['quantity']
         if 'benefits' in data:
@@ -434,17 +501,44 @@ def get_all_categories():
         'total': len(categories)
     }), 200
 
+# Public endpoint for categories (no admin required)
+@admin_bp.route('/categories/public', methods=['GET'])
+def get_categories_public():
+    """Get all active product categories for public use."""
+    categories = ProductCategory.query.filter_by(status='active').all()
+    
+    return jsonify({
+        'success': True,
+        'categories': [{'id': c.id, 'name': c.name} for c in categories],
+        'total': len(categories)
+    }), 200
+
 @admin_bp.route('/categories', methods=['POST'])
 @admin_required
 def create_category():
-    """Create a new product category."""
-    data = request.get_json()
+    """Create a new product category with optional image upload."""
+    data = request.form if request.files else request.get_json()
     
     try:
+        # Handle image upload
+        image_url = None
+        if 'image' in request.files and request.files['image'].filename:
+            file = request.files['image']
+            filename = secure_filename(file.filename)
+            upload_folder = current_app.config.get('UPLOAD_FOLDER', 'app/static/uploads')
+            os.makedirs(upload_folder, exist_ok=True)
+            file_path = os.path.join(upload_folder, filename)
+            file.save(file_path)
+            image_url = f'/uploads/{filename}'
+        
+        # If no image uploaded but image URL provided in JSON
+        if not image_url and data.get('image'):
+            image_url = data.get('image')
+        
         category = ProductCategory(
             name=data.get('name'),
             description=data.get('description'),
-            image=data.get('image'),
+            image=image_url,
             status=data.get('status', 'active')
         )
         db.session.add(category)
@@ -463,22 +557,38 @@ def create_category():
 @admin_bp.route('/categories/<int:category_id>', methods=['PUT'])
 @admin_required
 def update_category(category_id):
-    """Update a product category."""
-    data = request.get_json()
+    """Update a product category with optional image upload."""
+    data = request.form if request.files else request.get_json()
     category = ProductCategory.query.get(category_id)
     
     if not category:
         return jsonify({'success': False, 'error': 'Category not found'}), 404
     
     try:
+        # Handle image upload
+        image_url = category.image
+        if 'image' in request.files and request.files['image'].filename:
+            file = request.files['image']
+            filename = secure_filename(file.filename)
+            upload_folder = current_app.config.get('UPLOAD_FOLDER', 'app/static/uploads')
+            os.makedirs(upload_folder, exist_ok=True)
+            file_path = os.path.join(upload_folder, filename)
+            file.save(file_path)
+            image_url = f'/uploads/{filename}'
+        
+        # Update fields
         if 'name' in data:
             category.name = data['name']
         if 'description' in data:
             category.description = data['description']
-        if 'image' in data:
-            category.image = data['image']
+        if 'image' in data and not request.files:
+            image_url = data['image']
         if 'status' in data:
             category.status = data['status']
+        
+        # Update image if changed
+        if request.files or ('image' in data and not request.files):
+            category.image = image_url
         
         db.session.commit()
         return jsonify({
