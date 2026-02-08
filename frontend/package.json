@@ -1,6 +1,6 @@
 {
-    "name": "nutrileaf-frontend",
-    "version": "0.1.0",
+    "name": "nutrilea-frontend",
+    "version": "1.0.1",
     "private": true,
     "homepage": ".",
     "dependencies": {
