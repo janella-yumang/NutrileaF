@@ -9,6 +9,7 @@ from app.models import db, Product, ProductCategory
 products_bp = Blueprint('products', __name__, url_prefix='/api/products')
 
 @products_bp.route('/', methods=['GET'])
+@products_bp.route('', methods=['GET'])
 def get_products():
     """Get all products with optional filtering."""
     try:

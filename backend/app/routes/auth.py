@@ -108,212 +108,32 @@ def register():
         )
 
 
-@auth_bp.route("/", methods=["GET"])
-def auth_root():
-    """Test endpoint to verify auth blueprint is working"""
-    return jsonify({
-        "message": "Auth blueprint is working",
-        "endpoints": ["/login", "/register", "/verify", "/health"],
-        "methods": ["POST", "GET"]
-    }), 200
-
-@auth_bp.route("/health", methods=["GET"])
-def health():
-    """Health check endpoint for auth service"""
-    return jsonify({
-        "status": "healthy",
-        "service": "auth",
-        "timestamp": datetime.datetime.utcnow().isoformat()
-    }), 200
-
-@auth_bp.route("/verify-role", methods=["GET"])
-def verify_role():
-    """Verify user role from database (not localStorage)"""
-    try:
-        auth_header = request.headers.get('Authorization')
-        
-        if not auth_header or not auth_header.startswith('Bearer '):
-            return jsonify({'success': False, 'message': 'Missing or invalid token'}), 401
-        
-        token = auth_header.split(' ')[1]
-        secret_key = current_app.config.get('SECRET_KEY', 'supersecretkey')
-        
-        # Decode token
-        payload = jwt.decode(token, secret_key, algorithms=['HS256'])
-        user_id = payload.get('user_id')
-        
-        # Get fresh user data from database
-        from app.models import User
-        user = User.query.get(user_id)
-        
-        if not user:
-            return jsonify({'success': False, 'message': 'User not found'}), 404
-        
-        return jsonify({
-            'success': True,
-            'user': {
-                'id': user.id,
-                'name': user.name,
-                'email': user.email,
-                'phone': user.phone,
-                'address': user.address,
-                'role': user.role,
-                'status': user.status
-            }
-        })
-        
-    except jwt.ExpiredSignatureError:
-        return jsonify({'success': False, 'message': 'Token expired'}), 401
-    except jwt.InvalidTokenError:
-        return jsonify({'success': False, 'message': 'Invalid token'}), 401
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@auth_bp.route("/reset-admin-password", methods=["POST"])
-def reset_admin_password():
-    """Reset admin password to admin123"""
-    try:
-        from app.models import db, User
-        from werkzeug.security import generate_password_hash
-        
-        data = request.get_json(silent=True) or {}
-        email = data.get('email', 'may@gmail.com')
-        
-        # Find user
-        user = User.query.filter_by(email=email).first()
-        if not user:
-            return jsonify({
-                "success": False,
-                "message": "User not found"
-            }), 404
-        
-        # Reset password
-        user.password_hash = generate_password_hash("admin123")
-        db.session.commit()
-        
-        return jsonify({
-            "success": True,
-            "message": f"Password reset for {email}",
-            "credentials": {
-                "email": email,
-                "password": "admin123",
-                "role": user.role
-            }
-        }), 200
-        
-    except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 500
-
-@auth_bp.route("/create-admin", methods=["POST"])
-def create_admin():
-    """Create admin user manually - for debugging"""
-    try:
-        from app.models import db, User
-        from werkzeug.security import generate_password_hash
-        
-        admin_email = "admin@nutrilea.com"
-        
-        # Check if admin already exists
-        existing_admin = User.query.filter_by(email=admin_email).first()
-        if existing_admin:
-            return jsonify({
-                "success": False,
-                "message": "Admin user already exists"
-            }), 400
-        
-        # Create admin user
-        admin_user = User(
-            name="Admin User",
-            email=admin_email,
-            password_hash=generate_password_hash("admin123"),
-            role='admin',
-            status='active',
-            phone="",
-            address=""
-        )
-        
-        db.session.add(admin_user)
-        db.session.commit()
-        
-        return jsonify({
-            "success": True,
-            "message": "Admin user created successfully",
-            "admin": {
-                "email": admin_email,
-                "password": "admin123",
-                "role": "admin"
-            }
-        }), 201
-        
-    except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 500
-
-@auth_bp.route("/debug/users", methods=["GET"])
-def debug_users():
-    """Debug endpoint to check user roles"""
-    try:
-        from app.models import User
-        users = User.query.all()
-        return jsonify({
-            "success": True,
-            "users": [
-                {
-                    "id": user.id,
-                    "email": user.email,
-                    "name": user.name,
-                    "role": user.role,
-                    "status": user.status
-                } for user in users
-            ]
-        }), 200
-    except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 500
-
 @auth_bp.route("/login", methods=["POST"])
 def login():
     """Login with email and password against PostgreSQL."""
-    print(f"DEBUG: Login endpoint called")
-    print(f"DEBUG: Request method: {request.method}")
-    print(f"DEBUG: Request headers: {dict(request.headers)}")
-    
+    data = request.get_json(silent=True) or {}
+
+    email = (data.get("email") or "").strip().lower()
+    password = data.get("password") or ""
+
+    if not email or not password:
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "message": "Email and password are required.",
+                }
+            ),
+            400,
+        )
+
     try:
-        data = request.get_json(silent=True) or {}
-        print(f"DEBUG: Request data: {data}")
-
-        email = (data.get("email") or "").strip().lower()
-        password = data.get("password") or ""
-        
-        print(f"DEBUG: Extracted email: {email}, password: {'*' * len(password) if password else 'None'}")
-
-        if not email or not password:
-            print("DEBUG: Missing email or password")
-            return (
-                jsonify(
-                    {
-                        "success": False,
-                        "message": "Email and password are required.",
-                    }
-                ),
-                400,
-            )
-
         # Use SQLAlchemy to query PostgreSQL
         from app.models import db, User
         
         user = User.query.filter_by(email=email).first()
-        print(f"DEBUG: User found: {user is not None}")
 
         if not user or not check_password_hash(user.password_hash, password):
-            print("DEBUG: Invalid credentials")
             return (
                 jsonify(
                     {
@@ -326,7 +146,6 @@ def login():
 
         # Check if user is active
         if user.status != 'active':
-            print(f"DEBUG: User not active: {user.status}")
             return (
                 jsonify(
                     {
@@ -358,8 +177,7 @@ def login():
             secret_key,
             algorithm='HS256'
         )
-        
-        print(f"DEBUG: Login successful for user: {email}")
+
         return (
             jsonify(
                 {
@@ -373,16 +191,12 @@ def login():
         )
 
     except Exception as e:
-        print(f"ERROR: Login failed with exception: {str(e)}")
-        print(f"ERROR: Exception type: {type(e).__name__}")
-        import traceback
-        traceback.print_exc()
+        print(f"Login error: {e}")
         return (
             jsonify(
                 {
                     "success": False,
-                    "message": "Login failed due to server error.",
-                    "error": str(e)
+                    "message": f"Login error: {str(e)}",
                 }
             ),
             500,
