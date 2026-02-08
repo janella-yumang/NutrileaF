@@ -303,6 +303,12 @@ const HeaderNav: React.FC = () => {
             <>
               <div className="user-greeting">
                 Welcome, {userName}
+                {userRole === 'admin' && (
+                  <span className="user-role-badge admin-badge">Admin</span>
+                )}
+                {userRole === 'user' && (
+                  <span className="user-role-badge user-badge">User</span>
+                )}
               </div>
               
               <div className="header-profile-wrapper" ref={profileRef}>
