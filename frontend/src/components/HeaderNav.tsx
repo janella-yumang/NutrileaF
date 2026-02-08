@@ -19,6 +19,8 @@ const HeaderNav: React.FC = () => {
   const aboutRef = useRef<HTMLDivElement | null>(null);
   const profileRef = useRef<HTMLDivElement | null>(null);
 
+  const profileImgSrc = userProfileImage || profileIcon;
+
   // Check login status on mount
   useEffect(() => {
     const token = localStorage.getItem('nutrileaf_token');
@@ -246,7 +248,7 @@ const HeaderNav: React.FC = () => {
       console.log('HeaderNav - Role changed to admin, redirecting to dashboard');
       navigate('/admin');
     }
-  }, [userRole, navigate]);
+  }, [userRole, navigate, window.location.pathname]);
 
   const navItems = [
     { label: 'Home', path: '/' },
@@ -375,7 +377,7 @@ const HeaderNav: React.FC = () => {
                   title="Go to profile"
                 >
                   {(userProfileImage || profileIcon) ? (
-                    <img src={(userProfileImage || profileIcon)!} alt="Profile" className="header-profile-icon" />
+                    <img src={profileImgSrc as string} alt="Profile" className="header-profile-icon" />
                   ) : (
                     <div className="header-profile-icon-placeholder">
                       <User size={24} />
@@ -387,7 +389,7 @@ const HeaderNav: React.FC = () => {
                   <div className="profile-card-popup">
                     <div className="profile-card-icon">
                       {(userProfileImage || profileIcon) ? (
-                        <img src={(userProfileImage || profileIcon)!} alt="Profile" />
+                        <img src={profileImgSrc as string} alt="Profile" />
                       ) : (
                         <div className="profile-card-placeholder">
                           <User size={32} />
