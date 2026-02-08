@@ -59,6 +59,12 @@ const HeaderNav: React.FC = () => {
             setUserRole(roleData.user.role);
             
             console.log('HeaderNav - Set userRole from database:', roleData.user.role);
+            
+            // Redirect admin users to admin dashboard
+            if (roleData.user.role === 'admin' && window.location.pathname === '/') {
+              console.log('HeaderNav - Redirecting admin to dashboard');
+              navigate('/admin');
+            }
           } else {
             // Fallback to localStorage if verification fails
             setUserRole(userData.role || 'user');
@@ -233,6 +239,14 @@ const HeaderNav: React.FC = () => {
       }
     }
   }, []);
+
+  // Redirect admin users to dashboard when role changes
+  useEffect(() => {
+    if (userRole === 'admin' && window.location.pathname === '/') {
+      console.log('HeaderNav - Role changed to admin, redirecting to dashboard');
+      navigate('/admin');
+    }
+  }, [userRole, navigate]);
 
   const navItems = [
     { label: 'Home', path: '/' },
