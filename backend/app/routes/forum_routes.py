@@ -34,7 +34,17 @@ def list_forum_threads():
         
         return jsonify({
             'success': True,
-            'threads': [thread.to_dict() for thread in paginated_threads],
+            'threads': [{
+                'id': str(thread.id),
+                'title': thread.title,
+                'content': thread.content,
+                'author': thread.author,
+                'category': thread.category,
+                'status': thread.status,
+                'views_count': thread.views_count,
+                'created_at': thread.created_at.isoformat() if thread.created_at else None,
+                'updated_at': thread.updated_at.isoformat() if thread.updated_at else None
+            } for thread in paginated_threads],
             'total': total,
             'pages': (total + per_page - 1) // per_page,
             'current_page': page
@@ -59,8 +69,24 @@ def get_forum_thread(thread_id):
         
         return jsonify({
             'success': True,
-            'thread': thread.to_dict(),
-            'replies': [reply.to_dict() for reply in replies],
+            'thread': {
+                'id': str(thread.id),
+                'title': thread.title,
+                'content': thread.content,
+                'author': thread.author,
+                'category': thread.category,
+                'status': thread.status,
+                'views_count': thread.views_count,
+                'created_at': thread.created_at.isoformat() if thread.created_at else None,
+                'updated_at': thread.updated_at.isoformat() if thread.updated_at else None
+            },
+            'replies': [{
+                'id': str(reply.id),
+                'thread_id': str(reply.thread_id),
+                'author': reply.author,
+                'content': reply.content,
+                'created_at': reply.created_at.isoformat() if reply.created_at else None
+            } for reply in replies],
             'replies_count': len(replies)
         }), 200
     except Exception as e:
@@ -108,7 +134,17 @@ def create_forum_thread():
             'success': True,
             'message': 'Thread created successfully',
             'threadId': str(thread.id),
-            'thread': thread.to_dict()
+            'thread': {
+                'id': str(thread.id),
+                'title': thread.title,
+                'content': thread.content,
+                'author': thread.author,
+                'category': thread.category,
+                'status': thread.status,
+                'views_count': thread.views_count,
+                'created_at': thread.created_at.isoformat() if thread.created_at else None,
+                'updated_at': thread.updated_at.isoformat() if thread.updated_at else None
+            }
         }), 201
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -135,7 +171,17 @@ def update_forum_thread(thread_id):
         return jsonify({
             'success': True,
             'message': 'Thread updated successfully',
-            'thread': thread.to_dict()
+            'thread': {
+                'id': str(thread.id),
+                'title': thread.title,
+                'content': thread.content,
+                'author': thread.author,
+                'category': thread.category,
+                'status': thread.status,
+                'views_count': thread.views_count,
+                'created_at': thread.created_at.isoformat() if thread.created_at else None,
+                'updated_at': thread.updated_at.isoformat() if thread.updated_at else None
+            }
         }), 200
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -203,7 +249,13 @@ def create_forum_reply(thread_id):
             'success': True,
             'message': 'Reply created successfully',
             'replyId': str(reply.id),
-            'reply': reply.to_dict()
+            'reply': {
+                'id': str(reply.id),
+                'thread_id': str(reply.thread_id),
+                'author': reply.author,
+                'content': reply.content,
+                'created_at': reply.created_at.isoformat() if reply.created_at else None
+            }
         }), 201
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -226,7 +278,13 @@ def update_forum_reply(reply_id):
         return jsonify({
             'success': True,
             'message': 'Reply updated successfully',
-            'reply': reply.to_dict()
+            'reply': {
+                'id': str(reply.id),
+                'thread_id': str(reply.thread_id),
+                'author': reply.author,
+                'content': reply.content,
+                'created_at': reply.created_at.isoformat() if reply.created_at else None
+            }
         }), 200
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
