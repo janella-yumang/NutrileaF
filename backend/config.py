@@ -17,17 +17,12 @@ class Config:
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov', 'avi', 'webm'}
     
     # Database configuration - MongoDB
-    MONGODB_URI = os.environ.get('DATABASE_URL') or os.environ.get('MONGODB_URI')
+    MONGODB_URI = os.environ.get('DATABASE_URL') or os.environ.get('MONGODB_URI', 'mongodb://localhost:27017/nutrilea_db')
     
-    # For local development, you can use MongoDB Atlas or local MongoDB
-    if not MONGODB_URI:
-        print("ERROR: DATABASE_URL environment variable is required!")
-        print("For local development:")
-        print("1. Set up MongoDB Atlas account")
-        print("2. Create a free cluster")
-        print("3. Get your connection string")
-        print("4. Set environment variable: set DATABASE_URL=mongodb+srv://username:password@cluster.mongodb.net/dbname")
-        MONGODB_URI = 'mongodb://localhost:27017/nutrilea_db'  # Temporary placeholder
+    # Debug database connection
+    print(f"DEBUG: DATABASE_URL = {os.environ.get('DATABASE_URL', 'NOT SET')}")
+    print(f"DEBUG: MONGODB_URI = {os.environ.get('MONGODB_URI', 'NOT SET')}")
+    print(f"DEBUG: Using MongoDB URI: {MONGODB_URI[:50]}...")
     
     # Model path (for future ML models)
     MODEL_PATH = os.path.join(os.path.dirname(__file__), 'models', 'moringa_model.h5')
