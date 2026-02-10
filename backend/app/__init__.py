@@ -34,7 +34,7 @@ def create_app():
     
     # Connect to MongoDB
     try:
-        connect(db='nutrilea_db', host=Config.MONGODB_URI)
+        connect(db='Nutrileaf', host=Config.MONGODB_URI)
         print(f"✅ MongoDB connected successfully: {Config.MONGODB_URI[:50]}...")
     except Exception as e:
         print(f"❌ MongoDB connection failed: {e}")

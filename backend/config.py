@@ -11,7 +11,7 @@ class Config:
     
     # Upload folder configuration
     UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'app/static/uploads')
-    MAX_CONTENT_LENGTH = 25 * 1024 * 1024  # 25MB
+    MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50MB
     
     # Allowed file extensions
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov', 'avi', 'webm'}
