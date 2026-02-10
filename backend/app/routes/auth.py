@@ -67,7 +67,7 @@ def register():
         secret_key = current_app.config.get('SECRET_KEY', 'supersecretkey')
         token = jwt.encode(
             {
-                'user_id': new_user.id,
+                'user_id': str(new_user.id),  # Convert ObjectId to string
                 'email': email,
                 'role': 'user',
                 'exp': datetime.datetime.utcnow() + datetime.timedelta(days=30)
@@ -81,7 +81,7 @@ def register():
                 {
                     "success": True,
                     "user": {
-                        "id": new_user.id,
+                        "id": str(new_user.id),  # Convert ObjectId to string
                         "name": name,
                         "email": email,
                         "phone": phone,
@@ -155,7 +155,7 @@ def login():
             )
 
         user_data = {
-            "id": user.id,
+            "id": str(user.id),  # Convert ObjectId to string
             "name": user.name,
             "email": user.email,
             "phone": user.phone,
@@ -167,7 +167,7 @@ def login():
         secret_key = current_app.config.get('SECRET_KEY', 'supersecretkey')
         token = jwt.encode(
             {
-                'user_id': user.id,
+                'user_id': str(user.id),  # Convert ObjectId to string
                 'email': user.email,
                 'role': user.role,
                 'exp': datetime.datetime.utcnow() + datetime.timedelta(days=30)
@@ -217,7 +217,7 @@ def verify_token():
         user_id = payload.get('user_id')
         
         from app.models import User
-        user = User.query.get(user_id)
+        user = User.objects(id=user_id).first()  # Use MongoEngine syntax
         
         if not user:
             return jsonify({'success': False, 'message': 'User not found'}), 404
@@ -225,7 +225,7 @@ def verify_token():
         return jsonify({
             'success': True,
             'user': {
-                'id': user.id,
+                'id': str(user.id),  # Convert ObjectId to string
                 'name': user.name,
                 'email': user.email,
                 'phone': user.phone,
@@ -284,7 +284,7 @@ def update_profile():
             'success': True,
             'message': 'Profile updated successfully',
             'user': {
-                'id': user.id,
+                'id': str(user.id),  # Convert ObjectId to string
                 'name': user.name,
                 'email': user.email,
                 'phone': user.phone,
