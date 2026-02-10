@@ -1,4 +1,4 @@
-import sys, os
+import sys, os, datetime
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from flask import Flask, send_from_directory
@@ -32,14 +32,52 @@ def create_app():
 
     app.config.from_object(Config)
     
-    # Connect to MongoDB
-    try:
-        connect(db='Nutrileaf', host=Config.MONGODB_URI)
-        print(f"✅ MongoDB connected successfully: {Config.MONGODB_URI[:50]}...")
-    except Exception as e:
-        print(f"❌ MongoDB connection failed: {e}")
+    # Connect to MongoDB with better error handling
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            print(f"DEBUG: Attempt {attempt + 1} - Connecting to MongoDB...")
+            print(f"DEBUG: MONGODB_URI from config: {Config.MONGODB_URI[:50]}...")
+            
+            connection = connect(db='Nutrileaf', host=Config.MONGODB_URI)
+            print(f"✅ MongoDB connected successfully: {Config.MONGODB_URI[:50]}...")
+            break
+            
+        except Exception as e:
+            print(f"❌ MongoDB connection attempt {attempt + 1} failed: {e}")
+            if attempt < max_retries - 1:
+                print(f"Retrying in 2 seconds... ({attempt + 1}/{max_retries})")
+                import time
+                time.sleep(2)
+            else:
+                print(f"❌ All connection attempts failed. Using fallback mode.")
+                print("⚠️  App will run but database features will be limited.")
+                # Continue without database connection for basic functionality
     
     print(f"DEBUG: Using MongoDB database: {app.config.get('MONGODB_URI')[:50]}..." if app.config.get('MONGODB_URI') else "ERROR: No database configured")
+
+    # Health check endpoint
+    @app.route('/health', methods=['GET'])
+    def health_check():
+        """Health check endpoint to verify backend status"""
+        try:
+            # Check database connection
+            from app.models import Product
+            product_count = Product.objects.count()
+            
+            return jsonify({
+                'status': 'healthy',
+                'database': 'connected',
+                'products_count': product_count,
+                'timestamp': str(datetime.datetime.utcnow())
+            }), 200
+        except Exception as e:
+            return jsonify({
+                'status': 'unhealthy',
+                'database': 'disconnected',
+                'error': str(e),
+                'timestamp': str(datetime.datetime.utcnow())
+            }), 503
 
     # Serve uploaded files
     @app.route('/uploads/<path:filename>')
