@@ -17,12 +17,18 @@ class Config:
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov', 'avi', 'webm'}
     
     # Database configuration - MongoDB
-    MONGODB_URI = os.environ.get('DATABASE_URL') or os.environ.get('MONGODB_URI', 'mongodb://localhost:27017/nutrilea_db')
+    # Force MongoDB Atlas URL to prevent localhost connection
+    DATABASE_URL = os.environ.get('DATABASE_URL')
+    MONGODB_URI = DATABASE_URL or os.environ.get('MONGODB_URI', 'mongodb://localhost:27017/nutrilea_db')
+    
+    # If DATABASE_URL is not set, use hardcoded Atlas URL as fallback
+    if not DATABASE_URL:
+        print("WARNING: DATABASE_URL not set, using hardcoded Atlas URL")
+        MONGODB_URI = 'mongodb+srv://jannellayumang:bqqU6k6QGjHjuiwG@cluster0.f0bgzlh.mongodb.net/Nutrileaf?appName=Cluster0'
     
     # Debug database connection
-    print(f"DEBUG: DATABASE_URL = {os.environ.get('DATABASE_URL', 'NOT SET')}")
-    print(f"DEBUG: MONGODB_URI = {os.environ.get('MONGODB_URI', 'NOT SET')}")
-    print(f"DEBUG: Using MongoDB URI: {MONGODB_URI[:50]}...")
+    print(f"DEBUG: DATABASE_URL = {DATABASE_URL or 'NOT SET'}")
+    print(f"DEBUG: MONGODB_URI = {MONGODB_URI[:50]}...")
     
     # Model path (for future ML models)
     MODEL_PATH = os.path.join(os.path.dirname(__file__), 'models', 'moringa_model.h5')
