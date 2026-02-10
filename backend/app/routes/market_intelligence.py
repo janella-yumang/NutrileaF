@@ -11,12 +11,12 @@ def track_market():
         category = request.args.get('category')
         region = request.args.get('region', 'Luzon')
         
-        # Build base query
-        query = Product.query
+        # Build base query using MongoEngine
+        query = Product.objects
         
         # Filter by category if provided
         if category and category != 'all':
-            query = query.filter(Product.category == category)
+            query = query.filter(category=category)
         
         # Get products for analysis
         products = query.all()
@@ -87,24 +87,23 @@ def track_market():
 def get_market_categories():
     """Get all available categories for market filtering."""
     try:
-        categories = ProductCategory.query.filter_by(status='active').all()
+        categories = ProductCategory.objects.filter(status='active')
         
         # Also get categories that have products
-        product_categories = db.session.query(Product.category).distinct().all()
-        product_category_names = [cat[0] for cat in product_categories]
+        product_categories = Product.objects.distinct('category')
         
         return jsonify({
             'success': True,
             'categories': [
                 {
-                    'id': cat.id,
+                    'id': str(cat.id),
                     'name': cat.name,
                     'description': cat.description,
-                    'has_products': cat.name.lower() in [pc.lower() for pc in product_category_names]
+                    'has_products': cat.name.lower() in [pc.lower() for pc in product_categories]
                 }
                 for cat in categories
             ],
-            'product_categories': product_category_names
+            'product_categories': product_categories
         }), 200
         
     except Exception as e:

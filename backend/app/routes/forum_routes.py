@@ -1,5 +1,5 @@
 """
-Forum routes for PostgreSQL integration.
+Forum routes for MongoDB integration.
 Handles forum threads and replies.
 """
 
@@ -18,43 +18,44 @@ def list_forum_threads():
     per_page = request.args.get('per_page', 10, type=int)
     
     try:
-        query = ForumThread.query.filter_by(status='active')
+        query = ForumThread.objects.filter(status='active')
         
         if category:
-            query = query.filter_by(category=category)
+            query = query.filter(category=category)
         
-        # Order by pinned first, then by newest
-        threads = query.order_by(
-            ForumThread.status.desc(),
-            ForumThread.created_at.desc()
-        ).paginate(page=page, per_page=per_page, error_out=False)
+        # Order by newest
+        threads = query.order_by('-created_at')
+        
+        # Manual pagination for MongoEngine
+        start = (page - 1) * per_page
+        end = start + per_page
+        paginated_threads = threads[start:end]
+        total = threads.count()
         
         return jsonify({
             'success': True,
-            'threads': [thread.to_dict() for thread in threads.items],
-            'total': threads.total,
-            'pages': threads.pages,
+            'threads': [thread.to_dict() for thread in paginated_threads],
+            'total': total,
+            'pages': (total + per_page - 1) // per_page,
             'current_page': page
         }), 200
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@forum_bp.route('/threads/<int:thread_id>', methods=['GET'])
+@forum_bp.route('/threads/<string:thread_id>', methods=['GET'])
 def get_forum_thread(thread_id):
     """Get a specific forum thread with all replies."""
     try:
-        thread = ForumThread.query.get(thread_id)
+        thread = ForumThread.objects(id=thread_id).first()
         if not thread:
             return jsonify({'success': False, 'error': 'Thread not found'}), 404
         
         # Increment views count
         thread.views_count += 1
-        db.session.commit()
+        thread.save()
         
         # Get all replies for this thread
-        replies = ForumReply.query.filter_by(thread_id=thread_id).order_by(
-            ForumReply.created_at.asc()
-        ).all()
+        replies = ForumReply.objects(thread_id=thread).order_by('created_at')
         
         return jsonify({
             'success': True,
@@ -101,26 +102,24 @@ def create_forum_thread():
             category=category
         )
         
-        db.session.add(thread)
-        db.session.commit()
+        thread.save()
         
         return jsonify({
             'success': True,
             'message': 'Thread created successfully',
-            'threadId': thread.id,
+            'threadId': str(thread.id),
             'thread': thread.to_dict()
         }), 201
     except Exception as e:
-        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@forum_bp.route('/threads/<int:thread_id>', methods=['PUT'])
+@forum_bp.route('/threads/<string:thread_id>', methods=['PUT'])
 def update_forum_thread(thread_id):
     """Update a forum thread."""
     data = request.get_json()
     
     try:
-        thread = ForumThread.query.get(thread_id)
+        thread = ForumThread.objects(id=thread_id).first()
         if not thread:
             return jsonify({'success': False, 'error': 'Thread not found'}), 404
         
@@ -131,7 +130,7 @@ def update_forum_thread(thread_id):
         if 'status' in data:
             thread.status = data['status']
         
-        db.session.commit()
+        thread.save()
         
         return jsonify({
             'success': True,
@@ -139,40 +138,37 @@ def update_forum_thread(thread_id):
             'thread': thread.to_dict()
         }), 200
     except Exception as e:
-        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@forum_bp.route('/threads/<int:thread_id>', methods=['DELETE'])
+@forum_bp.route('/threads/<string:thread_id>', methods=['DELETE'])
 def delete_forum_thread(thread_id):
     """Delete a forum thread and all its replies."""
     try:
-        thread = ForumThread.query.get(thread_id)
+        thread = ForumThread.objects(id=thread_id).first()
         if not thread:
             return jsonify({'success': False, 'error': 'Thread not found'}), 404
         
         # Delete all replies for this thread
-        ForumReply.query.filter_by(thread_id=thread_id).delete()
-        # Delete the thread
-        db.session.delete(thread)
-        db.session.commit()
+        ForumReply.objects(thread_id=thread).delete()
+        # Delete thread
+        thread.delete()
         
         return jsonify({
             'success': True,
             'message': 'Thread deleted successfully'
         }), 200
     except Exception as e:
-        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
 # ==================== FORUM REPLIES ====================
 
-@forum_bp.route('/replies/<int:thread_id>', methods=['POST'])
+@forum_bp.route('/replies/<string:thread_id>', methods=['POST'])
 def create_forum_reply(thread_id):
     """Add a reply to a forum thread."""
     data = request.get_json()
     
     try:
-        thread = ForumThread.query.get(thread_id)
+        thread = ForumThread.objects(id=thread_id).first()
         if not thread:
             return jsonify({'success': False, 'error': 'Thread not found'}), 404
         
@@ -192,42 +188,40 @@ def create_forum_reply(thread_id):
             }), 400
         
         reply = ForumReply(
-            thread_id=thread_id,
+            thread_id=thread,
             content=content,
             user_name=user_name
         )
         
-        db.session.add(reply)
+        reply.save()
         
         # Increment thread's reply count
         thread.replies_count += 1
-        
-        db.session.commit()
+        thread.save()
         
         return jsonify({
             'success': True,
             'message': 'Reply created successfully',
-            'replyId': reply.id,
+            'replyId': str(reply.id),
             'reply': reply.to_dict()
         }), 201
     except Exception as e:
-        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@forum_bp.route('/replies/<int:reply_id>', methods=['PUT'])
+@forum_bp.route('/replies/<string:reply_id>', methods=['PUT'])
 def update_forum_reply(reply_id):
     """Update a forum reply."""
     data = request.get_json()
     
     try:
-        reply = ForumReply.query.get(reply_id)
+        reply = ForumReply.objects(id=reply_id).first()
         if not reply:
             return jsonify({'success': False, 'error': 'Reply not found'}), 404
         
         if 'content' in data:
             reply.content = data['content'].strip()
         
-        db.session.commit()
+        reply.save()
         
         return jsonify({
             'success': True,
@@ -235,30 +229,28 @@ def update_forum_reply(reply_id):
             'reply': reply.to_dict()
         }), 200
     except Exception as e:
-        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@forum_bp.route('/replies/<int:reply_id>', methods=['DELETE'])
+@forum_bp.route('/replies/<string:reply_id>', methods=['DELETE'])
 def delete_forum_reply(reply_id):
     """Delete a forum reply."""
     try:
-        reply = ForumReply.query.get(reply_id)
+        reply = ForumReply.objects(id=reply_id).first()
         if not reply:
             return jsonify({'success': False, 'error': 'Reply not found'}), 404
         
-        thread = ForumThread.query.get(reply.thread_id)
+        thread = ForumThread.objects(id=reply.thread_id).first()
         if thread and thread.replies_count > 0:
             thread.replies_count -= 1
+            thread.save()
         
-        db.session.delete(reply)
-        db.session.commit()
+        reply.delete()
         
         return jsonify({
             'success': True,
             'message': 'Reply deleted successfully'
         }), 200
     except Exception as e:
-        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
 # ==================== CATEGORIES ====================

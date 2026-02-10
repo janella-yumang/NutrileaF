@@ -31,12 +31,12 @@ def get_admin_stats():
     """Get admin dashboard stats."""
     try:
         stats = {
-            'products': Product.query.count(),
-            'users': User.query.count(),
-            'orders': Order.query.count(),
-            'forumThreads': ForumThread.query.count(),
-            'categories': ProductCategory.query.count(),
-            'reviews': Review.query.count(),
+            'products': Product.objects.count(),
+            'users': User.objects.count(),
+            'orders': Order.objects.count(),
+            'forumThreads': ForumThread.objects.count(),
+            'categories': ProductCategory.objects.count(),
+            'reviews': Review.objects.count(),
         }
 
         return jsonify({'success': True, 'stats': stats}), 200
