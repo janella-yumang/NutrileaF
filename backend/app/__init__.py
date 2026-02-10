@@ -10,7 +10,7 @@ def create_app():
     app = Flask(__name__)
     # Get allowed origins from environment or use defaults
     cors_origins_env = os.environ.get('CORS_ORIGINS', 
-        'http://localhost:3000,https://nutrilea-f.vercel.app,https://nutrilea-f.vercel.app/'
+        'http://localhost:3000,https://nutrilea-f.vercel.app,https://nutrilea-f.vercel.app/,https://nutrileaf-10.onrender.com'
     )
     allowed_origins = [origin.strip() for origin in cors_origins_env.split(',')]
     
@@ -27,7 +27,7 @@ def create_app():
          supports_credentials=True, 
          expose_headers=['Content-Type'],
          origins=allowed_origins,
-         allow_headers=['Content-Type', 'Authorization'],
+         allow_headers=['Content-Type', 'Authorization', 'X-Admin-Role'],
          methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
 
     app.config.from_object(Config)
