@@ -1,5 +1,5 @@
 """
-Create admin user for Nutrilea app.
+Recreate admin user with correct password
 """
 
 from app.models import User
@@ -20,42 +20,52 @@ except Exception as e:
     print(f"MongoDB connection failed: {e}")
     sys.exit(1)
 
-def create_admin_user():
-    """Create an admin user."""
+def recreate_admin():
+    """Recreate admin user with correct password"""
     try:
-        # Check if admin user already exists
+        # Delete existing admin user if exists
         existing_admin = User.objects(email='admin@nutrilea.com').first()
         if existing_admin:
-            print("Admin user already exists!")
-            print(f"Email: admin@nutrilea.com")
-            print("Password: admin123")
-            return
+            print("Deleting existing admin user...")
+            existing_admin.delete()
         
-        # Create admin user
+        # Create new admin user
+        password = 'admin123'
+        password_hash = generate_password_hash(password)
+        
         admin_user = User(
             name='Admin User',
             email='admin@nutrilea.com',
             phone='+63 912 345 6789',
             address='Admin Office, Nutrilea HQ',
-            password_hash=generate_password_hash('admin123'),
+            password_hash=password_hash,
             role='admin',
             status='active'
         )
         
         admin_user.save()
         
-        print("Admin user created successfully!")
+        print("Admin user recreated successfully!")
         print("=" * 50)
         print("ADMIN LOGIN CREDENTIALS:")
         print(f"Email: admin@nutrilea.com")
-        print(f"Password: admin123")
+        print(f"Password: {password}")
         print("=" * 50)
-        print("Please change the password after first login!")
+        
+        # Test the new credentials
+        from werkzeug.security import check_password_hash
+        test_result = check_password_hash(admin_user.password_hash, password)
+        print(f"Password verification test: {test_result}")
+        
+        if test_result:
+            print("SUCCESS: Admin credentials are working!")
+        else:
+            print("ERROR: Password verification still failed!")
         
     except Exception as e:
-        print(f"Error creating admin user: {e}")
+        print(f"Error recreating admin: {e}")
         import traceback
         traceback.print_exc()
 
 if __name__ == '__main__':
-    create_admin_user()
+    recreate_admin()
