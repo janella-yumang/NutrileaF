@@ -52,13 +52,34 @@ def get_all_products():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
     
-    products = Product.query.paginate(page=page, per_page=per_page, error_out=False)
+    # Use MongoEngine syntax
+    products = Product.objects.skip((page - 1) * per_page).limit(per_page)
+    total = Product.objects.count()
+    
+    # Convert to dict and handle ObjectId serialization
+    products_list = []
+    for product in products:
+        product_dict = {
+            'id': str(product.id),
+            'name': product.name,
+            'category': product.category,
+            'price': product.price,
+            'original_price': product.original_price,
+            'description': product.description,
+            'image': product.image,
+            'quantity': product.quantity,
+            'benefits': product.benefits,
+            'uses': product.uses,
+            'how_to_use': product.how_to_use,
+            'reviews': product.reviews
+        }
+        products_list.append(product_dict)
     
     return jsonify({
         'success': True,
-        'products': [p.to_dict() for p in products.items],
-        'total': products.total,
-        'pages': products.pages,
+        'products': products_list,
+        'total': total,
+        'pages': (total + per_page - 1) // per_page,
         'current_page': page
     }), 200
 
@@ -286,13 +307,29 @@ def get_all_users():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
     
-    users = User.query.paginate(page=page, per_page=per_page, error_out=False)
+    # Use MongoEngine syntax
+    users = User.objects.skip((page - 1) * per_page).limit(per_page)
+    total = User.objects.count()
+    
+    # Convert to dict and handle ObjectId serialization
+    users_list = []
+    for user in users:
+        user_dict = {
+            'id': str(user.id),
+            'name': user.name,
+            'email': user.email,
+            'phone': user.phone,
+            'address': user.address,
+            'role': user.role,
+            'status': user.status
+        }
+        users_list.append(user_dict)
     
     return jsonify({
         'success': True,
-        'users': [u.to_dict() for u in users.items],
-        'total': users.total,
-        'pages': users.pages,
+        'users': users_list,
+        'total': total,
+        'pages': (total + per_page - 1) // per_page,
         'current_page': page
     }), 200
 
@@ -354,15 +391,28 @@ def get_all_orders():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
     
-    orders = Order.query.order_by(Order.created_at.desc()).paginate(
-        page=page, per_page=per_page, error_out=False
-    )
+    # Use MongoEngine syntax
+    orders = Order.objects.skip((page - 1) * per_page).limit(per_page)
+    total = Order.objects.count()
+    
+    # Convert to dict and handle ObjectId serialization
+    orders_list = []
+    for order in orders:
+        order_dict = {
+            'id': str(order.id),
+            'user_id': str(order.user_id) if order.user_id else None,
+            'status': order.status,
+            'total_amount': order.total_amount,
+            'created_at': order.created_at.isoformat() if order.created_at else None,
+            'updated_at': order.updated_at.isoformat() if order.updated_at else None
+        }
+        orders_list.append(order_dict)
     
     return jsonify({
         'success': True,
-        'orders': [o.to_dict() for o in orders.items],
-        'total': orders.total,
-        'pages': orders.pages,
+        'orders': orders_list,
+        'total': total,
+        'pages': (total + per_page - 1) // per_page,
         'current_page': page
     }), 200
 
@@ -416,15 +466,29 @@ def get_all_forum_threads():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
     
-    threads = ForumThread.query.order_by(ForumThread.created_at.desc()).paginate(
-        page=page, per_page=per_page, error_out=False
-    )
+    # Use MongoEngine syntax
+    threads = ForumThread.objects.skip((page - 1) * per_page).limit(per_page)
+    total = ForumThread.objects.count()
+    
+    # Convert to dict and handle ObjectId serialization
+    threads_list = []
+    for thread in threads:
+        thread_dict = {
+            'id': str(thread.id),
+            'title': thread.title,
+            'content': thread.content,
+            'author': thread.author,
+            'status': thread.status,
+            'created_at': thread.created_at.isoformat() if thread.created_at else None,
+            'updated_at': thread.updated_at.isoformat() if thread.updated_at else None
+        }
+        threads_list.append(thread_dict)
     
     return jsonify({
         'success': True,
-        'threads': [t.to_dict() for t in threads.items],
-        'total': threads.total,
-        'pages': threads.pages,
+        'threads': threads_list,
+        'total': total,
+        'pages': (total + per_page - 1) // per_page,
         'current_page': page
     }), 200
 
@@ -509,24 +573,47 @@ def get_dashboard_stats():
 @admin_required
 def get_all_categories():
     """Get all product categories."""
-    categories = ProductCategory.query.all()
+    # Use MongoEngine syntax
+    categories = ProductCategory.objects.all()
+    
+    # Convert to dict and handle ObjectId serialization
+    categories_list = []
+    for category in categories:
+        category_dict = {
+            'id': str(category.id),
+            'name': category.name,
+            'description': category.description,
+            'image': category.image,
+            'status': category.status
+        }
+        categories_list.append(category_dict)
     
     return jsonify({
         'success': True,
-        'categories': [c.to_dict() for c in categories],
-        'total': len(categories)
+        'categories': categories_list,
+        'total': len(categories_list)
     }), 200
 
 # Public endpoint for categories (no admin required)
 @admin_bp.route('/categories/public', methods=['GET'])
 def get_categories_public():
     """Get all active product categories for public use."""
-    categories = ProductCategory.query.filter_by(status='active').all()
+    # Use MongoEngine syntax
+    categories = ProductCategory.objects(status='active')
+    
+    # Convert to dict and handle ObjectId serialization
+    categories_list = []
+    for category in categories:
+        category_dict = {
+            'id': str(category.id),
+            'name': category.name
+        }
+        categories_list.append(category_dict)
     
     return jsonify({
         'success': True,
-        'categories': [{'id': c.id, 'name': c.name} for c in categories],
-        'total': len(categories)
+        'categories': categories_list,
+        'total': len(categories_list)
     }), 200
 
 @admin_bp.route('/categories', methods=['POST'])
