@@ -1,2 +1,2 @@
 # Models package initialization
-from app.models import Product, ProductCategory
+from app.models.models import Product, ProductCategory
