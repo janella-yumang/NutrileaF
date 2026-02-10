@@ -3,7 +3,7 @@ Order API routes - saves checkout orders to PostgreSQL
 """
 
 from flask import Blueprint, request, jsonify
-from app.models import db, Order
+from app.models import Order
 from datetime import datetime
 
 orders_bp = Blueprint('orders', __name__)

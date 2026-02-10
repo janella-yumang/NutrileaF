@@ -8,7 +8,7 @@ from functools import wraps
 from werkzeug.security import generate_password_hash
 from werkzeug.utils import secure_filename
 import os
-from app.models import db, Product, User, Order, ForumThread, ForumReply, ProductCategory, Review
+from app.models import Product, User, Order, ForumThread, ForumReply, ProductCategory, Review
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/api/admin')
 
@@ -180,19 +180,8 @@ def update_product(product_id):
     try:
         # Handle image upload
         image_urls = product.image or []
-        if 'images' in request.files:
-            files = request.files.getlist('images')
-            upload_folder = current_app.config.get('UPLOAD_FOLDER', 'app/static/uploads')
-            os.makedirs(upload_folder, exist_ok=True)
-            
-            for file in files:
-                if file and file.filename:
-                    filename = secure_filename(file.filename)
-                    file_path = os.path.join(upload_folder, filename)
-                    file.save(file_path)
-                    image_urls.append(f'/uploads/{filename}')
         
-        # Handle single image upload
+        # Handle single image upload (replaces existing images)
         if 'image' in request.files and request.files['image'].filename:
             file = request.files['image']
             filename = secure_filename(file.filename)
@@ -201,6 +190,39 @@ def update_product(product_id):
             file_path = os.path.join(upload_folder, filename)
             file.save(file_path)
             image_urls = [f'/uploads/{filename}']
+        
+        # Handle multiple image upload (replaces existing images)
+        elif 'images' in request.files:
+            files = request.files.getlist('images')
+            upload_folder = current_app.config.get('UPLOAD_FOLDER', 'app/static/uploads')
+            os.makedirs(upload_folder, exist_ok=True)
+            image_urls = []
+            
+            for file in files:
+                if file and file.filename:
+                    filename = secure_filename(file.filename)
+                    file_path = os.path.join(upload_folder, filename)
+                    file.save(file_path)
+                    image_urls.append(f'/uploads/{filename}')
+        
+        # Handle image URLs from JSON (not file upload)
+        elif 'image' in data and not request.files:
+            if isinstance(data['image'], str):
+                image_urls = [data['image']] if data['image'] else []
+            elif isinstance(data['image'], list):
+                image_urls = data['image']
+        
+        # Handle images array from JSON
+        elif 'images' in data and not request.files:
+            if isinstance(data['images'], list):
+                image_urls = data['images']
+        
+        # Ensure at least one image exists - if no images provided, keep existing
+        if not image_urls and product.image:
+            image_urls = product.image
+        elif not image_urls:
+            # If no images at all, provide a default emoji or placeholder
+            image_urls = ['🌿']  # Default emoji for products
         
         # Update fields
         if 'name' in data:
@@ -213,16 +235,10 @@ def update_product(product_id):
             product.original_price = float(data['original_price']) if data['original_price'] else None
         if 'description' in data:
             product.description = data['description']
-        if 'image' in data and not request.files:
-            # Handle image URLs from JSON (not file upload)
-            if isinstance(data['image'], str):
-                image_urls = [data['image']]
-            elif isinstance(data['image'], list):
-                image_urls = data['image']
-            product.image = image_urls
-        elif request.files:
-            # Update with uploaded images
-            product.image = image_urls
+        
+        # Always update image field
+        product.image = image_urls
+        
         if 'quantity' in data:
             product.quantity = data['quantity']
         if 'benefits' in data:
@@ -237,7 +253,7 @@ def update_product(product_id):
         db.session.commit()
         return jsonify({
             'success': True,
-            'message': 'Product updated',
+            'message': 'Product updated successfully',
             'product': product.to_dict()
         }), 200
     except Exception as e:

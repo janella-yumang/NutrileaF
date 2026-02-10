@@ -1,12 +1,114 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
+from app.models import Product, ProductCategory
 
 market_bp = Blueprint('market', __name__)
 
 @market_bp.route('/track', methods=['GET'])
 def track_market():
-    # Placeholder: market tracking logic
-    return jsonify({
-        'price': 150,
-        'demand_trend': 'increasing',
-        'region': 'Luzon'
-    })
+    """Get market intelligence with optional category filtering."""
+    try:
+        # Get query parameters
+        category = request.args.get('category')
+        region = request.args.get('region', 'Luzon')
+        
+        # Build base query
+        query = Product.query
+        
+        # Filter by category if provided
+        if category and category != 'all':
+            query = query.filter(Product.category == category)
+        
+        # Get products for analysis
+        products = query.all()
+        
+        if not products:
+            return jsonify({
+                'success': False,
+                'error': 'No products found for the specified criteria'
+            }), 404
+        
+        # Calculate market intelligence
+        total_products = len(products)
+        avg_price = sum(p.price for p in products) / total_products
+        min_price = min(p.price for p in products)
+        max_price = max(p.price for p in products)
+        
+        # Determine demand trend (mock logic based on price distribution)
+        if avg_price > 500:
+            demand_trend = 'high'
+        elif avg_price > 300:
+            demand_trend = 'moderate'
+        else:
+            demand_trend = 'increasing'
+        
+        # Get category breakdown
+        category_breakdown = {}
+        for product in products:
+            cat = product.category
+            if cat not in category_breakdown:
+                category_breakdown[cat] = {
+                    'count': 0,
+                    'avg_price': 0,
+                    'total_price': 0
+                }
+            category_breakdown[cat]['count'] += 1
+            category_breakdown[cat]['total_price'] += product.price
+        
+        # Calculate averages for each category
+        for cat in category_breakdown:
+            category_breakdown[cat]['avg_price'] = (
+                category_breakdown[cat]['total_price'] / category_breakdown[cat]['count']
+            )
+            del category_breakdown[cat]['total_price']  # Remove temporary field
+        
+        return jsonify({
+            'success': True,
+            'market_data': {
+                'region': region,
+                'total_products': total_products,
+                'average_price': round(avg_price, 2),
+                'price_range': {
+                    'min': min_price,
+                    'max': max_price
+                },
+                'demand_trend': demand_trend,
+                'category_breakdown': category_breakdown,
+                'category_filter': category or 'all'
+            }
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@market_bp.route('/categories', methods=['GET'])
+def get_market_categories():
+    """Get all available categories for market filtering."""
+    try:
+        categories = ProductCategory.query.filter_by(status='active').all()
+        
+        # Also get categories that have products
+        product_categories = db.session.query(Product.category).distinct().all()
+        product_category_names = [cat[0] for cat in product_categories]
+        
+        return jsonify({
+            'success': True,
+            'categories': [
+                {
+                    'id': cat.id,
+                    'name': cat.name,
+                    'description': cat.description,
+                    'has_products': cat.name.lower() in [pc.lower() for pc in product_category_names]
+                }
+                for cat in categories
+            ],
+            'product_categories': product_category_names
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500

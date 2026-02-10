@@ -1,11 +1,11 @@
 Flask==2.3.3
 gunicorn==20.1.0
 Flask-CORS==4.0.0
-Flask-SQLAlchemy==3.0.5
 Werkzeug==2.3.7
 PyJWT==2.8.0
 numpy
 tensorflow
 opencv-python
 Pillow
-psycopg2-binary
+pymongo
+mongoengine

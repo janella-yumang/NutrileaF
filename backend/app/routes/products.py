@@ -4,7 +4,7 @@ Accessible to all users for browsing products
 """
 
 from flask import Blueprint, request, jsonify
-from app.models import db, Product, ProductCategory
+from app.models import Product, ProductCategory
 
 products_bp = Blueprint('products', __name__, url_prefix='/api/products')
 

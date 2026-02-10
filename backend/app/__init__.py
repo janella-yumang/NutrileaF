@@ -4,7 +4,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from flask import Flask, send_from_directory
 from flask_cors import CORS
 from config import Config
-from app.models import db
+from mongoengine import connect
 
 def create_app():
     app = Flask(__name__)
@@ -13,57 +13,33 @@ def create_app():
         'http://localhost:3000,https://nutrilea-f.vercel.app,https://nutrilea-f.vercel.app/'
     )
     allowed_origins = [origin.strip() for origin in cors_origins_env.split(',')]
-
-    for origin in [
-        'http://127.0.0.1:3000',
-        'http://localhost:3000',
-        'http://127.0.0.1:5000',
-        'http://localhost:5000',
-        'https://nutrilea-f.vercel.app'
-    ]:
-        if origin not in allowed_origins:
-            allowed_origins.append(origin)
+    
+    # Add development origins
+    if os.environ.get('FLASK_ENV') == 'development':
+        allowed_origins.extend([
+            'http://127.0.0.1:3000',
+            'http://localhost:3000',
+            'http://127.0.0.1:5000',
+            'http://localhost:5000'
+        ])
     
     CORS(app, 
          supports_credentials=True, 
          expose_headers=['Content-Type'],
          origins=allowed_origins,
-         allow_headers=['Content-Type', 'Authorization', 'X-Admin-Role'],
+         allow_headers=['Content-Type', 'Authorization'],
          methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
 
-    @app.before_request
-    def _cors_preflight():
-        if os.environ.get('DISABLE_CORS_FALLBACK') == 'true':
-            return None
-        if app.config.get('TESTING'):
-            return None
-        if getattr(__import__('flask'), 'request').method == 'OPTIONS':
-            return app.make_default_options_response()
-        return None
-
-    @app.after_request
-    def _cors_after_request(response):
-        if os.environ.get('DISABLE_CORS_FALLBACK') == 'true':
-            return response
-        if app.config.get('TESTING'):
-            return response
-
-        from flask import request
-
-        origin = request.headers.get('Origin')
-        if origin and origin in allowed_origins:
-            response.headers['Access-Control-Allow-Origin'] = origin
-            response.headers['Vary'] = 'Origin'
-            response.headers['Access-Control-Allow-Credentials'] = 'true'
-            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Admin-Role'
-            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-        return response
-
     app.config.from_object(Config)
-    app.config['SQLALCHEMY_DATABASE_URI'] = app.config.get('DATABASE_URI')
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    db.init_app(app)
-    print(f"DEBUG: Using database: {app.config.get('SQLALCHEMY_DATABASE_URI')[:50]}..." if app.config.get('SQLALCHEMY_DATABASE_URI') else "ERROR: No database configured")
+    
+    # Connect to MongoDB
+    try:
+        connect(db='nutrilea_db', host=Config.MONGODB_URI)
+        print(f"✅ MongoDB connected successfully: {Config.MONGODB_URI[:50]}...")
+    except Exception as e:
+        print(f"❌ MongoDB connection failed: {e}")
+    
+    print(f"DEBUG: Using MongoDB database: {app.config.get('MONGODB_URI')[:50]}..." if app.config.get('MONGODB_URI') else "ERROR: No database configured")
 
     # Serve uploaded files
     @app.route('/uploads/<path:filename>')
@@ -92,7 +68,6 @@ def create_app():
     from app.routes.forum_routes import forum_bp
     from app.routes.orders import orders_bp
     from app.routes.admin import admin_bp
-    from app.routes.products import products_bp
 
     app.register_blueprint(image_analysis_bp, url_prefix='/api/image')
     app.register_blueprint(growth_bp, url_prefix='/api/growth')
@@ -107,7 +82,6 @@ def create_app():
     app.register_blueprint(forum_bp)
     app.register_blueprint(orders_bp, url_prefix='/api/orders')
     app.register_blueprint(admin_bp)
-    app.register_blueprint(products_bp)
 
     @app.route("/")
     def home():

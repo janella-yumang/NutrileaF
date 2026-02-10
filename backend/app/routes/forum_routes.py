@@ -4,7 +4,7 @@ Handles forum threads and replies.
 """
 
 from flask import Blueprint, request, jsonify
-from app.models import db, ForumThread, ForumReply
+from app.models import ForumThread, ForumReply
 
 forum_bp = Blueprint('forum', __name__, url_prefix='/api/forum')
 

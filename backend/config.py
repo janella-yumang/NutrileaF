@@ -1,5 +1,11 @@
 import os
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()  # Load .env file
+except ImportError:
+    pass  # dotenv not available, use environment variables as-is
+
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'supersecretkey')
     
@@ -10,23 +16,18 @@ class Config:
     # Allowed file extensions
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov', 'avi', 'webm'}
     
-    # Database configuration - PostgreSQL only
-    DATABASE_URI = os.environ.get('DATABASE_URL') or os.environ.get('DATABASE_URI')
+    # Database configuration - MongoDB
+    MONGODB_URI = os.environ.get('DATABASE_URL') or os.environ.get('MONGODB_URI')
     
-    # For Render deployment, DATABASE_URL will be provided
-    # For local development, you need to set up PostgreSQL or use a cloud service
-    if not DATABASE_URI:
+    # For local development, you can use MongoDB Atlas or local MongoDB
+    if not MONGODB_URI:
         print("ERROR: DATABASE_URL environment variable is required!")
         print("For local development:")
-        print("1. Install PostgreSQL locally")
-        print("2. Create database: createdb nutrilea_db")
-        print("3. Set environment variable: set DATABASE_URL=postgresql://username:password@localhost:5432/nutrilea_db")
-        print("4. Or use a cloud PostgreSQL service like ElephantSQL or Supabase")
-        DATABASE_URI = 'postgresql://localhost:5432/temp'  # Temporary placeholder
-    
-    # Fix Render's PostgreSQL URL format if needed
-    if DATABASE_URI.startswith('postgres://'):
-        DATABASE_URI = DATABASE_URI.replace('postgres://', 'postgresql://', 1)
+        print("1. Set up MongoDB Atlas account")
+        print("2. Create a free cluster")
+        print("3. Get your connection string")
+        print("4. Set environment variable: set DATABASE_URL=mongodb+srv://username:password@cluster.mongodb.net/dbname")
+        MONGODB_URI = 'mongodb://localhost:27017/nutrilea_db'  # Temporary placeholder
     
     # Model path (for future ML models)
     MODEL_PATH = os.path.join(os.path.dirname(__file__), 'models', 'moringa_model.h5')

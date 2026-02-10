@@ -1,33 +1,35 @@
 """
 Database models for Nutrilea app.
-Used by Flask routes to interact with PostgreSQL.
+Used by Flask routes to interact with MongoDB.
 """
 
 from datetime import datetime
-from flask_sqlalchemy import SQLAlchemy
+from mongoengine import Document, EmbeddedDocument, fields
+from config import Config
 
-db = SQLAlchemy()
+# Connection will be established in the app initialization
+# from mongoengine import connect
+# connect(db='nutrilea_db', host=Config.MONGODB_URI)
 
-class Product(db.Model):
-    __tablename__ = 'products'
+class Product(Document):
+    meta = {'collection': 'products'}
     
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255), nullable=False, unique=True)
-    category = db.Column(db.String(100), nullable=False)
-    price = db.Column(db.Float, nullable=False)
-    original_price = db.Column(db.Float)
-    description = db.Column(db.Text)
-    image = db.Column(db.JSON)  # Array of image URLs
-    quantity = db.Column(db.String(100))
-    benefits = db.Column(db.JSON)
-    uses = db.Column(db.JSON)
-    how_to_use = db.Column(db.JSON)
-    reviews = db.Column(db.JSON)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    name = fields.StringField(required=True, unique=True, max_length=255)
+    category = fields.StringField(required=True, max_length=100)
+    price = fields.FloatField(required=True)
+    original_price = fields.FloatField()
+    description = fields.StringField()
+    image = fields.ListField(fields.StringField())  # Array of image URLs
+    quantity = fields.StringField(max_length=100)
+    benefits = fields.ListField(fields.StringField())
+    uses = fields.ListField(fields.StringField())
+    how_to_use = fields.ListField(fields.StringField())
+    reviews = fields.ListField(fields.DictField())
+    created_at = fields.DateTimeField(default=datetime.utcnow)
 
     def to_dict(self):
         return {
-            'id': self.id,
+            'id': str(self.id),
             'name': self.name,
             'category': self.category,
             'price': self.price,
@@ -41,22 +43,21 @@ class Product(db.Model):
             'reviews': self.reviews
         }
 
-class Order(db.Model):
-    __tablename__ = 'orders'
+class Order(Document):
+    meta = {'collection': 'orders'}
     
-    id = db.Column(db.Integer, primary_key=True)
-    user_name = db.Column(db.String(255), nullable=False)
-    user_phone = db.Column(db.String(20), nullable=False)
-    delivery_address = db.Column(db.Text, nullable=False)
-    payment_method = db.Column(db.String(50))
-    total_amount = db.Column(db.Float, nullable=False)
-    items = db.Column(db.JSON)
-    status = db.Column(db.String(50), default='pending')
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user_name = fields.StringField(required=True)
+    user_phone = fields.StringField(required=True)
+    delivery_address = fields.StringField(required=True)
+    payment_method = fields.StringField()
+    total_amount = fields.FloatField(required=True)
+    items = fields.ListField(fields.DictField())
+    status = fields.StringField(default='pending')
+    created_at = fields.DateTimeField(default=datetime.utcnow)
 
     def to_dict(self):
         return {
-            'id': self.id,
+            'id': str(self.id),
             'userName': self.user_name,
             'userPhone': self.user_phone,
             'deliveryAddress': self.delivery_address,
@@ -67,23 +68,22 @@ class Order(db.Model):
             'createdAt': self.created_at.isoformat() if self.created_at else None
         }
 
-class User(db.Model):
-    __tablename__ = 'users'
+class User(Document):
+    meta = {'collection': 'users'}
     
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(255), nullable=False, unique=True)
-    name = db.Column(db.String(255))
-    password_hash = db.Column(db.String(255))
-    phone = db.Column(db.String(20))
-    address = db.Column(db.Text)
-    role = db.Column(db.String(50), default='user')  # 'admin' or 'user'
-    status = db.Column(db.String(50), default='active')  # 'active', 'inactive', 'suspended'
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    email = fields.StringField(required=True, unique=True)
+    name = fields.StringField()
+    password_hash = fields.StringField()
+    phone = fields.StringField()
+    address = fields.StringField()
+    role = fields.StringField(default='user')  # 'admin' or 'user'
+    status = fields.StringField(default='active')  # 'active', 'inactive', 'suspended'
+    created_at = fields.DateTimeField(default=datetime.utcnow)
+    updated_at = fields.DateTimeField(default=datetime.utcnow)
 
     def to_dict(self):
         return {
-            'id': self.id,
+            'id': str(self.id),
             'email': self.email,
             'name': self.name,
             'phone': self.phone,
@@ -94,23 +94,22 @@ class User(db.Model):
             'updatedAt': self.updated_at.isoformat() if self.updated_at else None
         }
 
-class ForumThread(db.Model):
-    __tablename__ = 'forum_threads'
+class ForumThread(Document):
+    meta = {'collection': 'forum_threads'}
     
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(500), nullable=False)
-    content = db.Column(db.Text, nullable=False)
-    user_name = db.Column(db.String(255), nullable=False)
-    category = db.Column(db.String(100), nullable=False)  # e.g., 'health-tips', 'recipes', 'wellness'
-    views_count = db.Column(db.Integer, default=0)
-    replies_count = db.Column(db.Integer, default=0)
-    status = db.Column(db.String(50), default='active')  # active, closed, pinned
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    title = fields.StringField(required=True)
+    content = fields.StringField(required=True)
+    user_name = fields.StringField(required=True)
+    category = fields.StringField(required=True)  # e.g., 'health-tips', 'recipes', 'wellness'
+    views_count = fields.IntField(default=0)
+    replies_count = fields.IntField(default=0)
+    status = fields.StringField(default='active')  # active, closed, pinned
+    created_at = fields.DateTimeField(default=datetime.utcnow)
+    updated_at = fields.DateTimeField(default=datetime.utcnow)
 
     def to_dict(self):
         return {
-            'id': self.id,
+            'id': str(self.id),
             'title': self.title,
             'content': self.content,
             'userName': self.user_name,
@@ -122,40 +121,38 @@ class ForumThread(db.Model):
             'updatedAt': self.updated_at.isoformat() if self.updated_at else None
         }
 
-class ForumReply(db.Model):
-    __tablename__ = 'forum_replies'
+class ForumReply(Document):
+    meta = {'collection': 'forum_replies'}
     
-    id = db.Column(db.Integer, primary_key=True)
-    thread_id = db.Column(db.Integer, db.ForeignKey('forum_threads.id'), nullable=False)
-    content = db.Column(db.Text, nullable=False)
-    user_name = db.Column(db.String(255), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    thread_id = fields.ReferenceField(ForumThread, required=True)
+    content = fields.StringField(required=True)
+    user_name = fields.StringField(required=True)
+    created_at = fields.DateTimeField(default=datetime.utcnow)
+    updated_at = fields.DateTimeField(default=datetime.utcnow)
 
     def to_dict(self):
         return {
-            'id': self.id,
-            'threadId': self.thread_id,
+            'id': str(self.id),
+            'threadId': str(self.thread_id.id) if self.thread_id else None,
             'content': self.content,
             'userName': self.user_name,
             'createdAt': self.created_at.isoformat() if self.created_at else None,
             'updatedAt': self.updated_at.isoformat() if self.updated_at else None
         }
 
-class ProductCategory(db.Model):
-    __tablename__ = 'product_categories'
+class ProductCategory(Document):
+    meta = {'collection': 'product_categories'}
     
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False, unique=True)
-    description = db.Column(db.Text)
-    image = db.Column(db.String(255))
-    status = db.Column(db.String(50), default='active')  # active, inactive
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    name = fields.StringField(required=True, unique=True)
+    description = fields.StringField()
+    image = fields.StringField()
+    status = fields.StringField(default='active')  # active, inactive
+    created_at = fields.DateTimeField(default=datetime.utcnow)
+    updated_at = fields.DateTimeField(default=datetime.utcnow)
 
     def to_dict(self):
         return {
-            'id': self.id,
+            'id': str(self.id),
             'name': self.name,
             'description': self.description,
             'image': self.image,
@@ -164,34 +161,29 @@ class ProductCategory(db.Model):
             'updatedAt': self.updated_at.isoformat() if self.updated_at else None
         }
 
-class Review(db.Model):
-    __tablename__ = 'reviews'
+class Review(Document):
+    meta = {'collection': 'reviews'}
     
-    id = db.Column(db.Integer, primary_key=True)
-    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    rating = db.Column(db.Integer, nullable=False)  # 1-5 stars
-    title = db.Column(db.String(255))
-    content = db.Column(db.Text, nullable=False)
-    status = db.Column(db.String(50), default='active')  # active, hidden, reported
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    # Relationships
-    product = db.relationship('Product', backref='product_reviews')
-    user = db.relationship('User', backref='user_reviews')
+    product_id = fields.ReferenceField(Product, required=True)
+    user_id = fields.ReferenceField(User, required=True)
+    rating = fields.IntField(required=True)  # 1-5 stars
+    title = fields.StringField()
+    content = fields.StringField(required=True)
+    status = fields.StringField(default='active')  # active, hidden, reported
+    created_at = fields.DateTimeField(default=datetime.utcnow)
+    updated_at = fields.DateTimeField(default=datetime.utcnow)
 
     def to_dict(self):
         return {
-            'id': self.id,
-            'productId': self.product_id,
-            'userId': self.user_id,
+            'id': str(self.id),
+            'productId': str(self.product_id.id) if self.product_id else None,
+            'userId': str(self.user_id.id) if self.user_id else None,
             'rating': self.rating,
             'title': self.title,
             'content': self.content,
             'status': self.status,
             'createdAt': self.created_at.isoformat() if self.created_at else None,
             'updatedAt': self.updated_at.isoformat() if self.updated_at else None,
-            'productName': self.product.name if self.product else None,
-            'userName': self.user.name if self.user else None
+            'productName': self.product_id.name if self.product_id else None,
+            'userName': self.user_id.name if self.user_id else None
         }
