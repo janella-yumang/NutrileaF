@@ -93,7 +93,8 @@ def create_user():
     if not email:
         return jsonify({'success': False, 'error': 'Email is required'}), 400
 
-    existing = User.query.filter_by(email=email).first()
+    # Use MongoEngine syntax
+    existing = User.objects(email=email).first()
     if existing:
         return jsonify({'success': False, 'error': 'Email already exists'}), 409
 
@@ -110,17 +111,23 @@ def create_user():
             status=data.get('status', 'active'),
             password_hash=password_hash,
         )
-        db.session.add(user)
-        db.session.commit()
+        user.save()  # Use MongoEngine save()
 
         return jsonify({
             'success': True,
             'message': 'User created',
-            'userId': user.id,
-            'user': user.to_dict(),
+            'userId': str(user.id),  # Convert ObjectId to string
+            'user': {
+                'id': str(user.id),
+                'name': user.name,
+                'email': user.email,
+                'phone': user.phone,
+                'address': user.address,
+                'role': user.role,
+                'status': user.status
+            }
         }), 201
     except Exception as e:
-        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @admin_bp.route('/products', methods=['POST'])
@@ -175,25 +182,36 @@ def create_product():
             how_to_use=data.get('how_to_use', []),
             reviews=data.get('reviews', [])
         )
-        db.session.add(product)
-        db.session.commit()
+        product.save()  # Use MongoEngine save()
         
         return jsonify({
             'success': True,
             'message': 'Product created',
-            'productId': product.id,
-            'product': product.to_dict()
+            'productId': str(product.id),  # Convert ObjectId to string
+            'product': {
+                'id': str(product.id),
+                'name': product.name,
+                'category': product.category,
+                'price': product.price,
+                'original_price': product.original_price,
+                'description': product.description,
+                'image': product.image,
+                'quantity': product.quantity,
+                'benefits': product.benefits,
+                'uses': product.uses,
+                'how_to_use': product.how_to_use,
+                'reviews': product.reviews
+            }
         }), 201
     except Exception as e:
-        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@admin_bp.route('/products/<int:product_id>', methods=['PUT'])
+@admin_bp.route('/products/<string:product_id>', methods=['PUT'])
 @admin_required
 def update_product(product_id):
     """Update a product with optional image upload."""
     data = request.form if request.files else request.get_json()
-    product = Product.query.get(product_id)
+    product = Product.objects(id=product_id).first()  # Use MongoEngine syntax
     
     if not product:
         return jsonify({'success': False, 'error': 'Product not found'}), 404
@@ -271,31 +289,41 @@ def update_product(product_id):
         if 'reviews' in data:
             product.reviews = data['reviews']
         
-        db.session.commit()
+        product.save()  # Use MongoEngine save()
         return jsonify({
             'success': True,
             'message': 'Product updated successfully',
-            'product': product.to_dict()
+            'product': {
+                'id': str(product.id),
+                'name': product.name,
+                'category': product.category,
+                'price': product.price,
+                'original_price': product.original_price,
+                'description': product.description,
+                'image': product.image,
+                'quantity': product.quantity,
+                'benefits': product.benefits,
+                'uses': product.uses,
+                'how_to_use': product.how_to_use,
+                'reviews': product.reviews
+            }
         }), 200
     except Exception as e:
-        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@admin_bp.route('/products/<int:product_id>', methods=['DELETE'])
+@admin_bp.route('/products/<string:product_id>', methods=['DELETE'])
 @admin_required
 def delete_product(product_id):
     """Delete a product."""
-    product = Product.query.get(product_id)
+    product = Product.objects(id=product_id).first()  # Use MongoEngine syntax
     
     if not product:
         return jsonify({'success': False, 'error': 'Product not found'}), 404
     
     try:
-        db.session.delete(product)
-        db.session.commit()
+        product.delete()  # Use MongoEngine delete()
         return jsonify({'success': True, 'message': 'Product deleted'}), 200
     except Exception as e:
-        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
 # ==================== USERS ====================
@@ -333,12 +361,12 @@ def get_all_users():
         'current_page': page
     }), 200
 
-@admin_bp.route('/users/<int:user_id>', methods=['PUT'])
+@admin_bp.route('/users/<string:user_id>', methods=['PUT'])
 @admin_required
 def update_user(user_id):
     """Update a user (role, status, etc)."""
     data = request.get_json()
-    user = User.query.get(user_id)
+    user = User.objects(id=user_id).first()  # Use MongoEngine syntax
     
     if not user:
         return jsonify({'success': False, 'error': 'User not found'}), 404
@@ -355,31 +383,36 @@ def update_user(user_id):
         if 'status' in data:
             user.status = data['status']  # 'active', 'inactive', 'suspended'
         
-        db.session.commit()
+        user.save()  # Use MongoEngine save()
         return jsonify({
             'success': True,
             'message': 'User updated',
-            'user': user.to_dict()
+            'user': {
+                'id': str(user.id),
+                'name': user.name,
+                'email': user.email,
+                'phone': user.phone,
+                'address': user.address,
+                'role': user.role,
+                'status': user.status
+            }
         }), 200
     except Exception as e:
-        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@admin_bp.route('/users/<int:user_id>', methods=['DELETE'])
+@admin_bp.route('/users/<string:user_id>', methods=['DELETE'])
 @admin_required
 def delete_user(user_id):
     """Delete a user."""
-    user = User.query.get(user_id)
+    user = User.objects(id=user_id).first()  # Use MongoEngine syntax
     
     if not user:
         return jsonify({'success': False, 'error': 'User not found'}), 404
     
     try:
-        db.session.delete(user)
-        db.session.commit()
+        user.delete()  # Use MongoEngine delete()
         return jsonify({'success': True, 'message': 'User deleted'}), 200
     except Exception as e:
-        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
 # ==================== ORDERS ====================
