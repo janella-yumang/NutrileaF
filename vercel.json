@@ -4,6 +4,7 @@
   "buildCommand": "cd frontend && npm run build",
   "outputDirectory": "frontend/build",
   "env": {
+    "CI": "false",
     "ESLINT_NO_DEV_ERRORS": "true",
     "DISABLE_ESLINT_PLUGIN": "true"
   },
