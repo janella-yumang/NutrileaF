@@ -1315,6 +1315,7 @@ const AdminScreen: React.FC = () => {
     </div>
   </div>
     );
+};
 
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
