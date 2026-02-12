@@ -187,7 +187,6 @@ const MarketScreen: React.FC = () => {
     };
 
     const cartCount = cart.reduce((sum, item) => sum + item.cartQuantity, 0);
-    const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.cartQuantity), 0);
 
     return (
         <div className="screen" style={{ position: 'relative' }}>

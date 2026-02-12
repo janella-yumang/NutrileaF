@@ -98,34 +98,10 @@ const AdminScreen: React.FC = () => {
     } catch (error) {
       console.error('Error fetching categories:', error);
     }
-  };
-
-  // Fetch data when component mounts and when switching tabs
-  useEffect(() => {
-    console.log('Active tab changed to:', activeTab);
-    if (activeTab === 'products') {
-      fetchProducts();
-    } else if (activeTab === 'users') {
-      console.log('Triggering fetchUsers for users tab');
-      fetchUsers();
-    } else if (activeTab === 'orders') {
-      fetchOrders();
-    } else if (activeTab === 'forum') {
-      fetchForumThreads();
-    } else if (activeTab === 'categories') {
-      fetchCategories();
-    } else if (activeTab === 'reviews') {
-      fetchReviews();
-    }
-  }, [activeTab]);
-
-  // Fetch categories for dropdown on component mount
-  useEffect(() => {
-    fetchCategoriesForDropdown();
-  }, []);
+  }, [apiBase]);
 
   // Fetch Products
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     setProductsLoading(true);
     try {
       const res = await fetch(`${apiBase}/admin/products`, { headers: getAdminHeaders() });
@@ -137,10 +113,10 @@ const AdminScreen: React.FC = () => {
       console.error('Error fetching products:', error);
     }
     setProductsLoading(false);
-  };
+  }, [apiBase]);
 
   // Fetch Users
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     setUsersLoading(true);
     try {
       const timestamp = Date.now(); // Cache-busting
@@ -178,10 +154,10 @@ const AdminScreen: React.FC = () => {
       setUsers([]); // Set empty array on error
     }
     setUsersLoading(false);
-  };
+  }, [apiBase]);
 
   // Fetch Orders
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     setOrdersLoading(true);
     try {
       const res = await fetch(`${apiBase}/api/admin/orders`, { headers: getAdminHeaders() });
@@ -193,10 +169,10 @@ const AdminScreen: React.FC = () => {
       console.error('Error fetching orders:', error);
     }
     setOrdersLoading(false);
-  };
+  }, [apiBase]);
 
   // Fetch Forum Threads
-  const fetchForumThreads = async () => {
+  const fetchForumThreads = useCallback(async () => {
     setForumLoading(true);
     try {
       const res = await fetch(`${apiBase}/api/admin/forum/threads`, { headers: getAdminHeaders() });
@@ -208,10 +184,10 @@ const AdminScreen: React.FC = () => {
       console.error('Error fetching forum threads:', error);
     }
     setForumLoading(false);
-  };
+  }, [apiBase]);
 
   // Fetch Categories
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     setCategoriesLoading(true);
     try {
       const res = await fetch(`${apiBase}/admin/categories`, { headers: getAdminHeaders() });
@@ -223,10 +199,10 @@ const AdminScreen: React.FC = () => {
       console.error('Error fetching categories:', error);
     }
     setCategoriesLoading(false);
-  };
+  }, [apiBase]);
 
   // Fetch Reviews
-  const fetchReviews = async () => {
+  const fetchReviews = useCallback(async () => {
     setReviewsLoading(true);
     try {
       const res = await fetch(`${apiBase}/api/admin/reviews`, { headers: getAdminHeaders() });
@@ -238,7 +214,39 @@ const AdminScreen: React.FC = () => {
       console.error('Error fetching reviews:', error);
     }
     setReviewsLoading(false);
-  };
+  }, [apiBase]);
+
+  // Fetch data when component mounts and when switching tabs
+  useEffect(() => {
+    console.log('Active tab changed to:', activeTab);
+    if (activeTab === 'products') {
+      fetchProducts();
+    } else if (activeTab === 'users') {
+      console.log('Triggering fetchUsers for users tab');
+      fetchUsers();
+    } else if (activeTab === 'orders') {
+      fetchOrders();
+    } else if (activeTab === 'forum') {
+      fetchForumThreads();
+    } else if (activeTab === 'categories') {
+      fetchCategories();
+    } else if (activeTab === 'reviews') {
+      fetchReviews();
+    }
+  }, [
+    activeTab,
+    fetchProducts,
+    fetchUsers,
+    fetchOrders,
+    fetchForumThreads,
+    fetchCategories,
+    fetchReviews
+  ]);
+
+  // Fetch categories for dropdown on component mount
+  useEffect(() => {
+    fetchCategoriesForDropdown();
+  }, [fetchCategoriesForDropdown]);
 
   // Edit handler
   const handleEdit = (item: any, type: string) => {
