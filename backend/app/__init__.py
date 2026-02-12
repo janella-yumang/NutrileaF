@@ -13,6 +13,7 @@ def create_app():
     allowed_origins = [
         'https://nutrilea-f.vercel.app',
         'https://nutrilea-f.vercel.app/',
+        'https://nutrilea-mgbr7edka-yatsus-projects.vercel.app',
         'https://nutrilea-10.onrender.com',
         'http://localhost:3000',
         'http://127.0.0.1:3000',
