@@ -46,8 +46,8 @@ const AdminScreen: React.FC = () => {
 
   const fetchStats = useCallback(async () => {
     try {
-      console.log('Fetching stats from:', `${apiBase}/api/admin/stats`);
-      const res = await fetch(`${apiBase}/api/admin/stats`, { 
+      console.log('Fetching stats from:', `${apiBase}/admin/stats`);
+      const res = await fetch(`${apiBase}/admin/stats`, { 
         headers: getAdminHeaders(),
         method: 'GET'
       });
@@ -120,7 +120,7 @@ const AdminScreen: React.FC = () => {
     setUsersLoading(true);
     try {
       const timestamp = Date.now(); // Cache-busting
-      const fullUrl = `${apiBase}/api/admin/users?t=${timestamp}`;
+      const fullUrl = `${apiBase}/admin/users?t=${timestamp}`;
       console.log('=== FETCH USERS DEBUG ===');
       console.log('API URL:', apiBase);
       console.log('Full URL:', fullUrl);
@@ -160,7 +160,7 @@ const AdminScreen: React.FC = () => {
   const fetchOrders = useCallback(async () => {
     setOrdersLoading(true);
     try {
-      const res = await fetch(`${apiBase}/api/admin/orders`, { headers: getAdminHeaders() });
+      const res = await fetch(`${apiBase}/admin/orders`, { headers: getAdminHeaders() });
       const data = await res.json();
       if (data.success) {
         setOrders(data.orders);
@@ -175,7 +175,7 @@ const AdminScreen: React.FC = () => {
   const fetchForumThreads = useCallback(async () => {
     setForumLoading(true);
     try {
-      const res = await fetch(`${apiBase}/api/admin/forum/threads`, { headers: getAdminHeaders() });
+      const res = await fetch(`${apiBase}/admin/forum/threads`, { headers: getAdminHeaders() });
       const data = await res.json();
       if (data.success) {
         setForumThreads(data.threads);
@@ -205,7 +205,7 @@ const AdminScreen: React.FC = () => {
   const fetchReviews = useCallback(async () => {
     setReviewsLoading(true);
     try {
-      const res = await fetch(`${apiBase}/api/admin/reviews`, { headers: getAdminHeaders() });
+      const res = await fetch(`${apiBase}/admin/reviews`, { headers: getAdminHeaders() });
       const data = await res.json();
       if (data.success) {
         setReviews(data.reviews);
@@ -283,9 +283,9 @@ const AdminScreen: React.FC = () => {
     
     try {
       let endpoint = '';
-      if (editType === 'product') endpoint = `/api/admin/products/${editModalData.id}`;
-      else if (editType === 'user') endpoint = `/api/admin/users/${editModalData.id}`;
-      else if (editType === 'category') endpoint = `/api/admin/categories/${editModalData.id}`;
+      if (editType === 'product') endpoint = `/admin/products/${editModalData.id}`;
+      else if (editType === 'user') endpoint = `/admin/users/${editModalData.id}`;
+      else if (editType === 'category') endpoint = `/admin/categories/${editModalData.id}`;
       
       if (!endpoint) {
         console.error('No endpoint found for edit type:', editType);
@@ -371,12 +371,12 @@ const AdminScreen: React.FC = () => {
   const handleUpdate = async (id: number, type: string) => {
     try {
       let endpoint = '';
-      if (type === 'product') endpoint = `/api/admin/products/${id}`;
-      else if (type === 'user') endpoint = `/api/admin/users/${id}`;
-      else if (type === 'order') endpoint = `/api/admin/orders/${id}`;
-      else if (type === 'thread') endpoint = `/api/admin/forum/threads/${id}`;
-      else if (type === 'category') endpoint = `/api/admin/categories/${id}`;
-      else if (type === 'review') endpoint = `/api/admin/reviews/${id}`;
+      if (type === 'product') endpoint = `/admin/products/${id}`;
+      else if (type === 'user') endpoint = `/admin/users/${id}`;
+      else if (type === 'order') endpoint = `/admin/orders/${id}`;
+      else if (type === 'thread') endpoint = `/admin/forum/threads/${id}`;
+      else if (type === 'category') endpoint = `/admin/categories/${id}`;
+      else if (type === 'review') endpoint = `/admin/reviews/${id}`;
 
       const res = await fetch(`${apiBase}${endpoint}`, {
         method: 'PUT',
@@ -405,12 +405,12 @@ const AdminScreen: React.FC = () => {
 
     try {
       let endpoint = '';
-      if (type === 'product') endpoint = `/api/admin/products/${id}`;
-      else if (type === 'user') endpoint = `/api/admin/users/${id}`;
-      else if (type === 'order') endpoint = `/api/admin/orders/${id}`;
-      else if (type === 'thread') endpoint = `/api/admin/forum/threads/${id}`;
-      else if (type === 'category') endpoint = `/api/admin/categories/${id}`;
-      else if (type === 'review') endpoint = `/api/admin/reviews/${id}`;
+      if (type === 'product') endpoint = `/admin/products/${id}`;
+      else if (type === 'user') endpoint = `/admin/users/${id}`;
+      else if (type === 'order') endpoint = `/admin/orders/${id}`;
+      else if (type === 'thread') endpoint = `/admin/forum/threads/${id}`;
+      else if (type === 'category') endpoint = `/admin/categories/${id}`;
+      else if (type === 'review') endpoint = `/admin/reviews/${id}`;
 
       const res = await fetch(`${apiBase}${endpoint}`, {
         method: 'DELETE',
@@ -465,9 +465,9 @@ const AdminScreen: React.FC = () => {
     
     try {
       let endpoint = '';
-      if (createType === 'product') endpoint = '/api/admin/products';
-      else if (createType === 'user') endpoint = '/api/admin/users';
-      else if (createType === 'category') endpoint = '/api/admin/categories';
+      if (createType === 'product') endpoint = '/admin/products';
+      else if (createType === 'user') endpoint = '/admin/users';
+      else if (createType === 'category') endpoint = '/admin/categories';
       
       if (!endpoint) {
         console.error('No endpoint found for type:', createType);
