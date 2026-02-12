@@ -1,7 +1,7 @@
 import sys, os, datetime
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, request
 from flask_cors import CORS
 from config import Config
 from mongoengine import connect
