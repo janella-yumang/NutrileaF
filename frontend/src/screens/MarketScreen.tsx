@@ -35,10 +35,14 @@ const MarketScreen: React.FC = () => {
 
     // Helper function to get image URL
     const getImageUrl = (image: string | string[] | undefined) => {
-        if (!image) return '🌿'; // Default emoji if no image
+        if (!image) return undefined; // Return undefined if no image
         
         // If image is an array, take the first one
         const imageUrl = Array.isArray(image) ? image[0] : image;
+        
+        // Check if it's an emoji (single character emojis are typically 1-2 chars long)
+        const isEmoji = imageUrl && imageUrl.length <= 2 && /\p{Emoji}/u.test(imageUrl);
+        if (isEmoji) return undefined; // Return undefined for emoji, we'll handle separately
         
         // If it's already a full URL or starts with /uploads/, return as is
         if (imageUrl.startsWith('http') || imageUrl.startsWith('/uploads/')) {
@@ -49,6 +53,16 @@ const MarketScreen: React.FC = () => {
         const apiUrl = process.env.REACT_APP_API_URL || 'https://nutrileaf-10.onrender.com/api';
         const baseUrl = apiUrl.replace('/api', '');
         return `${baseUrl}/uploads/${imageUrl}`;
+    };
+
+    // Helper function to get emoji from image
+    const getImageEmoji = (image: string | string[] | undefined) => {
+        if (!image) return '🌿';
+        
+        const imageUrl = Array.isArray(image) ? image[0] : image;
+        const isEmoji = imageUrl && imageUrl.length <= 2 && /\p{Emoji}/u.test(imageUrl);
+        
+        return isEmoji ? imageUrl : '🌿';
     };
 
     // Load cart from localStorage on mount
@@ -840,26 +854,24 @@ const MarketScreen: React.FC = () => {
                                             }}>
                                                 {index % 3 === 0 ? 'HOT' : 'NEW'}
                                             </div>
-                                            <img 
-                                                src={getImageUrl(product.image)} 
-                                                alt={product.name}
-                                                style={{ 
-                                                    maxWidth: '100%',
-                                                    maxHeight: '100%',
-                                                    objectFit: 'contain'
-                                                }}
-                                                onError={(e) => {
-                                                    // Fallback to emoji if image fails to load
-                                                    e.currentTarget.style.display = 'none';
-                                                }}
-                                            />
-                                            <div style={{ 
-                                                position: 'absolute',
-                                                fontSize: '48px',
-                                                display: 'none' // Hidden by default, shown if image fails
-                                            }}>
-                                                {typeof product.image === 'string' && product.image.length > 0 && !product.image.startsWith('http') && !product.image.startsWith('/uploads/') ? product.image : '🌿'}
-                                            </div>
+                                            {getImageUrl(product.image) ? (
+                                                <img 
+                                                    src={getImageUrl(product.image)} 
+                                                    alt={product.name}
+                                                    style={{ 
+                                                        maxWidth: '100%',
+                                                        maxHeight: '100%',
+                                                        objectFit: 'contain'
+                                                    }}
+                                                    onError={(e) => {
+                                                        e.currentTarget.style.display = 'none';
+                                                    }}
+                                                />
+                                            ) : (
+                                                <div style={{ fontSize: '48px' }}>
+                                                    {getImageEmoji(product.image)}
+                                                </div>
+                                            )}
                                         </div>
 
                                         {/* Product Info */}
@@ -977,27 +989,31 @@ const MarketScreen: React.FC = () => {
                     >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
                             <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                                <img 
-                                    src={getImageUrl(selected?.image)} 
-                                    alt={selected.name}
-                                    style={{ 
+                                {getImageUrl(selected?.image) ? (
+                                    <img 
+                                        src={getImageUrl(selected?.image)} 
+                                        alt={selected.name}
+                                        style={{ 
+                                            width: '80px',
+                                            height: '80px',
+                                            objectFit: 'cover',
+                                            borderRadius: '8px'
+                                        }}
+                                    />
+                                ) : (
+                                    <div style={{ 
                                         width: '80px',
                                         height: '80px',
-                                        objectFit: 'cover',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '48px',
+                                        backgroundColor: '#f0f0f0',
                                         borderRadius: '8px'
-                                    }}
-                                    onError={(e) => {
-                                        // Fallback to emoji if image fails to load
-                                        e.currentTarget.style.display = 'none';
-                                        e.currentTarget.nextElementSibling?.removeAttribute('style');
-                                    }}
-                                />
-                                <div style={{ 
-                                    fontSize: '48px',
-                                    display: 'none' // Hidden by default, shown if image fails
-                                }}>
-                                    {selectedEmoji}
-                                </div>
+                                    }}>
+                                        {getImageEmoji(selected?.image)}
+                                    </div>
+                                )}
                                 <div>
                                     <h2 style={{ margin: 0 }}>{selected.name}</h2>
                                     <div style={{ color: '#666', fontSize: '14px' }}>{selected.quantity}</div>

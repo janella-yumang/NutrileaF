@@ -196,6 +196,34 @@ const ForumScreen: React.FC = () => {
     }
   }, [posts, activeFilter]);
 
+  const getUserProfileImage = (userName: string) => {
+    try {
+      const userJson = localStorage.getItem('nutrileaf_user');
+      if (userJson) {
+        const userData = JSON.parse(userJson);
+        // Check if user matches and has image
+        if (userData.name === userName && userData.image && typeof userData.image === 'string') {
+          const image = userData.image;
+          // Check if it's an emoji or actual URL
+          if (image.length <= 2 && /\p{Emoji}/u.test(image)) {
+            return undefined; // Emoji - don't display as image
+          }
+          // Return the image URL
+          if (image.startsWith('http') || image.startsWith('/')) {
+            return image;
+          }
+          // Construct full URL for relative paths
+          const apiUrl = process.env.REACT_APP_API_URL || 'https://nutrilea-backend.onrender.com/api';
+          const baseUrl = apiUrl.replace('/api', '');
+          return `${baseUrl}/${image}`;
+        }
+      }
+    } catch (error) {
+      console.error('Error getting user profile image:', error);
+    }
+    return undefined;
+  };
+
   const handleLikePost = async (postId: string) => {
     // Like functionality not supported yet in backend
     console.log('Like post feature coming soon');
@@ -214,19 +242,27 @@ const ForumScreen: React.FC = () => {
       const userJson = localStorage.getItem('nutrileaf_user');
       const userName = userJson ? JSON.parse(userJson).name : 'Anonymous';
       
+      // Use FormData for multipart upload support
+      const formData = new FormData();
+      formData.append('title', newPostTitle);
+      formData.append('content', newPostContent);
+      formData.append('userName', userName);
+      formData.append('category', 'general');
+      
+      // Append files if selected
+      if (selectedFiles && selectedFiles.length > 0) {
+        for (let i = 0; i < selectedFiles.length; i++) {
+          formData.append('attachments', selectedFiles[i]);
+        }
+      }
+      
       const response = await fetch(`${API_BASE}/forum/threads`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
         credentials: 'include',
-        body: JSON.stringify({
-          title: newPostTitle,
-          content: newPostContent,
-          userName: userName,
-          category: 'general'
-        }),
+        body: formData,
       });
 
       console.log('Forum - Create post response status:', response.status);
@@ -388,6 +424,24 @@ const ForumScreen: React.FC = () => {
                 <div className="post-header">
                   <div className="post-title-section">
                     <div className="post-author-info">
+                      {getUserProfileImage(post.author) ? (
+                        <img 
+                          src={getUserProfileImage(post.author)} 
+                          alt={post.author}
+                          style={{ 
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '50%',
+                            objectFit: 'cover'
+                          }}
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            if (e.currentTarget.nextElementSibling) {
+                              (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
+                            }
+                          }}
+                        />
+                      ) : null}
                       <div 
                         className="user-avatar-placeholder"
                         style={{ 
@@ -399,7 +453,7 @@ const ForumScreen: React.FC = () => {
                           borderRadius: '50%',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          display: 'flex'
+                          display: getUserProfileImage(post.author) ? 'none' : 'flex'
                         }}
                       >
                         {post.author.charAt(0).toUpperCase()}
