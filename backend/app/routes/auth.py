@@ -1,7 +1,9 @@
 from flask import Blueprint, request, jsonify, current_app
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 import jwt
 import datetime
+import os
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -85,7 +87,8 @@ def register():
                         "email": email,
                         "phone": phone,
                         "address": address,
-                        "role": "user"
+                        "role": "user",
+                        "image": new_user.image
                     },
                     "token": token,
                 }
@@ -158,7 +161,8 @@ def login():
             "email": user.email,
             "phone": user.phone,
             "address": user.address,
-            "role": user.role
+            "role": user.role,
+            "image": user.image
         }
 
         # Generate JWT token
@@ -228,7 +232,8 @@ def verify_token():
                 'email': user.email,
                 'phone': user.phone,
                 'address': user.address,
-                'role': user.role
+                'role': user.role,
+                'image': user.image
             }
         })
     except jwt.ExpiredSignatureError:
@@ -259,7 +264,7 @@ def update_profile():
     data = request.get_json(silent=True) or {}
     
     # Extract fields, with validation
-    full_name = (data.get('fullName') or '').strip()
+    full_name = (data.get('name') or data.get('fullName') or '').strip()
     phone = (data.get('phone') or '').strip()
     address = (data.get('address') or '').strip()
     
@@ -287,6 +292,92 @@ def update_profile():
                 'email': user.email,
                 'phone': user.phone,
                 'address': user.address,
+                'role': user.role,
+                'image': user.image
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
+
+
+@auth_bp.route("/verify-role", methods=["GET"])
+def verify_role():
+    """Verify JWT token and return role info."""
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({'success': False, 'message': 'Missing or invalid token'}), 401
+
+    token = auth_header.split(' ')[1]
+    secret_key = current_app.config.get('SECRET_KEY', 'supersecretkey')
+
+    try:
+        payload = jwt.decode(token, secret_key, algorithms=['HS256'])
+        user_id = payload.get('user_id')
+
+        from app.models import User
+        user = User.objects(id=user_id).first()
+        if not user:
+            return jsonify({'success': False, 'message': 'User not found'}), 404
+
+        return jsonify({
+            'success': True,
+            'user': {
+                'id': str(user.id),
+                'role': user.role,
+                'status': user.status,
+                'image': user.image
+            }
+        })
+    except jwt.ExpiredSignatureError:
+        return jsonify({'success': False, 'message': 'Token expired'}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({'success': False, 'message': 'Invalid token'}), 401
+
+
+@auth_bp.route("/upload-profile-image", methods=["POST"])
+def upload_profile_image():
+    """Upload and attach a profile image for the authenticated user."""
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({'success': False, 'message': 'Missing or invalid token'}), 401
+
+    token = auth_header.split(' ')[1]
+    secret_key = current_app.config.get('SECRET_KEY', 'supersecretkey')
+
+    try:
+        payload = jwt.decode(token, secret_key, algorithms=['HS256'])
+        user_id = payload.get('user_id')
+    except jwt.ExpiredSignatureError:
+        return jsonify({'success': False, 'message': 'Token expired'}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({'success': False, 'message': 'Invalid token'}), 401
+
+    if 'image' not in request.files or not request.files['image'].filename:
+        return jsonify({'success': False, 'message': 'No image uploaded'}), 400
+
+    try:
+        from app.models import User
+        user = User.objects(id=user_id).first()
+        if not user:
+            return jsonify({'success': False, 'message': 'User not found'}), 404
+
+        file = request.files['image']
+        filename = secure_filename(file.filename)
+        upload_folder = current_app.config.get('UPLOAD_FOLDER', 'app/static/uploads')
+        os.makedirs(upload_folder, exist_ok=True)
+        file_path = os.path.join(upload_folder, filename)
+        file.save(file_path)
+
+        user.image = f'/uploads/{filename}'
+        user.save()
+
+        return jsonify({
+            'success': True,
+            'message': 'Profile image updated',
+            'profileImage': user.image,
+            'user': {
+                'id': str(user.id),
+                'image': user.image
             }
         })
     except Exception as e:

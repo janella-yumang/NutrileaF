@@ -5,16 +5,19 @@ import HeaderNav from '../components/HeaderNav';
 import { Footer } from '../components/Footer';
 
 interface Post {
-  id: number;
-  userId: number;
-  userName: string;
-  userProfileImage?: string;
+  id: string;
   title: string;
   content: string;
-  attachments: Attachment[];
-  createdAt: string;
-  likeCount: number;
-  commentCount: number;
+  author: string;
+  category: string;
+  status: string;
+  views_count: number;
+  created_at: string;
+  updated_at: string;
+  attachments?: Attachment[];
+  likeCount?: number;
+  commentCount?: number;
+  replies?: Comment[];
 }
 
 interface Attachment {
@@ -24,13 +27,12 @@ interface Attachment {
 }
 
 interface Comment {
-  id: number;
-  userId: number;
-  userName: string;
-  userProfileImage?: string;
+  id: string;
+  thread_id: string;
+  author: string;
   content: string;
-  createdAt: string;
-  likeCount: number;
+  created_at: string;
+  likeCount?: number;
 }
 
 const ForumScreen: React.FC = () => {
@@ -45,11 +47,11 @@ const ForumScreen: React.FC = () => {
   const [newPostContent, setNewPostContent] = useState('');
   const [uploading, setUploading] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
-  const [expandedPostId, setExpandedPostId] = useState<number | null>(null);
-  const [comments, setComments] = useState<{ [key: number]: Comment[] }>({});
-  const [newComment, setNewComment] = useState<{ [key: number]: string }>({});
+  const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
+  const [comments, setComments] = useState<{ [key: string]: Comment[] }>({});
+  const [newComment, setNewComment] = useState<{ [key: string]: string }>({});
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userId, setUserId] = useState<number | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<'recent' | 'trending' | 'myPosts'>('recent');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -78,9 +80,9 @@ const ForumScreen: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      console.log('Forum - Loading posts from:', `${API_BASE}/forum/posts`);
+      console.log('Forum - Loading threads from:', `${API_BASE}/forum/threads`);
       
-      const response = await fetch(`${API_BASE}/forum/posts`, {
+      const response = await fetch(`${API_BASE}/forum/threads`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -99,9 +101,9 @@ const ForumScreen: React.FC = () => {
       console.log('Forum - Response data:', data);
 
       if (data.success) {
-        setPosts(data.posts || []);
-        console.log('Forum - Posts loaded successfully:', data.posts?.length || 0);
-        console.log('Forum - Sample post data:', data.posts?.[0]);
+        setPosts(data.threads || []);
+        console.log('Forum - Threads loaded successfully:', data.threads?.length || 0);
+        console.log('Forum - Sample thread data:', data.threads?.[0]);
       } else {
         setError(data.message || 'Failed to load posts');
       }
@@ -113,9 +115,9 @@ const ForumScreen: React.FC = () => {
     }
   }, [API_BASE]);
 
-  const loadComments = async (postId: number) => {
+  const loadComments = async (postId: string) => {
     try {
-      const response = await fetch(`${API_BASE}/forum/posts/${postId}/comments`, {
+      const response = await fetch(`${API_BASE}/forum/threads/${postId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -125,8 +127,8 @@ const ForumScreen: React.FC = () => {
 
       if (response.ok) {
         const data = await response.json();
-        if (data.success) {
-          setComments(prev => ({ ...prev, [postId]: data.comments || [] }));
+        if (data.success && data.thread && data.thread.replies) {
+          setComments(prev => ({ ...prev, [postId]: data.thread.replies || [] }));
         }
       }
     } catch (error) {
@@ -134,18 +136,18 @@ const ForumScreen: React.FC = () => {
     }
   };
 
-  const handleAddComment = async (postId: number) => {
+  const handleAddComment = async (postId: string) => {
     const commentText = newComment[postId];
     if (!commentText?.trim()) return;
 
     try {
-      const response = await fetch(`${API_BASE}/forum/posts/${postId}/comments`, {
+      const response = await fetch(`${API_BASE}/forum/replies/${postId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('nutrileaf_token')}`,
         },
-        body: JSON.stringify({ content: commentText }),
+        body: JSON.stringify({ content: commentText, thread_id: postId }),
       });
 
       if (response.ok) {
@@ -157,7 +159,7 @@ const ForumScreen: React.FC = () => {
           // Update post comment count
           setPosts(prev => prev.map(post => 
             post.id === postId 
-              ? { ...post, commentCount: post.commentCount + 1 }
+              ? { ...post, commentCount: (post.commentCount || 0) + 1 }
               : post
           ));
         }
@@ -167,32 +169,9 @@ const ForumScreen: React.FC = () => {
     }
   };
 
-  const handleLikeComment = async (postId: number, commentId: number) => {
-    try {
-      const response = await fetch(`${API_BASE}/forum/comments/${commentId}/like`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('nutrileaf_token')}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          setComments(prev => ({
-            ...prev,
-            [postId]: prev[postId].map(comment =>
-              comment.id === commentId
-                ? { ...comment, likeCount: data.likeCount }
-                : comment
-            )
-          }));
-        }
-      }
-    } catch (error) {
-      console.error('Error liking comment:', error);
-    }
+  const handleLikeComment = async (postId: string, commentId: string) => {
+    // Like functionality not supported yet in backend
+    console.log('Like comment feature coming soon');
   };
 
   // Load posts
@@ -205,37 +184,20 @@ const ForumScreen: React.FC = () => {
   const getFilteredPosts = useCallback(() => {
     switch (activeFilter) {
       case 'recent':
-        return posts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        return posts.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       case 'trending':
-        const postsWithInteractions = posts.filter(post => (post.likeCount + post.commentCount) >= 3);
-        return postsWithInteractions.sort((a, b) => (b.likeCount + b.commentCount) - (a.likeCount + a.commentCount));
+        return posts.sort((a, b) => (b.views_count || 0) - (a.views_count || 0));
       case 'myPosts':
-        return posts.filter(post => post.userId === userId);
+        // Since we don't have userId in the new structure, just return recent posts
+        return posts.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       default:
         return posts;
     }
-  }, [posts, activeFilter, userId]);
+  }, [posts, activeFilter]);
 
-  const handleLikePost = async (postId: number) => {
-    try {
-      const token = localStorage.getItem('nutrileaf_token');
-      const response = await fetch(`${API_BASE}/forum/posts/${postId}/like`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        credentials: 'include',
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setPosts(posts.map((p) =>
-          p.id === postId ? { ...p, likeCount: data.likeCount } : p
-        ));
-      }
-    } catch (error) {
-      console.error('Error liking post:', error);
-    }
+  const handleLikePost = async (postId: string) => {
+    // Like functionality not supported yet in backend
+    console.log('Like post feature coming soon');
   };
 
   const handleCreatePost = async (e: React.FormEvent) => {
@@ -248,25 +210,22 @@ const ForumScreen: React.FC = () => {
     try {
       setUploading(true);
       const token = localStorage.getItem('nutrileaf_token');
+      const userJson = localStorage.getItem('nutrileaf_user');
+      const userName = userJson ? JSON.parse(userJson).name : 'Anonymous';
       
-      const formData = new FormData();
-      formData.append('title', newPostTitle);
-      formData.append('content', newPostContent);
-      
-      // Add files if selected
-      if (selectedFiles) {
-        for (let i = 0; i < selectedFiles.length; i++) {
-          formData.append('files', selectedFiles[i]);
-        }
-      }
-      
-      const response = await fetch(`${API_BASE}/forum/posts`, {
+      const response = await fetch(`${API_BASE}/forum/threads`, {
         method: 'POST',
         headers: {
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
         credentials: 'include',
-        body: formData,
+        body: JSON.stringify({
+          title: newPostTitle,
+          content: newPostContent,
+          userName: userName,
+          category: 'general'
+        }),
       });
 
       console.log('Forum - Create post response status:', response.status);
@@ -274,7 +233,7 @@ const ForumScreen: React.FC = () => {
       console.log('Forum - Create post response data:', data);
       
       if (data.success) {
-        setPosts([data.post, ...posts]);
+        setPosts([data.thread, ...posts]);
         setNewPostTitle('');
         setNewPostContent('');
         setSelectedFiles(null);
@@ -331,14 +290,14 @@ const ForumScreen: React.FC = () => {
             onClick={() => setActiveFilter('trending')}
           >
             🔥 Trending
-            <span className="count">{posts.filter(p => (p.likeCount + p.commentCount) >= 3).length}</span>
+            <span className="count">{posts.filter(p => (p.views_count || 0) >= 3).length}</span>
           </button>
           <button 
             className={`filter-tab ${activeFilter === 'myPosts' ? 'active' : ''}`}
             onClick={() => setActiveFilter('myPosts')}
           >
             👤 Your Posts
-            <span className="count">{posts.filter(p => p.userId === userId).length}</span>
+            <span className="count">{posts.length}</span>
           </button>
         </div>
 
@@ -428,26 +387,9 @@ const ForumScreen: React.FC = () => {
                 <div className="post-header">
                   <div className="post-title-section">
                     <div className="post-author-info">
-                      {post.userProfileImage ? (
-                        <img 
-                          src={post.userProfileImage.startsWith('http') ? post.userProfileImage : `${BASE_URL}${post.userProfileImage}`}
-                          alt={post.userName}
-                          className="user-avatar"
-                          onError={(e) => {
-                            console.log('Failed to load user avatar:', post.userProfileImage);
-                            const target = e.currentTarget;
-                            const nextElement = target.nextElementSibling as HTMLElement;
-                            target.style.display = 'none';
-                            if (nextElement) {
-                              nextElement.style.display = 'flex';
-                            }
-                          }}
-                        />
-                      ) : null}
                       <div 
                         className="user-avatar-placeholder"
                         style={{ 
-                          display: post.userProfileImage ? 'none' : 'flex',
                           background: `linear-gradient(135deg, #6bc98e, #2d7a50)`,
                           color: 'white',
                           fontWeight: '600',
@@ -455,15 +397,16 @@ const ForumScreen: React.FC = () => {
                           height: '40px',
                           borderRadius: '50%',
                           alignItems: 'center',
-                          justifyContent: 'center'
+                          justifyContent: 'center',
+                          display: 'flex'
                         }}
                       >
-                        {post.userName.charAt(0).toUpperCase()}
+                        {post.author.charAt(0).toUpperCase()}
                       </div>
                       <div>
                         <h3 className="post-title">{post.title}</h3>
                         <p className="post-author">
-                          by <strong>{post.userName}</strong>
+                          by <strong>{post.author}</strong>
                         </p>
                       </div>
                     </div>
@@ -472,41 +415,9 @@ const ForumScreen: React.FC = () => {
 
                 <p className="post-content">{post.content}</p>
 
-                {/* Display attachments */}
-                {post.attachments && post.attachments.length > 0 && (
-                  <div className="post-attachments">
-                    {post.attachments.map((attachment, index) => {
-                      const imageUrl = attachment.url.startsWith('http') ? attachment.url : `${BASE_URL}${attachment.url}`;
-                      return (
-                        <div key={index} className="attachment">
-                          {attachment.type === 'image' ? (
-                            <img 
-                              src={imageUrl}
-                              alt={attachment.name}
-                              className="attachment-image"
-                              onClick={() => window.open(imageUrl, '_blank')}
-                              style={{ maxWidth: '100%', height: 'auto', display: 'block' }}
-                            />
-                          ) : attachment.type === 'video' ? (
-                            <video 
-                              controls 
-                              className="attachment-video"
-                              onClick={() => window.open(imageUrl, '_blank')}
-                              style={{ maxWidth: '100%', height: 'auto' }}
-                            >
-                              <source src={imageUrl} />
-                              Your browser does not support the video tag.
-                            </video>
-                          ) : null}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
                 <div className="post-meta">
                   <span className="post-date">
-                    {new Date(post.createdAt + 'Z').toLocaleString('en-US', {
+                    {new Date(post.created_at).toLocaleString('en-US', {
                       year: 'numeric',
                       month: 'short',
                       day: 'numeric',
@@ -545,21 +456,13 @@ const ForumScreen: React.FC = () => {
                         <div key={comment.id} className="comment">
                           <div className="comment-header">
                             <div className="comment-author-info">
-                              {comment.userProfileImage ? (
-                                <img 
-                                  src={comment.userProfileImage.startsWith('http') ? comment.userProfileImage : `${BASE_URL}${comment.userProfileImage}`}
-                                  alt={comment.userName}
-                                  className="comment-avatar"
-                                />
-                              ) : (
-                                <div className="comment-avatar-placeholder">
-                                  {comment.userName.charAt(0).toUpperCase()}
-                                </div>
-                              )}
-                              <div className="comment-author-name">{comment.userName}</div>
+                              <div className="comment-avatar-placeholder">
+                                {comment.author.charAt(0).toUpperCase()}
+                              </div>
+                              <div className="comment-author-name">{comment.author}</div>
                             </div>
                             <div className="comment-date">
-                              {new Date(comment.createdAt + 'Z').toLocaleString('en-US', {
+                              {new Date(comment.created_at).toLocaleString('en-US', {
                                 month: 'short',
                                 day: 'numeric',
                                 hour: '2-digit',

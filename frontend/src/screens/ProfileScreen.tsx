@@ -5,12 +5,13 @@ import HeaderNav from '../components/HeaderNav';
 import { Footer } from '../components/Footer';
 
 interface UserData {
-  id: number;
-  fullName: string;
+  id: string;
+  name: string;
   email: string;
   phone: string;
   address: string;
   role: string;
+  image?: string;
 }
 
 interface FormErrors {
@@ -22,8 +23,8 @@ const ProfileScreen: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState<UserData>({
-    id: 0,
-    fullName: '',
+    id: '',
+    name: '',
     email: '',
     phone: '',
     address: '',
@@ -55,8 +56,6 @@ const ProfileScreen: React.FC = () => {
       console.log('ProfileScreen - User role:', userData.role);
       
       // Verify role from database instead of trusting localStorage
-      const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrilea-backend.onrender.com/api';
-      
       fetch(`${API_BASE}/auth/verify-role`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -78,21 +77,23 @@ const ProfileScreen: React.FC = () => {
           
           setFormData({
             id: userData.id,
-            fullName: userData.fullName,
+            name: userData.name || userData.fullName || '',
             email: userData.email,
             phone: userData.phone,
             address: userData.address,
             role: roleData.user.role,
+            image: roleData.user.image || userData.image
           });
         } else {
           // Fallback to localStorage if verification fails
           setFormData({
             id: userData.id,
-            fullName: userData.fullName,
+            name: userData.name || userData.fullName || '',
             email: userData.email,
             phone: userData.phone,
             address: userData.address,
             role: userData.role || 'user',
+            image: userData.image
           });
         }
       })
@@ -101,23 +102,24 @@ const ProfileScreen: React.FC = () => {
         // Fallback to localStorage
         setFormData({
           id: userData.id,
-          fullName: userData.fullName,
+          name: userData.name || userData.fullName || '',
           email: userData.email,
           phone: userData.phone,
           address: userData.address,
           role: userData.role || 'user',
+          image: userData.image
         });
       });
 
       // Load profile icon from localStorage if it exists, otherwise check backend
-      const savedIcon = localStorage.getItem(`profile_icon_${userData.id}`);
+      const savedIcon = localStorage.getItem(`nutrileaf_profile_icon_${userData.id}`);
       if (savedIcon) {
         setProfileIcon(savedIcon);
-      } else if (userData.profileImage) {
+      } else if (userData.image) {
         // Use backend profile image if available
-        const profileImageUrl = userData.profileImage.startsWith('http') 
-          ? userData.profileImage 
-          : `${API_BASE.replace('/api', '')}${userData.profileImage}`;
+        const profileImageUrl = userData.image.startsWith('http')
+          ? userData.image
+          : `${API_BASE.replace('/api', '')}${userData.image}`;
         setProfileIcon(profileImageUrl);
       }
     } catch (error) {
@@ -162,7 +164,7 @@ const ProfileScreen: React.FC = () => {
         setProfileIcon(result);
         
         // Save to localStorage as backup
-        localStorage.setItem(`profile_icon_${formData.id}`, result);
+        localStorage.setItem(`nutrileaf_profile_icon_${formData.id}`, result);
         
         // Upload to backend
         await uploadProfileImage(file);
@@ -175,11 +177,10 @@ const ProfileScreen: React.FC = () => {
     try {
       const token = localStorage.getItem('nutrileaf_token');
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('image', file);
       
-      const response = await fetch(`${API_BASE}/forum/upload-profile-image`, {
+      const response = await fetch(`${API_BASE}/auth/upload-profile-image`, {
         method: 'POST',
-        credentials: 'include',
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -193,8 +194,9 @@ const ProfileScreen: React.FC = () => {
         const userJson = localStorage.getItem('nutrileaf_user');
         if (userJson) {
           const userData = JSON.parse(userJson);
-          userData.profileImage = data.profileImage;
+          userData.image = data.profileImage;
           localStorage.setItem('nutrileaf_user', JSON.stringify(userData));
+          window.dispatchEvent(new CustomEvent('profileUpdated', { detail: userData }));
         }
       } else {
         console.error('Failed to upload profile image:', data.message);
@@ -207,8 +209,8 @@ const ProfileScreen: React.FC = () => {
   const validateForm = (): boolean => {
     const errors: FormErrors = {};
 
-    if (!formData.fullName.trim()) {
-      errors.fullName = 'Full name is required';
+    if (!formData.name.trim()) {
+      errors.name = 'Full name is required';
     }
 
     if (!formData.email.trim()) {
@@ -254,13 +256,12 @@ const ProfileScreen: React.FC = () => {
       
       const response = await fetch(`${API_BASE}/auth/update-profile`, {
         method: 'POST',
-        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          fullName: formData.fullName,
+          name: formData.name,
           phone: formData.phone,
           address: formData.address,
         }),
@@ -278,12 +279,15 @@ const ProfileScreen: React.FC = () => {
       }
 
       // Update localStorage with new user data
-      localStorage.setItem('nutrileaf_user', JSON.stringify({
+      const updatedUser = {
         ...formData,
-        fullName: data.user.fullName,
+        name: data.user.name,
         phone: data.user.phone,
         address: data.user.address,
-      }));
+        image: data.user.image
+      };
+      localStorage.setItem('nutrileaf_user', JSON.stringify(updatedUser));
+      window.dispatchEvent(new CustomEvent('profileUpdated', { detail: updatedUser }));
 
       setSuccessMessage('Profile updated successfully!');
       setTimeout(() => setSuccessMessage(null), 3000);
@@ -361,8 +365,8 @@ const ProfileScreen: React.FC = () => {
               <label>Full Name</label>
               <input
                 type="text"
-                name="fullName"
-                value={formData.fullName}
+                name="name"
+                value={formData.name}
                 onChange={handleChange}
                 placeholder="Your name"
               />

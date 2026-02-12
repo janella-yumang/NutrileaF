@@ -8,6 +8,7 @@ from functools import wraps
 from werkzeug.security import generate_password_hash
 from werkzeug.utils import secure_filename
 import os
+import json
 from app.models import Product, User, Order, ForumThread, ForumReply, ProductCategory, Review
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/api/admin')
@@ -183,6 +184,32 @@ def create_product():
             elif isinstance(data.get('image'), list):
                 image_urls = data.get('image')
         
+        benefits = data.get('benefits', [])
+        uses = data.get('uses', [])
+        how_to_use = data.get('how_to_use', [])
+        reviews = data.get('reviews', [])
+
+        if isinstance(benefits, str):
+            try:
+                benefits = json.loads(benefits)
+            except json.JSONDecodeError:
+                benefits = [b.strip() for b in benefits.split(',') if b.strip()]
+        if isinstance(uses, str):
+            try:
+                uses = json.loads(uses)
+            except json.JSONDecodeError:
+                uses = [u.strip() for u in uses.split(',') if u.strip()]
+        if isinstance(how_to_use, str):
+            try:
+                how_to_use = json.loads(how_to_use)
+            except json.JSONDecodeError:
+                how_to_use = [h.strip() for h in how_to_use.split(',') if h.strip()]
+        if isinstance(reviews, str):
+            try:
+                reviews = json.loads(reviews)
+            except json.JSONDecodeError:
+                reviews = []
+
         product = Product(
             name=data.get('name'),
             category=data.get('category'),
@@ -191,10 +218,10 @@ def create_product():
             description=data.get('description'),
             image=image_urls if image_urls else [],
             quantity=data.get('quantity'),
-            benefits=data.get('benefits', []),
-            uses=data.get('uses', []),
-            how_to_use=data.get('how_to_use', []),
-            reviews=data.get('reviews', [])
+            benefits=benefits,
+            uses=uses,
+            how_to_use=how_to_use,
+            reviews=reviews
         )
         product.save()  # Use MongoEngine save()
         
@@ -295,13 +322,37 @@ def update_product(product_id):
         if 'quantity' in data:
             product.quantity = data['quantity']
         if 'benefits' in data:
-            product.benefits = data['benefits']
+            benefits = data['benefits']
+            if isinstance(benefits, str):
+                try:
+                    benefits = json.loads(benefits)
+                except json.JSONDecodeError:
+                    benefits = [b.strip() for b in benefits.split(',') if b.strip()]
+            product.benefits = benefits
         if 'uses' in data:
-            product.uses = data['uses']
+            uses = data['uses']
+            if isinstance(uses, str):
+                try:
+                    uses = json.loads(uses)
+                except json.JSONDecodeError:
+                    uses = [u.strip() for u in uses.split(',') if u.strip()]
+            product.uses = uses
         if 'how_to_use' in data:
-            product.how_to_use = data['how_to_use']
+            how_to_use = data['how_to_use']
+            if isinstance(how_to_use, str):
+                try:
+                    how_to_use = json.loads(how_to_use)
+                except json.JSONDecodeError:
+                    how_to_use = [h.strip() for h in how_to_use.split(',') if h.strip()]
+            product.how_to_use = how_to_use
         if 'reviews' in data:
-            product.reviews = data['reviews']
+            reviews = data['reviews']
+            if isinstance(reviews, str):
+                try:
+                    reviews = json.loads(reviews)
+                except json.JSONDecodeError:
+                    reviews = []
+            product.reviews = reviews
         
         product.save()  # Use MongoEngine save()
         return jsonify({

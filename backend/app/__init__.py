@@ -10,8 +10,18 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
     
-    # CORS configuration - allow all origins
-    CORS(app, origins="*", supports_credentials=False)
+    # CORS configuration - allow credentials with specific origins
+    CORS(app, 
+         origins=[
+             "https://nutrilea-f.vercel.app",
+             "http://localhost:3000",
+             "http://localhost:3001",
+             "http://127.0.0.1:3000",
+         ],
+         supports_credentials=True,
+         allow_headers=["Authorization", "Content-Type"],
+         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    )
 
     connect(host=Config.MONGODB_URI, alias='default')
     print(f"DEBUG: Using MongoDB: {Config.MONGODB_URI[:50]}..." if Config.MONGODB_URI else "ERROR: No database configured")

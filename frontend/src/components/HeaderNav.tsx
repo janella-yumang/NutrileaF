@@ -17,7 +17,7 @@ const HeaderNav: React.FC = () => {
   const [userName, setUserName] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userPhone, setUserPhone] = useState<string | null>(null);
-  const [userId, setUserId] = useState<number | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [profileIcon, setProfileIcon] = useState<string | null>(null);
   const [userProfileImage, setUserProfileImage] = useState<string | null>(null);
@@ -31,6 +31,10 @@ const HeaderNav: React.FC = () => {
   const cartRef = useRef<HTMLDivElement | null>(null);
 
   const profileImgSrc = userProfileImage || profileIcon;
+  const toFirstName = (name?: string | null) => {
+    if (!name) return null;
+    return name.trim().split(' ')[0] || name;
+  };
 
   const updateCartCount = useCallback(() => {
     try {
@@ -111,7 +115,8 @@ const HeaderNav: React.FC = () => {
         fetch(`${API_BASE}/auth/verify-role`, {
           headers: {
             'Authorization': `Bearer ${token}`
-          }
+          },
+          credentials: 'include'
         })
         .then(response => response.json())
         .then(roleData => {
@@ -121,17 +126,27 @@ const HeaderNav: React.FC = () => {
             const freshUserData = {
               ...userData,
               role: roleData.user?.role ?? roleData.role ?? null,
-              status: roleData.user?.status ?? userData.status
+              status: roleData.user?.status ?? userData.status,
+              image: roleData.user?.image ?? userData.image
             };
             
             // Update localStorage with fresh data
             localStorage.setItem('nutrileaf_user', JSON.stringify(freshUserData));
             
             setUserId(userData.id);
-            setUserName(userData.name || userData.fullName);
+            setUserName(toFirstName(userData.name || userData.fullName));
             setUserEmail(userData.email);
             setUserPhone(userData.phone);
             setUserRole(roleData.user?.role ?? roleData.role ?? null);
+
+            if (freshUserData.image) {
+              const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrilea-10.onrender.com/api';
+              const BASE_URL = API_BASE.replace('/api', '');
+              const fullProfileImageUrl = freshUserData.image.startsWith('http')
+                ? freshUserData.image
+                : `${BASE_URL}${freshUserData.image}`;
+              setUserProfileImage(fullProfileImageUrl);
+            }
             
             console.log('HeaderNav - Set userRole from database:', roleData.user.role);
           } else {
@@ -147,12 +162,12 @@ const HeaderNav: React.FC = () => {
         });
         
         // Set profile image from backend user data
-        if (userData.profileImage) {
+        if (userData.image) {
           const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrilea-10.onrender.com/api';
           const BASE_URL = API_BASE.replace('/api', '');
-          const fullProfileImageUrl = userData.profileImage.startsWith('http') 
-            ? userData.profileImage 
-            : `${BASE_URL}${userData.profileImage}`;
+          const fullProfileImageUrl = userData.image.startsWith('http')
+            ? userData.image
+            : `${BASE_URL}${userData.image}`;
           setUserProfileImage(fullProfileImageUrl);
         }
         
@@ -178,18 +193,18 @@ const HeaderNav: React.FC = () => {
         try {
           const userData = JSON.parse(user);
           setUserId(userData.id);
-          setUserName(userData.fullName);
+          setUserName(toFirstName(userData.name || userData.fullName));
           setUserEmail(userData.email);
           setUserPhone(userData.phone);
         setUserRole(userData.role || 'user');
           
           // Set profile image from backend user data
-          if (userData.profileImage) {
+          if (userData.image) {
             const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrilea-10.onrender.com/api';
             const BASE_URL = API_BASE.replace('/api', '');
-            const fullProfileImageUrl = userData.profileImage.startsWith('http') 
-              ? userData.profileImage 
-              : `${BASE_URL}${userData.profileImage}`;
+            const fullProfileImageUrl = userData.image.startsWith('http')
+              ? userData.image
+              : `${BASE_URL}${userData.image}`;
             setUserProfileImage(fullProfileImageUrl);
           }
           
@@ -213,6 +228,29 @@ const HeaderNav: React.FC = () => {
 
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // Listen for profile updates from ProfileScreen
+  useEffect(() => {
+    const handleProfileUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent<{ name?: string; image?: string }>;
+      if (customEvent.detail) {
+        if (customEvent.detail.name) {
+          setUserName(toFirstName(customEvent.detail.name));
+        }
+        if (customEvent.detail.image) {
+          const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrileaf-10.onrender.com/api';
+          const BASE_URL = API_BASE.replace('/api', '');
+          const fullImageUrl = customEvent.detail.image.startsWith('http')
+            ? customEvent.detail.image
+            : `${BASE_URL}${customEvent.detail.image}`;
+          setUserProfileImage(fullImageUrl);
+        }
+      }
+    };
+
+    window.addEventListener('profileUpdated', handleProfileUpdate as EventListener);
+    return () => window.removeEventListener('profileUpdated', handleProfileUpdate as EventListener);
   }, []);
 
   // Poll for profile icon updates every 500ms
