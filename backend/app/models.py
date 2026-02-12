@@ -83,6 +83,7 @@ class User(Document):
     password_hash = fields.StringField()
     phone = fields.StringField()
     address = fields.StringField()
+    image = fields.StringField()
     role = fields.StringField(default='user')  # 'admin' or 'user'
     status = fields.StringField(default='active')  # 'active', 'inactive', 'suspended'
     created_at = fields.DateTimeField(default=datetime.utcnow)
@@ -95,6 +96,7 @@ class User(Document):
             'name': self.name,
             'phone': self.phone,
             'address': self.address,
+            'image': self.image,
             'role': self.role,
             'status': self.status,
             'createdAt': self.created_at.isoformat() if self.created_at else None,

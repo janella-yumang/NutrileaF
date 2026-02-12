@@ -19,7 +19,7 @@ const AdminScreen: React.FC = () => {
   const [forumThreads, setForumThreads] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<any>({});
   const [usersLoading, setUsersLoading] = useState(false);
   const [productsLoading, setProductsLoading] = useState(false);
@@ -30,11 +30,39 @@ const AdminScreen: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [createType, setCreateType] = useState<'product' | 'user' | 'category' | null>(null);
-  const [editType, setEditType] = useState<'product' | 'user' | 'category' | null>(null);
+  const [editType, setEditType] = useState<'product' | 'user' | 'category' | 'review' | null>(null);
   const [createData, setCreateData] = useState<any>({});
   const [editModalData, setEditModalData] = useState<any>({});
   
   const apiBase = process.env.REACT_APP_API_URL || 'https://nutrileaf-10.onrender.com/api';
+  const apiOrigin = apiBase.endsWith('/api') ? apiBase.slice(0, -4) : apiBase;
+  const resolveImageUrl = (image?: string) => {
+    if (!image) return '';
+    if (image.startsWith('http')) return image;
+    return `${apiOrigin}${image}`;
+  };
+
+  const scanParts = [
+    { label: 'Leaves', value: 420, color: '#1f6a45' },
+    { label: 'Pods', value: 310, color: '#2e7d5b' },
+    { label: 'Seeds', value: 180, color: '#3b8d68' },
+    { label: 'Flowers', value: 140, color: '#5aa37d' },
+    { label: 'Bark', value: 90, color: '#7ab898' }
+  ];
+  const maxScan = Math.max(...scanParts.map(item => item.value));
+  const detection = { healthy: 680, disease: 220 };
+  const detectionTotal = detection.healthy + detection.disease;
+  const healthyPct = Math.round((detection.healthy / detectionTotal) * 100);
+  const accuracyTrend = [84, 86, 88, 89, 90, 91, 92];
+  const accuracyPoints = accuracyTrend
+    .map((value, index) => {
+      const x = (index / (accuracyTrend.length - 1)) * 240 + 10;
+      const y = 80 - (value - 80) * 4;
+      return `${x},${y}`;
+    })
+    .join(' ');
+  const marketValueTrend = [120, 135, 150, 165, 180, 210];
+  const marketMax = Math.max(...marketValueTrend);
   const getAdminHeaders = () => {
     const token = localStorage.getItem('nutrileaf_token');
     return {
@@ -250,9 +278,14 @@ const AdminScreen: React.FC = () => {
 
   // Edit handler
   const handleEdit = (item: any, type: string) => {
-    setEditType(type as 'product' | 'user' | 'category');
+    setEditType(type as 'product' | 'user' | 'category' | 'review');
     setEditModalData({ ...item });
     setShowEditModal(true);
+  };
+
+  const handleInlineEdit = (item: any) => {
+    setEditingId(item.id);
+    setEditData({ ...item });
   };
 
   // Update handler for modal
@@ -280,21 +313,29 @@ const AdminScreen: React.FC = () => {
         return;
       }
     }
+
+    if (editType === 'review') {
+      if (!editModalData.rating || !editModalData.content) {
+        alert('Please fill in required fields: Rating and Content');
+        return;
+      }
+    }
     
     try {
       let endpoint = '';
       if (editType === 'product') endpoint = `/admin/products/${editModalData.id}`;
       else if (editType === 'user') endpoint = `/admin/users/${editModalData.id}`;
       else if (editType === 'category') endpoint = `/admin/categories/${editModalData.id}`;
+      else if (editType === 'review') endpoint = `/admin/reviews/${editModalData.id}`;
       
       if (!endpoint) {
         console.error('No endpoint found for edit type:', editType);
         return;
       }
 
-      // For products with images, use FormData
-      if (editType === 'product' && editModalData.imageFile) {
-        console.log('Using FormData for product edit with image');
+      // For entities with image uploads, use FormData
+      if ((editType === 'product' || editType === 'user' || editType === 'category') && editModalData.imageFile) {
+        console.log('Using FormData for edit with image');
         const formData = new FormData();
         
         // Add all product fields except imageFile
@@ -353,6 +394,7 @@ const AdminScreen: React.FC = () => {
           if (editType === 'product') fetchProducts();
           else if (editType === 'user') fetchUsers();
           else if (editType === 'category') fetchCategories();
+          else if (editType === 'review') fetchReviews();
           setShowEditModal(false);
           setEditModalData({});
           setEditType(null);
@@ -368,7 +410,7 @@ const AdminScreen: React.FC = () => {
   };
 
   // Update handler (legacy for inline editing)
-  const handleUpdate = async (id: number, type: string) => {
+  const handleUpdate = async (id: string, type: string) => {
     try {
       let endpoint = '';
       if (type === 'product') endpoint = `/admin/products/${id}`;
@@ -400,7 +442,7 @@ const AdminScreen: React.FC = () => {
   };
 
   // Delete handler
-  const handleDelete = async (id: number, type: string) => {
+  const handleDelete = async (id: string, type: string) => {
     if (!window.confirm('Are you sure you want to delete this item?')) return;
 
     try {
@@ -474,9 +516,9 @@ const AdminScreen: React.FC = () => {
         return;
       }
 
-      // For products with images, use FormData
-      if (createType === 'product' && createData.imageFile) {
-        console.log('Using FormData for product with image');
+      // For entities with images, use FormData
+      if ((createType === 'product' || createType === 'user' || createType === 'category') && createData.imageFile) {
+        console.log('Using FormData for create with image');
         const formData = new FormData();
         
         // Add all product fields except imageFile
@@ -578,7 +620,7 @@ const AdminScreen: React.FC = () => {
 
       {/* Dashboard Tab */}
       {activeTab === 'dashboard' && (
-        <div style={styles.section}>
+        <div style={styles.dashboardSection}>
           <h2>Dashboard Statistics</h2>
           <div style={styles.statsGrid}>
             <div style={styles.statCard}>
@@ -606,6 +648,121 @@ const AdminScreen: React.FC = () => {
               <div style={styles.statLabel}>Total Revenue</div>
             </div>
           </div>
+
+          <div style={styles.analyticsBlock}>
+            <div style={styles.analyticsHeader}>
+              <h3 style={styles.analyticsTitle}>Admin Analytics</h3>
+              <p style={styles.analyticsSubtitle}>Static preview (no backend yet)</p>
+            </div>
+
+            <div style={styles.analyticsGrid}>
+              <div style={styles.analyticsCard}>
+                <div style={styles.analyticsLabel}>Healthy detected</div>
+                <div style={styles.analyticsValue}>{detection.healthy}</div>
+              </div>
+              <div style={styles.analyticsCard}>
+                <div style={styles.analyticsLabel}>Disease detected</div>
+                <div style={styles.analyticsValue}>{detection.disease}</div>
+              </div>
+              <div style={styles.analyticsCard}>
+                <div style={styles.analyticsLabel}>Accuracy result</div>
+                <div style={styles.analyticsValue}>{accuracyTrend[accuracyTrend.length - 1]}%</div>
+              </div>
+              <div style={styles.analyticsCard}>
+                <div style={styles.analyticsLabel}>Market value</div>
+                <div style={styles.analyticsValue}>PHP {marketValueTrend[marketValueTrend.length - 1]}k</div>
+              </div>
+            </div>
+
+            <div style={styles.analyticsCharts}>
+              <div style={styles.chartCard}>
+                <h4 style={styles.chartTitle}>Total scans by malunggay part</h4>
+                <div style={styles.chartList}>
+                  {scanParts.map(item => (
+                    <div key={item.label} style={styles.chartRow}>
+                      <div style={styles.chartLabel}>{item.label}</div>
+                      <div style={styles.chartTrack}>
+                        <div
+                          style={{
+                            ...styles.chartFill,
+                            width: `${Math.round((item.value / maxScan) * 100)}%`,
+                            background: item.color
+                          }}
+                        />
+                      </div>
+                      <div style={styles.chartValue}>{item.value}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div style={styles.chartCard}>
+                <h4 style={styles.chartTitle}>Healthy vs disease detected</h4>
+                <div style={styles.donutRow}>
+                  <div
+                    style={{
+                      ...styles.donut,
+                      background: `conic-gradient(#2e7d5b 0% ${healthyPct}%, #e06b6b ${healthyPct}% 100%)`
+                    }}
+                  >
+                    <div style={styles.donutCenter}>
+                      <div style={styles.donutValue}>{healthyPct}%</div>
+                      <div style={styles.donutLabel}>Healthy</div>
+                    </div>
+                  </div>
+                  <div style={styles.donutLegend}>
+                    <div style={styles.legendItem}>
+                      <span style={{ ...styles.legendDot, background: '#2e7d5b' }} />
+                      Healthy: {detection.healthy}
+                    </div>
+                    <div style={styles.legendItem}>
+                      <span style={{ ...styles.legendDot, background: '#e06b6b' }} />
+                      Disease: {detection.disease}
+                    </div>
+                    <div style={styles.legendNote}>Total scans: {detectionTotal}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={styles.chartCard}>
+                <h4 style={styles.chartTitle}>Accuracy of scan results</h4>
+                <svg width="260" height="110" style={styles.chartSvg}>
+                  <polyline
+                    fill="none"
+                    stroke="#1f6a45"
+                    strokeWidth="3"
+                    points={accuracyPoints}
+                  />
+                  <polyline
+                    fill="rgba(46,125,91,0.15)"
+                    stroke="none"
+                    points={`${accuracyPoints} 250,90 10,90`}
+                  />
+                </svg>
+                <div style={styles.chartAxis}>
+                  <span>Week 1</span>
+                  <span>Week 7</span>
+                </div>
+              </div>
+
+              <div style={styles.chartCard}>
+                <h4 style={styles.chartTitle}>Market value (monthly)</h4>
+                <div style={styles.barChart}>
+                  {marketValueTrend.map((value, index) => (
+                    <div key={`${value}-${index}`} style={styles.barItem}>
+                      <div
+                        style={{
+                          ...styles.bar,
+                          height: `${Math.round((value / marketMax) * 100)}%`
+                        }}
+                      />
+                      <div style={styles.barLabel}>{index + 1}m</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -626,6 +783,7 @@ const AdminScreen: React.FC = () => {
               <thead>
                 <tr>
                   <th style={styles.tableHeader}>ID</th>
+                  <th style={styles.tableHeader}>Image</th>
                   <th style={styles.tableHeader}>Name</th>
                   <th style={styles.tableHeader}>Category</th>
                   <th style={styles.tableHeader}>Price</th>
@@ -637,6 +795,23 @@ const AdminScreen: React.FC = () => {
                 {products.map(product => (
                   <tr key={product.id} style={styles.tableRow}>
                     <td style={styles.tableCell}>{product.id}</td>
+                    <td style={styles.tableCell}>
+                      {product.image && Array.isArray(product.image) && product.image.length > 0 ? (
+                        <img
+                          src={resolveImageUrl(product.image[0])}
+                          alt={product.name}
+                          style={styles.thumb}
+                        />
+                      ) : product.image && typeof product.image === 'string' ? (
+                        <img
+                          src={resolveImageUrl(product.image)}
+                          alt={product.name}
+                          style={styles.thumb}
+                        />
+                      ) : (
+                        <span style={styles.mutedText}>No image</span>
+                      )}
+                    </td>
                     <td style={styles.tableCell}>{product.name}</td>
                     <td style={styles.tableCell}>{product.category}</td>
                     <td style={styles.tableCell}>₱{product.price}</td>
@@ -680,6 +855,7 @@ const AdminScreen: React.FC = () => {
               <thead>
                 <tr>
                   <th style={styles.tableHeader}>ID</th>
+                  <th style={styles.tableHeader}>Image</th>
                   <th style={styles.tableHeader}>Email</th>
                   <th style={styles.tableHeader}>Name</th>
                   <th style={styles.tableHeader}>Role</th>
@@ -691,6 +867,17 @@ const AdminScreen: React.FC = () => {
                 {users.map(user => (
                   <tr key={user.id} style={styles.tableRow}>
                     <td style={styles.tableCell}>{user.id}</td>
+                    <td style={styles.tableCell}>
+                      {user.image ? (
+                        <img
+                          src={resolveImageUrl(user.image)}
+                          alt={user.name || 'User'}
+                          style={styles.thumb}
+                        />
+                      ) : (
+                        <span style={styles.mutedText}>No image</span>
+                      )}
+                    </td>
                     <td style={styles.tableCell}>{user.email}</td>
                     <td style={styles.tableCell}>{user.name}</td>
                     <td style={styles.tableCell}>
@@ -786,7 +973,7 @@ const AdminScreen: React.FC = () => {
                       ) : (
                         <>
                           <button
-                            onClick={() => handleEdit(order, 'order')}
+                            onClick={() => handleInlineEdit(order)}
                             style={styles.editBtn}
                           >
                             Edit
@@ -869,7 +1056,7 @@ const AdminScreen: React.FC = () => {
                       ) : (
                         <>
                           <button
-                            onClick={() => handleEdit(thread, 'thread')}
+                            onClick={() => handleInlineEdit(thread)}
                             style={styles.editBtn}
                           >
                             Edit
@@ -995,7 +1182,14 @@ const AdminScreen: React.FC = () => {
       {showCreateModal && (
         <div style={styles.modalOverlay}>
           <div style={styles.modal}>
-            <h3>Create New {createType === 'product' ? 'Product' : 'User'}</h3>
+            <h3>
+              Create New{' '}
+              {createType === 'product'
+                ? 'Product'
+                : createType === 'user'
+                ? 'User'
+                : 'Category'}
+            </h3>
             
             {createType === 'product' && (
               <div>
@@ -1102,6 +1296,68 @@ const AdminScreen: React.FC = () => {
                   <option value="user">User</option>
                   <option value="admin">Admin</option>
                 </select>
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>
+                    User Image:
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={e => setCreateData({ ...createData, imageFile: e.target.files?.[0] })}
+                    style={styles.modalInput}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Or paste image URL"
+                    value={createData.image || ''}
+                    onChange={e => setCreateData({ ...createData, image: e.target.value })}
+                    style={styles.modalInput}
+                  />
+                </div>
+              </div>
+            )}
+
+            {createType === 'category' && (
+              <div>
+                <input
+                  type="text"
+                  placeholder="Category Name"
+                  value={createData.name || ''}
+                  onChange={e => setCreateData({ ...createData, name: e.target.value })}
+                  style={styles.modalInput}
+                />
+                <textarea
+                  placeholder="Description"
+                  value={createData.description || ''}
+                  onChange={e => setCreateData({ ...createData, description: e.target.value })}
+                  style={styles.modalTextarea}
+                />
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>
+                    Category Image:
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={e => setCreateData({ ...createData, imageFile: e.target.files?.[0] })}
+                    style={styles.modalInput}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Or paste image URL"
+                    value={createData.image || ''}
+                    onChange={e => setCreateData({ ...createData, image: e.target.value })}
+                    style={styles.modalInput}
+                  />
+                </div>
+                <select
+                  value={createData.status || 'active'}
+                  onChange={e => setCreateData({ ...createData, status: e.target.value })}
+                  style={styles.modalInput}
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
               </div>
             )}
 
@@ -1131,7 +1387,16 @@ const AdminScreen: React.FC = () => {
       {showEditModal && (
         <div style={styles.modalOverlay}>
           <div style={styles.modal}>
-            <h3>Edit {editType === 'product' ? 'Product' : editType === 'user' ? 'User' : 'Category'}</h3>
+            <h3>
+              Edit{' '}
+              {editType === 'product'
+                ? 'Product'
+                : editType === 'user'
+                ? 'User'
+                : editType === 'review'
+                ? 'Review'
+                : 'Category'}
+            </h3>
             
             {editType === 'product' && (
               <div>
@@ -1245,6 +1510,24 @@ const AdminScreen: React.FC = () => {
                   <option value="inactive">Inactive</option>
                   <option value="suspended">Suspended</option>
                 </select>
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>
+                    User Image (leave empty to keep current):
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={e => setEditModalData({ ...editModalData, imageFile: e.target.files?.[0] })}
+                    style={styles.modalInput}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Or paste image URL"
+                    value={editModalData.image || ''}
+                    onChange={e => setEditModalData({ ...editModalData, image: e.target.value })}
+                    style={styles.modalInput}
+                  />
+                </div>
               </div>
             )}
 
@@ -1273,6 +1556,13 @@ const AdminScreen: React.FC = () => {
                     onChange={e => setEditModalData({ ...editModalData, imageFile: e.target.files?.[0] })}
                     style={styles.modalInput}
                   />
+                  <input
+                    type="text"
+                    placeholder="Or paste image URL"
+                    value={editModalData.image || ''}
+                    onChange={e => setEditModalData({ ...editModalData, image: e.target.value })}
+                    style={styles.modalInput}
+                  />
                   {editModalData.imageFile && (
                     <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
                       New image: {editModalData.imageFile.name}
@@ -1286,6 +1576,42 @@ const AdminScreen: React.FC = () => {
                 >
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
+                </select>
+              </div>
+            )}
+
+            {editType === 'review' && (
+              <div>
+                <input
+                  type="number"
+                  min={1}
+                  max={5}
+                  placeholder="Rating (1-5)"
+                  value={editModalData.rating || ''}
+                  onChange={e => setEditModalData({ ...editModalData, rating: parseInt(e.target.value) })}
+                  style={styles.modalInput}
+                />
+                <input
+                  type="text"
+                  placeholder="Title"
+                  value={editModalData.title || ''}
+                  onChange={e => setEditModalData({ ...editModalData, title: e.target.value })}
+                  style={styles.modalInput}
+                />
+                <textarea
+                  placeholder="Content"
+                  value={editModalData.content || ''}
+                  onChange={e => setEditModalData({ ...editModalData, content: e.target.value })}
+                  style={styles.modalTextarea}
+                />
+                <select
+                  value={editModalData.status || 'active'}
+                  onChange={e => setEditModalData({ ...editModalData, status: e.target.value })}
+                  style={styles.modalInput}
+                >
+                  <option value="active">Active</option>
+                  <option value="hidden">Hidden</option>
+                  <option value="reported">Reported</option>
                 </select>
               </div>
             )}
@@ -1369,6 +1695,16 @@ const styles: { [key: string]: React.CSSProperties } = {
     boxShadow: '0 14px 30px rgba(15, 36, 25, 0.10)',
     border: '1px solid rgba(15, 36, 25, 0.08)',
     width: '100%'
+  },
+  dashboardSection: {
+    backgroundColor: 'white',
+    borderRadius: '16px',
+    padding: '20px',
+    boxShadow: '0 14px 30px rgba(15, 36, 25, 0.10)',
+    border: '1px solid rgba(15, 36, 25, 0.08)',
+    width: '100%',
+    maxWidth: '1200px',
+    margin: '0 auto'
   },
   sectionHeader: {
     display: 'flex',
@@ -1454,6 +1790,172 @@ const styles: { [key: string]: React.CSSProperties } = {
     marginTop: '10px',
     opacity: 0.9
   },
+  analyticsBlock: {
+    marginTop: '28px',
+    paddingTop: '12px',
+    borderTop: '1px solid rgba(15, 36, 25, 0.08)'
+  },
+  analyticsHeader: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+    marginBottom: '16px'
+  },
+  analyticsTitle: {
+    margin: 0,
+    fontSize: '20px'
+  },
+  analyticsSubtitle: {
+    margin: 0,
+    color: '#567064',
+    fontSize: '13px'
+  },
+  analyticsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+    gap: '12px',
+    marginBottom: '18px'
+  },
+  analyticsCard: {
+    background: 'linear-gradient(135deg, #f2f8f5 0%, #ffffff 100%)',
+    borderRadius: '12px',
+    padding: '14px',
+    border: '1px solid rgba(15, 36, 25, 0.08)'
+  },
+  analyticsLabel: {
+    fontSize: '12px',
+    textTransform: 'uppercase',
+    letterSpacing: '0.8px',
+    color: '#6b7f74'
+  },
+  analyticsValue: {
+    fontSize: '20px',
+    fontWeight: 700,
+    marginTop: '6px'
+  },
+  analyticsCharts: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+    gap: '16px'
+  },
+  chartCard: {
+    background: '#ffffff',
+    borderRadius: '16px',
+    padding: '16px',
+    border: '1px solid rgba(15, 36, 25, 0.08)',
+    boxShadow: '0 10px 22px rgba(15, 36, 25, 0.08)'
+  },
+  chartTitle: {
+    marginTop: 0,
+    marginBottom: '10px',
+    fontSize: '15px'
+  },
+  chartList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px'
+  },
+  chartRow: {
+    display: 'grid',
+    gridTemplateColumns: '90px 1fr 42px',
+    alignItems: 'center',
+    gap: '8px'
+  },
+  chartLabel: {
+    fontSize: '12px',
+    color: '#567064'
+  },
+  chartTrack: {
+    height: '10px',
+    background: '#eef4f0',
+    borderRadius: '999px',
+    overflow: 'hidden'
+  },
+  chartFill: {
+    height: '100%',
+    borderRadius: '999px'
+  },
+  chartValue: {
+    fontSize: '12px',
+    color: '#5b7267',
+    textAlign: 'right'
+  },
+  donutRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '16px'
+  },
+  donut: {
+    width: '120px',
+    height: '120px',
+    borderRadius: '50%',
+    display: 'grid',
+    placeItems: 'center',
+    boxShadow: 'inset 0 0 0 12px #f9fbfa'
+  },
+  donutCenter: {
+    textAlign: 'center'
+  },
+  donutValue: {
+    fontSize: '18px',
+    fontWeight: 700
+  },
+  donutLabel: {
+    fontSize: '11px',
+    color: '#6b7f74'
+  },
+  donutLegend: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+    fontSize: '12px'
+  },
+  legendItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px'
+  },
+  legendDot: {
+    width: '10px',
+    height: '10px',
+    borderRadius: '50%'
+  },
+  legendNote: {
+    fontSize: '11px',
+    color: '#6b7f74'
+  },
+  chartSvg: {
+    marginTop: '6px'
+  },
+  chartAxis: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    fontSize: '11px',
+    color: '#6b7f74'
+  },
+  barChart: {
+    display: 'flex',
+    alignItems: 'flex-end',
+    gap: '10px',
+    height: '120px',
+    marginTop: '8px'
+  },
+  barItem: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '6px'
+  },
+  bar: {
+    width: '100%',
+    background: 'linear-gradient(180deg, #2d7a50 0%, #8ec8a7 100%)',
+    borderRadius: '10px'
+  },
+  barLabel: {
+    fontSize: '11px',
+    color: '#6b7f74'
+  },
   table: {
     width: '100%',
     borderCollapse: 'collapse',
@@ -1534,6 +2036,17 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   tableRowHover: {
     backgroundColor: '#f8faf9'
+  },
+  thumb: {
+    width: '44px',
+    height: '44px',
+    objectFit: 'cover',
+    borderRadius: '8px',
+    border: '1px solid rgba(15, 36, 25, 0.12)'
+  },
+  mutedText: {
+    fontSize: '12px',
+    color: '#6b7f74'
   }
 };
 

@@ -87,7 +87,7 @@ def get_all_products():
 @admin_required
 def create_user():
     """Create a new user."""
-    data = request.get_json() or {}
+    data = request.form if request.files else (request.get_json() or {})
 
     email = data.get('email')
     if not email:
@@ -102,11 +102,24 @@ def create_user():
         password = data.get('password')
         password_hash = generate_password_hash(password) if password else None
 
+        image_url = None
+        if 'image' in request.files and request.files['image'].filename:
+            file = request.files['image']
+            filename = secure_filename(file.filename)
+            upload_folder = current_app.config.get('UPLOAD_FOLDER', 'app/static/uploads')
+            os.makedirs(upload_folder, exist_ok=True)
+            file_path = os.path.join(upload_folder, filename)
+            file.save(file_path)
+            image_url = f'/uploads/{filename}'
+        if not image_url and data.get('image'):
+            image_url = data.get('image')
+
         user = User(
             email=email,
             name=data.get('name'),
             phone=data.get('phone'),
             address=data.get('address'),
+            image=image_url,
             role=data.get('role', 'user'),
             status=data.get('status', 'active'),
             password_hash=password_hash,
@@ -123,6 +136,7 @@ def create_user():
                 'email': user.email,
                 'phone': user.phone,
                 'address': user.address,
+                'image': user.image,
                 'role': user.role,
                 'status': user.status
             }
@@ -348,6 +362,7 @@ def get_all_users():
             'email': user.email,
             'phone': user.phone,
             'address': user.address,
+            'image': user.image,
             'role': user.role,
             'status': user.status
         }
@@ -365,15 +380,27 @@ def get_all_users():
 @admin_required
 def update_user(user_id):
     """Update a user (role, status, etc)."""
-    data = request.get_json()
+    data = request.form if request.files else (request.get_json() or {})
     user = User.objects(id=user_id).first()  # Use MongoEngine syntax
     
     if not user:
         return jsonify({'success': False, 'error': 'User not found'}), 404
     
     try:
+        if 'image' in request.files and request.files['image'].filename:
+            file = request.files['image']
+            filename = secure_filename(file.filename)
+            upload_folder = current_app.config.get('UPLOAD_FOLDER', 'app/static/uploads')
+            os.makedirs(upload_folder, exist_ok=True)
+            file_path = os.path.join(upload_folder, filename)
+            file.save(file_path)
+            user.image = f'/uploads/{filename}'
+        elif 'image' in data:
+            user.image = data['image']
         if 'name' in data:
             user.name = data['name']
+        if 'email' in data:
+            user.email = data['email']
         if 'phone' in data:
             user.phone = data['phone']
         if 'address' in data:
@@ -393,6 +420,7 @@ def update_user(user_id):
                 'email': user.email,
                 'phone': user.phone,
                 'address': user.address,
+                'image': user.image,
                 'role': user.role,
                 'status': user.status
             }
@@ -489,19 +517,7 @@ def get_all_forum_threads():
     threads = ForumThread.objects.skip((page - 1) * per_page).limit(per_page)
     total = ForumThread.objects.count()
     
-    # Convert to dict and handle ObjectId serialization
-    threads_list = []
-    for thread in threads:
-        thread_dict = {
-            'id': str(thread.id),
-            'title': thread.title,
-            'content': thread.content,
-            'author': thread.author,
-            'status': thread.status,
-            'created_at': thread.created_at.isoformat() if thread.created_at else None,
-            'updated_at': thread.updated_at.isoformat() if thread.updated_at else None
-        }
-        threads_list.append(thread_dict)
+    threads_list = [thread.to_dict() for thread in threads]
     
     return jsonify({
         'success': True,
