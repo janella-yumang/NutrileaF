@@ -33,9 +33,12 @@ def get_products():
         total = query.count()
         products = query.skip((page - 1) * per_page).limit(per_page)
 
+        # Construct base URL for image URLs
+        base_url = request.url_root.rstrip('/') if request.url_root else 'https://nutrilea-backend.onrender.com'
+
         return jsonify({
             'success': True,
-            'products': [p.to_dict() for p in products],
+            'products': [p.to_dict(base_url) for p in products],
             'total': total,
             'pages': (total + per_page - 1) // per_page,
             'current_page': page

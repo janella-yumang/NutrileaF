@@ -27,7 +27,28 @@ class Product(Document):
     reviews = fields.ListField(fields.DictField())
     created_at = fields.DateTimeField(default=datetime.utcnow)
 
-    def to_dict(self):
+    def get_image_urls(self, base_url='https://nutrilea-backend.onrender.com'):
+        """Convert relative image paths to full URLs."""
+        if not self.image:
+            return ['🌿']  # Default emoji
+        
+        urls = []
+        for img in self.image:
+            if not img:
+                continue
+            # If it's already a full URL, use as-is
+            if img.startswith('http') or img.startswith('https'):
+                urls.append(img)
+            # If it's an emoji, keep as-is
+            elif len(img) <= 2:
+                urls.append(img)
+            # Otherwise, construct full URL
+            else:
+                urls.append(f"{base_url}/uploads/{img.lstrip('/')}")
+        
+        return urls if urls else ['🌿']
+    
+    def to_dict(self, base_url='https://nutrilea-backend.onrender.com'):
         return {
             'id': str(self.id),
             'name': self.name,
@@ -35,7 +56,7 @@ class Product(Document):
             'price': self.price,
             'originalPrice': self.original_price,
             'description': self.description,
-            'image': self.image,
+            'image': self.get_image_urls(base_url),
             'quantity': self.quantity,
             'benefits': self.benefits,
             'uses': self.uses,

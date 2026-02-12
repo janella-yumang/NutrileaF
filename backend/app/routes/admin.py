@@ -56,6 +56,9 @@ def get_all_products():
     # Use MongoEngine syntax
     products = Product.objects.skip((page - 1) * per_page).limit(per_page)
     total = Product.objects.count()
+
+    # Construct base URL for image URLs
+    base_url = request.url_root.rstrip('/') if request.url_root else 'https://nutrilea-backend.onrender.com'
     
     # Convert to dict and handle ObjectId serialization
     products_list = []
@@ -67,7 +70,7 @@ def get_all_products():
             'price': product.price,
             'original_price': product.original_price,
             'description': product.description,
-            'image': product.image,
+            'image': product.get_image_urls(base_url),
             'quantity': product.quantity,
             'benefits': product.benefits,
             'uses': product.uses,
@@ -164,8 +167,8 @@ def create_product():
                     filename = secure_filename(file.filename)
                     file_path = os.path.join(upload_folder, filename)
                     file.save(file_path)
-                    # Store relative URL for frontend access
-                    image_urls.append(f'/uploads/{filename}')
+                    # Store just the filename - Product model handles URL construction
+                    image_urls.append(filename)
         
         # Handle single image upload
         if 'image' in request.files and request.files['image'].filename:
@@ -175,7 +178,7 @@ def create_product():
             os.makedirs(upload_folder, exist_ok=True)
             file_path = os.path.join(upload_folder, filename)
             file.save(file_path)
-            image_urls = [f'/uploads/{filename}']
+            image_urls = [filename]
         
         # If no images uploaded but image URLs provided in JSON
         if not image_urls and data.get('image'):
@@ -236,7 +239,7 @@ def create_product():
                 'price': product.price,
                 'original_price': product.original_price,
                 'description': product.description,
-                'image': product.image,
+                'image': product.get_image_urls(request.url_root.rstrip('/')),
                 'quantity': product.quantity,
                 'benefits': product.benefits,
                 'uses': product.uses,
@@ -269,7 +272,7 @@ def update_product(product_id):
             os.makedirs(upload_folder, exist_ok=True)
             file_path = os.path.join(upload_folder, filename)
             file.save(file_path)
-            image_urls = [f'/uploads/{filename}']
+            image_urls = [filename]
         
         # Handle multiple image upload (replaces existing images)
         elif 'images' in request.files:
@@ -283,7 +286,7 @@ def update_product(product_id):
                     filename = secure_filename(file.filename)
                     file_path = os.path.join(upload_folder, filename)
                     file.save(file_path)
-                    image_urls.append(f'/uploads/{filename}')
+                    image_urls.append(filename)
         
         # Handle image URLs from JSON (not file upload)
         elif 'image' in data and not request.files:
@@ -365,7 +368,7 @@ def update_product(product_id):
                 'price': product.price,
                 'original_price': product.original_price,
                 'description': product.description,
-                'image': product.image,
+                'image': product.get_image_urls(request.url_root.rstrip('/')),
                 'quantity': product.quantity,
                 'benefits': product.benefits,
                 'uses': product.uses,
