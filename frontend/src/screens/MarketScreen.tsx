@@ -468,23 +468,34 @@ const MarketScreen: React.FC = () => {
                 </div>
 
                 {/* Search Bar */}
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '18px', position: 'relative' }}>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '24px', position: 'relative' }}>
                     <div style={{ flex: 1 }}>
                         <input
                             aria-label="Search products"
                             value={searchQuery}
                             onChange={(e) => { setSearchQuery(e.target.value); setShowSuggestions(true); }}
-                            onFocus={() => setShowSuggestions(true)}
-                            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                            onFocus={(e) => {
+                                setShowSuggestions(true);
+                                e.currentTarget.style.boxShadow = '0 12px 28px rgba(26, 95, 58, 0.18)';
+                                e.currentTarget.style.border = '2px solid #1a5f3a';
+                            }}
+                            onBlur={(e) => {
+                                setTimeout(() => setShowSuggestions(false), 150);
+                                e.currentTarget.style.boxShadow = '0 10px 24px rgba(15,36,25,0.12)';
+                                e.currentTarget.style.border = '1px solid #d0e5d8';
+                            }}
                             placeholder="Search malunggay products..."
                             style={{
                                 width: '100%',
-                                background: '#f6faf7',
-                                border: '1px solid #d9eadf',
+                                background: 'linear-gradient(135deg, #fafcfb 0%, #f4faf6 100%)',
+                                border: '1px solid #d0e5d8',
                                 borderRadius: '999px',
-                                padding: '14px 18px',
-                                boxShadow: '0 6px 14px rgba(15,36,25,0.08)',
-                                fontSize: '15px'
+                                padding: '16px 20px',
+                                boxShadow: '0 10px 24px rgba(15,36,25,0.12)',
+                                fontSize: '15px',
+                                fontWeight: 500,
+                                transition: 'all 0.3s ease',
+                                color: '#0f2419'
                             }}
                         />
                         {showSuggestions && searchQuery.trim() !== '' && (
@@ -785,7 +796,7 @@ const MarketScreen: React.FC = () => {
                                             background: '#ffffff',
                                             borderRadius: '18px',
                                             overflow: 'hidden',
-                                            border: '1px solid #e6f1ea',
+                                            border: '2px solid transparent',
                                             boxShadow: '0 10px 22px rgba(15,36,25,0.08)',
                                             transition: 'all 0.3s ease',
                                             display: 'flex',
@@ -793,14 +804,14 @@ const MarketScreen: React.FC = () => {
                                             cursor: 'pointer'
                                         }}
                                         onMouseEnter={(e) => {
-                                            e.currentTarget.style.boxShadow = '0 16px 30px rgba(15,36,25,0.12)';
+                                            e.currentTarget.style.boxShadow = '0 16px 32px rgba(15,36,25,0.14)';
                                             e.currentTarget.style.transform = 'translateY(-6px)';
-                                            e.currentTarget.style.border = '1px solid #cfe5d6';
+                                            e.currentTarget.style.border = '2px solid #a8d5b8';
                                         }}
                                         onMouseLeave={(e) => {
                                             e.currentTarget.style.boxShadow = '0 10px 22px rgba(15,36,25,0.08)';
                                             e.currentTarget.style.transform = 'translateY(0)';
-                                            e.currentTarget.style.border = '1px solid #e6f1ea';
+                                            e.currentTarget.style.border = '2px solid transparent';
                                         }}
                                     >
                                         {/* Product Image */}
