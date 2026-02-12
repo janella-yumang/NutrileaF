@@ -21,7 +21,10 @@ const CartScreen: React.FC = () => {
     }, []);
 
     const persist = (c: CartItem[]) => {
-        try { localStorage.setItem('cart', JSON.stringify(c)); } catch (e) {}
+        try {
+            localStorage.setItem('cart', JSON.stringify(c));
+            window.dispatchEvent(new CustomEvent('cartUpdated', { detail: { cart: c } }));
+        } catch (e) {}
     };
 
     const updateQuantity = (id: number, qty: number) => {

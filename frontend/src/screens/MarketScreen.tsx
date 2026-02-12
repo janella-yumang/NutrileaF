@@ -56,7 +56,10 @@ const MarketScreen: React.FC = () => {
     }, []);
 
     const persistCart = (newCart: CartItem[]) => {
-        try { localStorage.setItem('cart', JSON.stringify(newCart)); } catch (e) {}
+        try {
+            localStorage.setItem('cart', JSON.stringify(newCart));
+            window.dispatchEvent(new CustomEvent('cartUpdated', { detail: { cart: newCart } }));
+        } catch (e) {}
     };
 
     const [products, setProducts] = useState<Product[]>([]);
@@ -303,15 +306,16 @@ const MarketScreen: React.FC = () => {
                 <div style={{
                     marginBottom: '32px',
                     backgroundImage: `linear-gradient(90deg, rgba(7, 43, 24, 0.98) 0%, rgba(14, 74, 39, 0.9) 45%, rgba(20, 95, 52, 0.35) 70%, rgba(20, 95, 52, 0.05) 100%), url(${heroSlides[heroIndex].image})`,
-                    backgroundSize: 'cover',
+                    backgroundSize: 'contain',
                     backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat',
                     borderRadius: '24px',
-                    padding: '32px',
+                    padding: '40px',
                     color: 'white',
                     position: 'relative',
                     overflow: 'hidden',
                     boxShadow: '0 22px 40px rgba(9, 48, 27, 0.25)',
-                    minHeight: '280px',
+                    minHeight: '380px',
                     display: 'flex',
                     alignItems: 'center'
                 }}>

@@ -1,6 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { User, Menu } from 'lucide-react';
+
+interface HeaderCartItem {
+  id?: number | string;
+  name?: string;
+  price?: number;
+  cartQuantity?: number;
+}
 
 const HeaderNav: React.FC = () => {
   const navigate = useNavigate();
@@ -16,10 +23,76 @@ const HeaderNav: React.FC = () => {
   const [userProfileImage, setUserProfileImage] = useState<string | null>(null);
   const [showProfileCard, setShowProfileCard] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
+  const [cartItems, setCartItems] = useState<HeaderCartItem[]>([]);
+  const [cartOpen, setCartOpen] = useState(false);
   const aboutRef = useRef<HTMLDivElement | null>(null);
   const profileRef = useRef<HTMLDivElement | null>(null);
+  const cartRef = useRef<HTMLDivElement | null>(null);
 
   const profileImgSrc = userProfileImage || profileIcon;
+
+  const updateCartCount = useCallback(() => {
+    try {
+      const raw = localStorage.getItem('cart');
+      if (!raw) {
+        setCartCount(0);
+        setCartItems([]);
+        return;
+      }
+      const items = JSON.parse(raw);
+      if (!Array.isArray(items)) {
+        setCartCount(0);
+        setCartItems([]);
+        return;
+      }
+      const nextCount = items.reduce((sum, item) => sum + (item?.cartQuantity || 0), 0);
+      setCartCount(nextCount);
+      setCartItems(items);
+    } catch (error) {
+      setCartCount(0);
+      setCartItems([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    updateCartCount();
+
+    const handleStorage = () => updateCartCount();
+    const handleCartUpdated = (event: Event) => {
+      const customEvent = event as CustomEvent<{ cart?: { cartQuantity?: number }[] }>;
+      if (customEvent.detail?.cart && Array.isArray(customEvent.detail.cart)) {
+        const nextCount = customEvent.detail.cart.reduce(
+          (sum, item) => sum + (item?.cartQuantity || 0),
+          0
+        );
+        setCartCount(nextCount);
+        return;
+      }
+      updateCartCount();
+    };
+
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('cartUpdated', handleCartUpdated as EventListener);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('cartUpdated', handleCartUpdated as EventListener);
+    };
+  }, [updateCartCount]);
+
+  useEffect(() => {
+    if (!cartOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (cartRef.current && !cartRef.current.contains(target)) {
+        setCartOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [cartOpen]);
 
   // Check login status on mount
   useEffect(() => {
@@ -343,6 +416,147 @@ const HeaderNav: React.FC = () => {
         </button>
 
         <div className="header-actions">
+          <div ref={cartRef} style={{ position: 'relative', marginRight: '8px' }}>
+            <button
+              className="header-action-btn"
+              type="button"
+              onClick={() => setCartOpen((prev) => !prev)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                borderRadius: '999px',
+                padding: '10px 14px',
+                background: 'linear-gradient(135deg, #1a5f3a 0%, #2d7a50 100%)',
+                color: 'white',
+                border: 'none',
+                boxShadow: '0 10px 20px rgba(26, 95, 58, 0.18)'
+              }}
+            >
+              <span>🛒</span>
+              <span>Cart</span>
+              {cartCount > 0 && (
+                <span style={{
+                  background: 'rgba(255,255,255,0.2)',
+                  color: 'white',
+                  borderRadius: '999px',
+                  padding: '2px 8px',
+                  fontSize: '12px',
+                  fontWeight: 700
+                }}>
+                  {cartCount}
+                </span>
+              )}
+            </button>
+
+            {cartOpen && (
+              <div style={{
+                position: 'absolute',
+                top: 'calc(100% + 10px)',
+                right: 0,
+                width: '320px',
+                background: 'white',
+                borderRadius: '14px',
+                boxShadow: '0 20px 45px rgba(0,0,0,0.16)',
+                border: '1px solid #edf3ef',
+                padding: '14px',
+                zIndex: 3000
+              }}>
+                <div style={{
+                  fontWeight: 700,
+                  marginBottom: '8px',
+                  color: '#0f2419',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}>
+                  <span>Cart summary</span>
+                  <span style={{ fontSize: '12px', color: '#6b7f71' }}>{cartCount} item(s)</span>
+                </div>
+
+                {cartItems.length === 0 ? (
+                  <div style={{ padding: '12px 8px', color: '#6b7f71', fontSize: '14px' }}>
+                    Your cart is empty.
+                  </div>
+                ) : (
+                  <div style={{ display: 'grid', gap: '10px', maxHeight: '220px', overflowY: 'auto' }}>
+                    {cartItems.slice(0, 4).map((item, index) => (
+                      <div key={item.id ?? index} style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '10px 12px',
+                        background: '#f7fbf8',
+                        borderRadius: '10px'
+                      }}>
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: '14px', color: '#0f2419' }}>
+                            {item.name ?? 'Item'}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#6b7f71' }}>
+                            Qty: {item.cartQuantity ?? 0}
+                          </div>
+                        </div>
+                        <div style={{ fontWeight: 700, color: '#1a5f3a' }}>
+                          ₱{item.price ?? 0}
+                        </div>
+                      </div>
+                    ))}
+                    {cartItems.length > 4 && (
+                      <div style={{ fontSize: '12px', color: '#6b7f71', textAlign: 'center' }}>
+                        +{cartItems.length - 4} more item(s)
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div style={{
+                  display: 'flex',
+                  gap: '10px',
+                  marginTop: '12px'
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCartOpen(false);
+                      navigate('/cart');
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '10px 12px',
+                      borderRadius: '999px',
+                      border: '1px solid #d9eadf',
+                      background: 'white',
+                      color: '#1a5f3a',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    View cart
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCartOpen(false);
+                      navigate('/checkout');
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '10px 12px',
+                      borderRadius: '999px',
+                      border: 'none',
+                      background: '#1a5f3a',
+                      color: 'white',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Checkout
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
           {isLoggedIn ? (
             <>
               <div className="user-greeting">
