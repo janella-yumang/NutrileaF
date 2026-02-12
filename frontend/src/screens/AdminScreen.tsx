@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import HeaderNav from '../components/HeaderNav';
 import '../App.css';
 
@@ -44,7 +44,7 @@ const AdminScreen: React.FC = () => {
     };
   };
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       console.log('Fetching stats from:', `${apiBase}/api/admin/stats`);
       const res = await fetch(`${apiBase}/api/admin/stats`, { 
@@ -86,7 +86,7 @@ const AdminScreen: React.FC = () => {
   }, [activeTab, fetchStats]);
 
   // Fetch categories for dropdown
-  const fetchCategoriesForDropdown = async () => {
+  const fetchCategoriesForDropdown = useCallback(async () => {
     try {
       const res = await fetch(`${apiBase}/admin/categories`, {
         headers: getAdminHeaders()
@@ -1306,8 +1306,7 @@ const AdminScreen: React.FC = () => {
 
     </div>
   </div>
-  );
-};
+  )}, [/* add dependency array here */]););
 
 const styles: { [key: string]: React.CSSProperties } = {
   container: {

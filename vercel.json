@@ -6,7 +6,17 @@
   "env": {
     "CI": "false",
     "ESLINT_NO_DEV_ERRORS": "true",
-    "DISABLE_ESLINT_PLUGIN": "true"
+    "DISABLE_ESLINT_PLUGIN": "true",
+    "GENERATE_SOURCEMAP": "false",
+    "NODE_ENV": "production"
+  },
+  "build": {
+    "env": {
+      "CI": "false",
+      "ESLINT_NO_DEV_ERRORS": "true",
+      "DISABLE_ESLINT_PLUGIN": "true",
+      "GENERATE_SOURCEMAP": "false"
+    }
   },
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }

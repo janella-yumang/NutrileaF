@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HeaderNav from '../components/HeaderNav';
 
@@ -64,7 +64,7 @@ const MarketScreen: React.FC = () => {
     const [categories, setCategories] = useState<any[]>([]);
 
     // Fetch products from API
-    const fetchProducts = async () => {
+    const fetchProducts = useCallback(async () => {
         try {
             const apiUrl = process.env.REACT_APP_API_URL || 'https://nutrilea-10.onrender.com/api';
             console.log('MarketScreen - API URL:', apiUrl);
@@ -89,10 +89,10 @@ const MarketScreen: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     // Fetch categories
-    const fetchCategories = async () => {
+    const fetchCategories = useCallback(async () => {
         try {
             const apiUrl = process.env.REACT_APP_API_URL || 'https://nutrilea-10.onrender.com/api';
             console.log('MarketScreen - API URL:', apiUrl);
@@ -116,13 +116,13 @@ const MarketScreen: React.FC = () => {
             // Set empty categories array to prevent issues
             setCategories([]);
         }
-    };
+    }, []);
 
     // Load products and categories on mount
     useEffect(() => {
         fetchProducts();
         fetchCategories();
-    }, []);
+    }, [fetchProducts, fetchCategories]);
 
     const filteredProducts = products
         .filter(p => selectedCategory === 'all' ? true : p.category === selectedCategory)
@@ -186,8 +186,8 @@ const MarketScreen: React.FC = () => {
         }
     };
 
-    const cartTotal = cart.reduce((sum, item) => sum + item.price * item.cartQuantity, 0);
     const cartCount = cart.reduce((sum, item) => sum + item.cartQuantity, 0);
+    const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.cartQuantity), 0);
 
     return (
         <div className="screen" style={{ position: 'relative' }}>
