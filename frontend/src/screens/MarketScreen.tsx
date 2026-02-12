@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ShoppingCart } from 'lucide-react';
 import HeaderNav from '../components/HeaderNav';
 import FloatingChat from '../components/FloatingChat';
 
@@ -29,6 +30,8 @@ const MarketScreen: React.FC = () => {
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [showSuggestions, setShowSuggestions] = useState(false);
+    const [cartOpen, setCartOpen] = useState(false);
+    const cartRef = React.useRef<HTMLDivElement | null>(null);
 
     // Helper function to get image URL
     const getImageUrl = (image: string | string[] | undefined) => {
@@ -127,6 +130,21 @@ const MarketScreen: React.FC = () => {
         fetchProducts();
         fetchCategories();
     }, [fetchProducts, fetchCategories]);
+
+    // Handle click outside cart dropdown
+    useEffect(() => {
+        if (!cartOpen) return;
+
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as Node;
+            if (cartRef.current && !cartRef.current.contains(target)) {
+                setCartOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [cartOpen]);
 
     const filteredProducts = products
         .filter(p => selectedCategory === 'all' ? true : p.category === selectedCategory)
@@ -536,6 +554,150 @@ const MarketScreen: React.FC = () => {
                         <option value="price-low">Sort: Price Low</option>
                         <option value="price-high">Sort: Price High</option>
                     </select>
+                    <div ref={cartRef} style={{ position: 'relative' }}>
+                        <button
+                            type="button"
+                            onClick={() => setCartOpen((prev) => !prev)}
+                            style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                borderRadius: '999px',
+                                padding: '12px 14px',
+                                background: 'linear-gradient(135deg, #1a5f3a 0%, #2d7a50 100%)',
+                                color: 'white',
+                                border: 'none',
+                                boxShadow: '0 10px 20px rgba(26, 95, 58, 0.18)',
+                                cursor: 'pointer',
+                                fontWeight: 600,
+                                fontSize: '13px',
+                                whiteSpace: 'nowrap'
+                            }}
+                        >
+                            <ShoppingCart size={18} />
+                            <span>Cart</span>
+                            {cart.length > 0 && (
+                                <span style={{
+                                    background: 'rgba(255,255,255,0.2)',
+                                    color: 'white',
+                                    borderRadius: '999px',
+                                    padding: '2px 8px',
+                                    fontSize: '12px',
+                                    fontWeight: 700
+                                }}>
+                                    {cart.reduce((sum, item) => sum + item.cartQuantity, 0)}
+                                </span>
+                            )}
+                        </button>
+
+                        {cartOpen && (
+                            <div style={{
+                                position: 'absolute',
+                                top: 'calc(100% + 10px)',
+                                right: 0,
+                                width: '320px',
+                                background: 'white',
+                                borderRadius: '14px',
+                                boxShadow: '0 20px 45px rgba(0,0,0,0.16)',
+                                border: '1px solid #edf3ef',
+                                padding: '14px',
+                                zIndex: 3000
+                            }}>
+                                <div style={{
+                                    fontWeight: 700,
+                                    marginBottom: '8px',
+                                    color: '#0f2419',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between'
+                                }}>
+                                    <span>Cart summary</span>
+                                    <span style={{ fontSize: '12px', color: '#6b7f71' }}>{cart.reduce((sum, item) => sum + item.cartQuantity, 0)} item(s)</span>
+                                </div>
+
+                                {cart.length === 0 ? (
+                                    <div style={{ padding: '12px 8px', color: '#6b7f71', fontSize: '14px' }}>
+                                        Your cart is empty.
+                                    </div>
+                                ) : (
+                                    <div style={{ display: 'grid', gap: '10px', maxHeight: '220px', overflowY: 'auto' }}>
+                                        {cart.slice(0, 4).map((item) => (
+                                            <div key={item.id} style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'space-between',
+                                                padding: '10px 12px',
+                                                background: '#f7fbf8',
+                                                borderRadius: '10px'
+                                            }}>
+                                                <div>
+                                                    <div style={{ fontWeight: 600, fontSize: '14px', color: '#0f2419' }}>
+                                                        {item.name}
+                                                    </div>
+                                                    <div style={{ fontSize: '12px', color: '#6b7f71' }}>
+                                                        Qty: {item.cartQuantity}
+                                                    </div>
+                                                </div>
+                                                <div style={{ fontWeight: 700, color: '#1a5f3a' }}>
+                                                    ₱{item.price}
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {cart.length > 4 && (
+                                            <div style={{ fontSize: '12px', color: '#6b7f71', textAlign: 'center' }}>
+                                                +{cart.length - 4} more item(s)
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                <div style={{
+                                    display: 'flex',
+                                    gap: '10px',
+                                    marginTop: '12px'
+                                }}>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setCartOpen(false);
+                                            navigate('/cart');
+                                        }}
+                                        style={{
+                                            flex: 1,
+                                            padding: '10px 12px',
+                                            borderRadius: '999px',
+                                            border: '1px solid #d9eadf',
+                                            background: 'white',
+                                            color: '#1a5f3a',
+                                            fontWeight: 600,
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        View cart
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setCartOpen(false);
+                                            navigate('/checkout');
+                                        }}
+                                        style={{
+                                            flex: 1,
+                                            padding: '10px 12px',
+                                            borderRadius: '999px',
+                                            border: 'none',
+                                            background: '#1a5f3a',
+                                            color: 'white',
+                                            fontWeight: 600,
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        Checkout
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                     {/* Category Filter */}
