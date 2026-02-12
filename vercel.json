@@ -8,6 +8,6 @@
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "env": {
-    "REACT_APP_API_URL": "https://nutrilea-10.onrender.com/api"
+    "REACT_APP_API_URL": "https://nutrileaf-10.onrender.com/api"
   }
 }
