@@ -1,5 +1,5 @@
 """
-Order API routes - saves checkout orders to PostgreSQL
+Order API routes - saves checkout orders to MongoDB
 """
 
 from flask import Blueprint, request, jsonify
@@ -44,8 +44,7 @@ def create_order():
             status='pending'
         )
         
-        db.session.add(order)
-        db.session.commit()
+        order.save()
         
         return jsonify({
             'success': True,
@@ -54,47 +53,45 @@ def create_order():
         }), 201
     
     except Exception as e:
-        db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
 @orders_bp.route('/list', methods=['GET'])
 def list_orders():
     """Get all orders."""
     try:
-        orders = Order.query.order_by(Order.created_at.desc()).all()
+        orders = Order.objects.order_by('-created_at')
         return jsonify({
             'success': True,
-            'count': len(orders),
+            'count': orders.count(),
             'orders': [o.to_dict() for o in orders]
         }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@orders_bp.route('/<int:order_id>', methods=['GET'])
+@orders_bp.route('/<string:order_id>', methods=['GET'])
 def get_order(order_id):
     """Get a specific order by ID."""
     try:
-        order = Order.query.get(order_id)
+        order = Order.objects(id=order_id).first()
         if not order:
             return jsonify({'error': 'Order not found'}), 404
         return jsonify({'success': True, 'order': order.to_dict()}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@orders_bp.route('/<int:order_id>/status', methods=['PUT'])
+@orders_bp.route('/<string:order_id>/status', methods=['PUT'])
 def update_order_status(order_id):
     """Update order status."""
     try:
-        order = Order.query.get(order_id)
+        order = Order.objects(id=order_id).first()
         if not order:
             return jsonify({'error': 'Order not found'}), 404
         
         data = request.get_json()
         if 'status' in data:
             order.status = data['status']
-            db.session.commit()
+            order.save()
         
         return jsonify({'success': True, 'order': order.to_dict()}), 200
     except Exception as e:
-        db.session.rollback()
         return jsonify({'error': str(e)}), 500

@@ -18,29 +18,29 @@ def get_products():
         search = request.args.get('search')
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 20, type=int)
-        
+
         # Build query
-        query = Product.query
-        
+        query = Product.objects
+
         # Filter by category
         if category and category != 'all':
-            query = query.filter(Product.category == category)
-        
+            query = query.filter(category=category)
+
         # Search functionality
         if search:
-            query = query.filter(Product.name.ilike(f'%{search}%'))
-        
-        # Paginate
-        products = query.paginate(page=page, per_page=per_page, error_out=False)
-        
+            query = query.filter(name__icontains=search)
+
+        total = query.count()
+        products = query.skip((page - 1) * per_page).limit(per_page)
+
         return jsonify({
             'success': True,
-            'products': [p.to_dict() for p in products.items],
-            'total': products.total,
-            'pages': products.pages,
+            'products': [p.to_dict() for p in products],
+            'total': total,
+            'pages': (total + per_page - 1) // per_page,
             'current_page': page
         }), 200
-        
+
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
@@ -48,7 +48,7 @@ def get_products():
 def get_categories():
     """Get all product categories for filtering."""
     try:
-        categories = ProductCategory.query.filter_by(status='active').all()
+        categories = ProductCategory.objects(status='active')
         
         return jsonify({
             'success': True,
@@ -58,11 +58,11 @@ def get_categories():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@products_bp.route('/<int:product_id>', methods=['GET'])
+@products_bp.route('/<string:product_id>', methods=['GET'])
 def get_product(product_id):
     """Get a single product by ID."""
     try:
-        product = Product.query.get(product_id)
+        product = Product.objects(id=product_id).first()
         
         if not product:
             return jsonify({'success': False, 'error': 'Product not found'}), 404

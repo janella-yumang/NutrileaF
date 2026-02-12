@@ -8,7 +8,7 @@ auth_bp = Blueprint("auth", __name__)
 
 @auth_bp.route("/register", methods=["POST"])
 def register():
-    """Register a new user in PostgreSQL."""
+    """Register a new user in MongoDB."""
     data = request.get_json(silent=True) or {}
 
     name = (data.get("name") or data.get("fullName") or "").strip()
@@ -29,10 +29,10 @@ def register():
         )
 
     try:
-        from app.models import db, User
-        
+        from app.models import User
+
         # Check if user already exists
-        existing_user = User.query.filter_by(email=email).first()
+        existing_user = User.objects(email=email).first()
         if existing_user:
             return (
                 jsonify(
@@ -57,9 +57,7 @@ def register():
             role='user',
             status='active'
         )
-        
-        db.session.add(new_user)
-        db.session.commit()
+        new_user.save()
         
         print(f"DEBUG: User registered successfully with ID: {new_user.id}")
         print(f"DEBUG: User data: {name}, {email}")
@@ -68,7 +66,7 @@ def register():
         secret_key = current_app.config.get('SECRET_KEY', 'supersecretkey')
         token = jwt.encode(
             {
-                'user_id': new_user.id,
+                'user_id': str(new_user.id),
                 'email': email,
                 'role': 'user',
                 'exp': datetime.datetime.utcnow() + datetime.timedelta(days=30)
@@ -82,7 +80,7 @@ def register():
                 {
                     "success": True,
                     "user": {
-                        "id": new_user.id,
+                        "id": str(new_user.id),
                         "name": name,
                         "email": email,
                         "phone": phone,
@@ -95,7 +93,6 @@ def register():
             201,
         )
     except Exception as e:
-        db.session.rollback()
         print(f"Registration error: {e}")
         return (
             jsonify(
@@ -110,7 +107,7 @@ def register():
 
 @auth_bp.route("/login", methods=["POST"])
 def login():
-    """Login with email and password against PostgreSQL."""
+    """Login with email and password against MongoDB."""
     data = request.get_json(silent=True) or {}
 
     email = (data.get("email") or "").strip().lower()
@@ -128,10 +125,9 @@ def login():
         )
 
     try:
-        # Use SQLAlchemy to query PostgreSQL
-        from app.models import db, User
-        
-        user = User.query.filter_by(email=email).first()
+        from app.models import User
+
+        user = User.objects(email=email).first()
 
         if not user or not check_password_hash(user.password_hash, password):
             return (
@@ -157,7 +153,7 @@ def login():
             )
 
         user_data = {
-            "id": user.id,
+            "id": str(user.id),
             "name": user.name,
             "email": user.email,
             "phone": user.phone,
@@ -169,7 +165,7 @@ def login():
         secret_key = current_app.config.get('SECRET_KEY', 'supersecretkey')
         token = jwt.encode(
             {
-                'user_id': user.id,
+                'user_id': str(user.id),
                 'email': user.email,
                 'role': user.role,
                 'exp': datetime.datetime.utcnow() + datetime.timedelta(days=30)
@@ -219,7 +215,7 @@ def verify_token():
         user_id = payload.get('user_id')
         
         from app.models import User
-        user = User.query.get(user_id)
+        user = User.objects(id=user_id).first()
         
         if not user:
             return jsonify({'success': False, 'message': 'User not found'}), 404
@@ -227,7 +223,7 @@ def verify_token():
         return jsonify({
             'success': True,
             'user': {
-                'id': user.id,
+                'id': str(user.id),
                 'name': user.name,
                 'email': user.email,
                 'phone': user.phone,
@@ -271,8 +267,8 @@ def update_profile():
         return jsonify({'success': False, 'message': 'Full name is required'}), 400
     
     try:
-        from app.models import db, User
-        user = User.query.get(user_id)
+        from app.models import User
+        user = User.objects(id=user_id).first()
         
         if not user:
             return jsonify({'success': False, 'message': 'User not found'}), 404
@@ -280,13 +276,13 @@ def update_profile():
         user.name = full_name
         user.phone = phone
         user.address = address
-        db.session.commit()
+        user.save()
         
         return jsonify({
             'success': True,
             'message': 'Profile updated successfully',
             'user': {
-                'id': user.id,
+                'id': str(user.id),
                 'name': user.name,
                 'email': user.email,
                 'phone': user.phone,
@@ -294,6 +290,5 @@ def update_profile():
             }
         })
     except Exception as e:
-        db.session.rollback()
         return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
 

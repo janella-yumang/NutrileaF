@@ -428,18 +428,7 @@ def get_all_orders():
     orders = Order.objects.skip((page - 1) * per_page).limit(per_page)
     total = Order.objects.count()
     
-    # Convert to dict and handle ObjectId serialization
-    orders_list = []
-    for order in orders:
-        order_dict = {
-            'id': str(order.id),
-            'user_id': str(order.user_id) if order.user_id else None,
-            'status': order.status,
-            'total_amount': order.total_amount,
-            'created_at': order.created_at.isoformat() if order.created_at else None,
-            'updated_at': order.updated_at.isoformat() if order.updated_at else None
-        }
-        orders_list.append(order_dict)
+    orders_list = [order.to_dict() for order in orders]
     
     return jsonify({
         'success': True,
@@ -449,12 +438,12 @@ def get_all_orders():
         'current_page': page
     }), 200
 
-@admin_bp.route('/orders/<int:order_id>', methods=['PUT'])
+@admin_bp.route('/orders/<string:order_id>', methods=['PUT'])
 @admin_required
 def update_order(order_id):
     """Update order status."""
     data = request.get_json()
-    order = Order.query.get(order_id)
+    order = Order.objects(id=order_id).first()
     
     if not order:
         return jsonify({'success': False, 'error': 'Order not found'}), 404
@@ -463,31 +452,28 @@ def update_order(order_id):
         if 'status' in data:
             order.status = data['status']  # pending, processing, shipped, delivered, cancelled
         
-        db.session.commit()
+        order.save()
         return jsonify({
             'success': True,
             'message': 'Order updated',
             'order': order.to_dict()
         }), 200
     except Exception as e:
-        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@admin_bp.route('/orders/<int:order_id>', methods=['DELETE'])
+@admin_bp.route('/orders/<string:order_id>', methods=['DELETE'])
 @admin_required
 def delete_order(order_id):
     """Delete an order."""
-    order = Order.query.get(order_id)
+    order = Order.objects(id=order_id).first()
     
     if not order:
         return jsonify({'success': False, 'error': 'Order not found'}), 404
     
     try:
-        db.session.delete(order)
-        db.session.commit()
+        order.delete()
         return jsonify({'success': True, 'message': 'Order deleted'}), 200
     except Exception as e:
-        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
 # ==================== FORUM ====================
@@ -525,12 +511,12 @@ def get_all_forum_threads():
         'current_page': page
     }), 200
 
-@admin_bp.route('/forum/threads/<int:thread_id>', methods=['PUT'])
+@admin_bp.route('/forum/threads/<string:thread_id>', methods=['PUT'])
 @admin_required
 def update_forum_thread(thread_id):
     """Update forum thread (close, pin, etc)."""
     data = request.get_json()
-    thread = ForumThread.query.get(thread_id)
+    thread = ForumThread.objects(id=thread_id).first()
     
     if not thread:
         return jsonify({'success': False, 'error': 'Thread not found'}), 404
@@ -541,32 +527,29 @@ def update_forum_thread(thread_id):
         if 'title' in data:
             thread.title = data['title']
         
-        db.session.commit()
+        thread.save()
         return jsonify({
             'success': True,
             'message': 'Thread updated',
             'thread': thread.to_dict()
         }), 200
     except Exception as e:
-        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@admin_bp.route('/forum/threads/<int:thread_id>', methods=['DELETE'])
+@admin_bp.route('/forum/threads/<string:thread_id>', methods=['DELETE'])
 @admin_required
 def delete_forum_thread(thread_id):
     """Delete a forum thread and its replies."""
-    thread = ForumThread.query.get(thread_id)
+    thread = ForumThread.objects(id=thread_id).first()
     
     if not thread:
         return jsonify({'success': False, 'error': 'Thread not found'}), 404
     
     try:
-        ForumReply.query.filter_by(thread_id=thread_id).delete()
-        db.session.delete(thread)
-        db.session.commit()
+        ForumReply.objects(thread_id=thread).delete()
+        thread.delete()
         return jsonify({'success': True, 'message': 'Thread deleted'}), 200
     except Exception as e:
-        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
 # ==================== DASHBOARD STATS ====================
@@ -576,14 +559,14 @@ def delete_forum_thread(thread_id):
 def get_dashboard_stats():
     """Get dashboard statistics."""
     try:
-        total_users = User.query.count()
-        total_products = Product.query.count()
-        total_orders = Order.query.count()
-        pending_orders = Order.query.filter_by(status='pending').count()
-        total_forum_threads = ForumThread.query.count()
+        total_users = User.objects.count()
+        total_products = Product.objects.count()
+        total_orders = Order.objects.count()
+        pending_orders = Order.objects(status='pending').count()
+        total_forum_threads = ForumThread.objects.count()
         
         # Revenue calculation
-        completed_orders = Order.query.filter_by(status='delivered').all()
+        completed_orders = Order.objects(status='delivered')
         total_revenue = sum(o.total_amount for o in completed_orders)
         
         return jsonify({
@@ -677,25 +660,23 @@ def create_category():
             image=image_url,
             status=data.get('status', 'active')
         )
-        db.session.add(category)
-        db.session.commit()
+        category.save()
         
         return jsonify({
             'success': True,
             'message': 'Category created',
-            'categoryId': category.id,
+            'categoryId': str(category.id),
             'category': category.to_dict()
         }), 201
     except Exception as e:
-        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@admin_bp.route('/categories/<int:category_id>', methods=['PUT'])
+@admin_bp.route('/categories/<string:category_id>', methods=['PUT'])
 @admin_required
 def update_category(category_id):
     """Update a product category with optional image upload."""
     data = request.form if request.files else request.get_json()
-    category = ProductCategory.query.get(category_id)
+    category = ProductCategory.objects(id=category_id).first()
     
     if not category:
         return jsonify({'success': False, 'error': 'Category not found'}), 404
@@ -726,31 +707,28 @@ def update_category(category_id):
         if request.files or ('image' in data and not request.files):
             category.image = image_url
         
-        db.session.commit()
+        category.save()
         return jsonify({
             'success': True,
             'message': 'Category updated',
             'category': category.to_dict()
         }), 200
     except Exception as e:
-        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@admin_bp.route('/categories/<int:category_id>', methods=['DELETE'])
+@admin_bp.route('/categories/<string:category_id>', methods=['DELETE'])
 @admin_required
 def delete_category(category_id):
     """Delete a product category."""
-    category = ProductCategory.query.get(category_id)
+    category = ProductCategory.objects(id=category_id).first()
     
     if not category:
         return jsonify({'success': False, 'error': 'Category not found'}), 404
     
     try:
-        db.session.delete(category)
-        db.session.commit()
+        category.delete()
         return jsonify({'success': True, 'message': 'Category deleted'}), 200
     except Exception as e:
-        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
 # ==================== REVIEWS ====================
@@ -762,15 +740,14 @@ def get_all_reviews():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
     
-    reviews = Review.query.order_by(Review.created_at.desc()).paginate(
-        page=page, per_page=per_page, error_out=False
-    )
-    
+    total = Review.objects.count()
+    reviews = Review.objects.order_by('-created_at').skip((page - 1) * per_page).limit(per_page)
+
     return jsonify({
         'success': True,
-        'reviews': [r.to_dict() for r in reviews.items],
-        'total': reviews.total,
-        'pages': reviews.pages,
+        'reviews': [r.to_dict() for r in reviews],
+        'total': total,
+        'pages': (total + per_page - 1) // per_page,
         'current_page': page
     }), 200
 
@@ -789,25 +766,23 @@ def create_review():
             content=data.get('content'),
             status=data.get('status', 'active')
         )
-        db.session.add(review)
-        db.session.commit()
+        review.save()
         
         return jsonify({
             'success': True,
             'message': 'Review created',
-            'reviewId': review.id,
+            'reviewId': str(review.id),
             'review': review.to_dict()
         }), 201
     except Exception as e:
-        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@admin_bp.route('/reviews/<int:review_id>', methods=['PUT'])
+@admin_bp.route('/reviews/<string:review_id>', methods=['PUT'])
 @admin_required
 def update_review(review_id):
     """Update a review."""
     data = request.get_json()
-    review = Review.query.get(review_id)
+    review = Review.objects(id=review_id).first()
     
     if not review:
         return jsonify({'success': False, 'error': 'Review not found'}), 404
@@ -822,29 +797,26 @@ def update_review(review_id):
         if 'status' in data:
             review.status = data['status']
         
-        db.session.commit()
+        review.save()
         return jsonify({
             'success': True,
             'message': 'Review updated',
             'review': review.to_dict()
         }), 200
     except Exception as e:
-        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@admin_bp.route('/reviews/<int:review_id>', methods=['DELETE'])
+@admin_bp.route('/reviews/<string:review_id>', methods=['DELETE'])
 @admin_required
 def delete_review(review_id):
     """Delete a review."""
-    review = Review.query.get(review_id)
+    review = Review.objects(id=review_id).first()
     
     if not review:
         return jsonify({'success': False, 'error': 'Review not found'}), 404
     
     try:
-        db.session.delete(review)
-        db.session.commit()
+        review.delete()
         return jsonify({'success': True, 'message': 'Review deleted'}), 200
     except Exception as e:
-        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
