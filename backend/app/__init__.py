@@ -19,7 +19,7 @@ def create_app():
              "http://127.0.0.1:3000",
          ],
          supports_credentials=True,
-         allow_headers=["Authorization", "Content-Type"],
+         allow_headers=["Authorization", "Content-Type", "X-Admin-Role"],
          methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
     )
 
