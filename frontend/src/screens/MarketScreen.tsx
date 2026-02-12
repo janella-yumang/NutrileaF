@@ -434,37 +434,53 @@ const MarketScreen: React.FC = () => {
                     />
                     
                     {showSuggestions && searchQuery.trim() !== '' && (
-                                        <div
-                                            key={p.id}
-                                            onMouseDown={() => { setSelectedProduct(p); setSearchQuery(''); setShowSuggestions(false); }}
-                                            style={{ padding: '12px 16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #fafafa' }}
-                                        >
-                                            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                                                <img 
-                                                    src={getImageUrl(p.image)} 
-                                                    alt={p.name}
-                                                    style={{ 
-                                                        width: '24px', 
-                                                        height: '24px', 
-                                                        objectFit: 'cover',
-                                                        borderRadius: '4px'
-                                                    }}
-                                                    onError={(e) => {
-                                                        // Fallback to emoji if image fails to load
-                                                        e.currentTarget.style.display = 'none';
-                                                        e.currentTarget.nextElementSibling?.removeAttribute('style');
-                                                    }}
-                                                />
-                                                <div style={{ fontSize: '14px', color: '#222' }}>{p.name}</div>
-                                            </div>
-                                            <div style={{ color: '#1a5f3a', fontWeight: 700 }}>₱{p.price}</div>
+                        <div style={{
+                            position: 'absolute',
+                            top: '60px',
+                            width: 'min(600px, 90%)',
+                            background: 'white',
+                            borderRadius: '12px',
+                            boxShadow: '0 12px 40px rgba(0,0,0,0.12)',
+                            maxHeight: '280px',
+                            overflowY: 'auto',
+                            zIndex: 1500,
+                            border: '1px solid #f0f0f0'
+                        }}>
+                            {products
+                                .filter(product => product.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                                .slice(0, 6)
+                                .map(product => (
+                                    <div
+                                        key={product.id}
+                                        onMouseDown={() => { setSelectedProduct(product); setSearchQuery(''); setShowSuggestions(false); }}
+                                        style={{ padding: '12px 16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #fafafa' }}
+                                    >
+                                        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                            <img 
+                                                src={getImageUrl(product.image)} 
+                                                alt={product.name}
+                                                style={{ 
+                                                    width: '24px', 
+                                                    height: '24px', 
+                                                    objectFit: 'cover',
+                                                    borderRadius: '4px'
+                                                }}
+                                                onError={(e) => {
+                                                    // Fallback to emoji if image fails to load
+                                                    e.currentTarget.style.display = 'none';
+                                                    e.currentTarget.nextElementSibling?.removeAttribute('style');
+                                                }}
+                                            />
+                                            <div style={{ fontSize: '14px', color: '#222' }}>{product.name}</div>
                                         </div>
-                                    ))}
-                                {products.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
-                                    <div style={{ padding: '12px 16px', color: '#888' }}>No results</div>
-                                )}
-                            </div>
-                        )}
+                                        <div style={{ color: '#1a5f3a', fontWeight: 700 }}>₱{product.price}</div>
+                                    </div>
+                                ))}
+                            {products.filter(product => product.name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
+                                <div style={{ padding: '12px 16px', color: '#888' }}>No results</div>
+                            )}
+                        </div>
+                    )}
                     </div>
 
                     {/* Category Filter */}
@@ -804,7 +820,7 @@ const MarketScreen: React.FC = () => {
 
                         <div style={{ display: 'flex', gap: '12px', marginTop: '16px', alignItems: 'center' }}>
                             <button
-                                onClick={() => { addToCartWithQuantity(selectedProduct, 1); setSelectedProduct(null); }}
+                                onClick={() => { selectedProduct && addToCart(selectedProduct); setSelectedProduct(null); }}
                                 style={{ background: '#1a5f3a', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}
                             >
                                 Add to cart
