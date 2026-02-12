@@ -10,7 +10,7 @@ def create_app():
     app = Flask(__name__)
     # Get allowed origins from environment or use defaults
     cors_origins_env = os.environ.get('CORS_ORIGINS', 
-        'http://localhost:3000,https://nutrilea-f.vercel.app,https://nutrilea-f.vercel.app/'
+        'http://localhost:3000,https://nutrilea-f.vercel.app'
     )
     allowed_origins = [origin.strip() for origin in cors_origins_env.split(',')]
     
@@ -23,10 +23,19 @@ def create_app():
             'http://localhost:5000'
         ])
     
+    # Function to check if origin is allowed (supports Vercel preview URLs)
+    def is_origin_allowed(origin):
+        if origin in allowed_origins:
+            return True
+        # Allow all Vercel preview deployments
+        if origin and 'vercel.app' in origin:
+            return True
+        return False
+    
     CORS(app, 
          supports_credentials=True, 
          expose_headers=['Content-Type'],
-         origins=allowed_origins,
+         origin=is_origin_allowed,
          allow_headers=['Content-Type', 'Authorization'],
          methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
 
