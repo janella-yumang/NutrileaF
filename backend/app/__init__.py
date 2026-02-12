@@ -1,4 +1,4 @@
-import sys, os
+import sys, os, re
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from flask import Flask, send_from_directory
@@ -8,34 +8,19 @@ from mongoengine import connect
 
 def create_app():
     app = Flask(__name__)
-    # Get allowed origins from environment or use defaults
-    cors_origins_env = os.environ.get('CORS_ORIGINS', 
-        'http://localhost:3000,https://nutrilea-f.vercel.app'
-    )
-    allowed_origins = [origin.strip() for origin in cors_origins_env.split(',')]
-    
-    # Add development origins
-    if os.environ.get('FLASK_ENV') == 'development':
-        allowed_origins.extend([
-            'http://127.0.0.1:3000',
-            'http://localhost:3000',
-            'http://127.0.0.1:5000',
-            'http://localhost:5000'
-        ])
-    
-    # Function to check if origin is allowed (supports Vercel preview URLs)
-    def is_origin_allowed(origin):
-        if origin in allowed_origins:
-            return True
-        # Allow all Vercel preview deployments
-        if origin and 'vercel.app' in origin:
-            return True
-        return False
+    # Allow localhost and all Vercel domains
+    allowed_origins = [
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://localhost:5000',
+        'http://127.0.0.1:5000',
+        re.compile(r"^https://.*\.vercel\.app$")
+    ]
     
     CORS(app, 
          supports_credentials=True, 
          expose_headers=['Content-Type'],
-         origin=is_origin_allowed,
+         origins=allowed_origins,
          allow_headers=['Content-Type', 'Authorization'],
          methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
 
