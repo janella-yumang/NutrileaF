@@ -76,7 +76,7 @@ const AdminScreen: React.FC = () => {
         totalRevenue: 0
       });
     }
-  };
+  }, [apiBase]);
 
   // Fetch dashboard stats
   useEffect(() => {
