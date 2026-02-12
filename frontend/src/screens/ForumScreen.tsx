@@ -151,22 +151,25 @@ const ForumScreen: React.FC = () => {
         body: JSON.stringify({ content: commentText, thread_id: postId }),
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          setComments(prev => ({ ...prev, [postId]: [...(prev[postId] || []), data.comment] }));
-          setNewComment(prev => ({ ...prev, [postId]: '' }));
-          
-          // Update post comment count
-          setPosts(prev => prev.map(post => 
-            post.id === postId 
-              ? { ...post, commentCount: (post.commentCount || 0) + 1 }
-              : post
-          ));
-        }
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        setComments(prev => ({ ...prev, [postId]: [...(prev[postId] || []), data.comment] }));
+        setNewComment(prev => ({ ...prev, [postId]: '' }));
+        
+        // Update post comment count
+        setPosts(prev => prev.map(post => 
+          post.id === postId 
+            ? { ...post, commentCount: (post.commentCount || 0) + 1 }
+            : post
+        ));
+        setError(null);
+      } else {
+        setError(data.message || 'Failed to add comment');
       }
     } catch (error) {
       console.error('Error adding comment:', error);
+      setError('Failed to add comment. Please try again.');
     }
   };
 
@@ -225,8 +228,34 @@ const ForumScreen: React.FC = () => {
   };
 
   const handleLikePost = async (postId: string) => {
-    // Like functionality not supported yet in backend
-    console.log('Like post feature coming soon');
+    try {
+      const token = localStorage.getItem('nutrileaf_token');
+      const response = await fetch(`${API_BASE}/forum/threads/${postId}/like`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        credentials: 'include',
+      });
+
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        // Update the like count in the UI
+        setPosts(prev => prev.map(post =>
+          post.id === postId
+            ? { ...post, likeCount: data.likeCount || (post.likeCount || 0) + 1 }
+            : post
+        ));
+        setError(null);
+      } else {
+        setError(data.message || 'Failed to like post');
+      }
+    } catch (error) {
+      console.error('Error liking post:', error);
+      setError('Failed to like post. Please try again.');
+    }
   };
 
   const handleCreatePost = async (e: React.FormEvent) => {
