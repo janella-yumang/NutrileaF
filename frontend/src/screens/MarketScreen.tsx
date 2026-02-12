@@ -171,6 +171,53 @@ const MarketScreen: React.FC = () => {
         }
     ];
 
+    const heroSlides = [
+        {
+            id: 1,
+            title: 'NutriLeaf Superfood Powder',
+            subtitle: '100% organic malunggay powder for smoothies, soups, and rice.',
+            ctaPrimary: 'Get the Powder',
+            ctaSecondary: 'View Benefits',
+            image: '/images/products1.jpg',
+            badge: 'New Arrival'
+        },
+        {
+            id: 2,
+            title: 'Pure Malunggay Leaf Capsules',
+            subtitle: 'Packed with Vitamin C and essential nutrients for daily wellness.',
+            ctaPrimary: 'Shop Capsules',
+            ctaSecondary: 'Learn More',
+            image: '/images/products2.jpg',
+            badge: 'Best Seller'
+        },
+        {
+            id: 3,
+            title: 'Moringa Herbal Tea Blend',
+            subtitle: 'A calming brew with a clean, earthy finish.',
+            ctaPrimary: 'Brew a Cup',
+            ctaSecondary: 'See Recipe',
+            image: '/images/products3.jpg',
+            badge: 'Limited'
+        },
+        {
+            id: 4,
+            title: 'Cold-Pressed Moringa Oil',
+            subtitle: 'Nourish skin and hair with antioxidant-rich oil.',
+            ctaPrimary: 'Shop Oil',
+            ctaSecondary: 'Ingredients',
+            image: '/images/products4.jpg',
+            badge: 'Premium'
+        }
+    ];
+    const [heroIndex, setHeroIndex] = useState(0);
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setHeroIndex((prev) => (prev + 1) % heroSlides.length);
+        }, 4500);
+        return () => clearInterval(timer);
+    }, [heroSlides.length]);
+
     const addToCart = (product: Product) => {
         setCart(prevCart => {
             const existing = prevCart.find(item => item.id === product.id);
@@ -246,51 +293,56 @@ const MarketScreen: React.FC = () => {
         <div className="screen" style={{ position: 'relative' }}>
             <div className="header" style={{ height: 0 }} />
 
-            {/* Simple Header with Cart */}
+            {/* Market Header */}
             <div style={{
                 position: 'sticky',
                 top: '0',
-                background: 'white',
-                borderBottom: '1px solid #e0e0e0',
-                padding: '16px 20px',
-                zIndex: 100,
-                maxWidth: '1400px',
-                margin: '0 auto'
+                background: 'linear-gradient(90deg, #7ad95b 0%, #62c850 45%, #5bbf52 100%)',
+                borderBottom: '1px solid rgba(15, 36, 25, 0.12)',
+                padding: '14px 20px',
+                zIndex: 100
             }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h1 style={{ 
-                        margin: 0, 
-                        fontSize: '24px', 
-                        fontWeight: '600',
-                        color: '#1a5f3a'
-                    }}>
-                        🌿 NutriLeaf Store
-                    </h1>
-                    
+                <div style={{
+                    maxWidth: '1400px',
+                    margin: '0 auto',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{
+                            width: '38px',
+                            height: '38px',
+                            borderRadius: '50%',
+                            background: 'rgba(255,255,255,0.35)',
+                            display: 'grid',
+                            placeItems: 'center',
+                            fontSize: '20px'
+                        }}>
+                            🌿
+                        </div>
+                        <div>
+                            <div style={{ fontSize: '20px', fontWeight: 700, color: '#123b24' }}>NutriLeaf</div>
+                            <div style={{ fontSize: '12px', color: '#1b4a2f' }}>Market</div>
+                        </div>
+                    </div>
+
                     <button
                         onClick={() => navigate('/cart')}
                         aria-label="Shopping cart"
                         style={{
-                            background: '#1a5f3a',
+                            background: '#0f2e1b',
                             color: 'white',
                             border: 'none',
-                            borderRadius: '12px',
-                            padding: '12px 16px',
+                            borderRadius: '999px',
+                            padding: '10px 16px',
                             cursor: 'pointer',
-                            fontSize: '16px',
+                            fontSize: '14px',
+                            fontWeight: 600,
                             display: 'flex',
                             alignItems: 'center',
                             gap: '8px',
-                            boxShadow: '0 4px 12px rgba(26, 95, 58, 0.2)',
-                            transition: 'all 0.2s ease'
-                        }}
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = 'translateY(-2px)';
-                            e.currentTarget.style.boxShadow = '0 6px 16px rgba(26, 95, 58, 0.3)';
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(26, 95, 58, 0.2)';
+                            boxShadow: '0 6px 16px rgba(14, 32, 20, 0.25)'
                         }}
                     >
                         🛒 Cart
@@ -298,15 +350,10 @@ const MarketScreen: React.FC = () => {
                             <span style={{
                                 background: '#ff6b6b',
                                 color: 'white',
-                                borderRadius: '50%',
-                                width: '24px',
-                                height: '24px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '12px',
-                                fontWeight: '700',
-                                marginLeft: '4px'
+                                borderRadius: '999px',
+                                padding: '2px 8px',
+                                fontSize: '11px',
+                                fontWeight: 700
                             }}>
                                 {cartCount}
                             </span>
@@ -321,236 +368,279 @@ const MarketScreen: React.FC = () => {
                 padding: '24px 20px 80px 20px',
                 minHeight: 'calc(100vh - 140px)'
             }}>
-                {/* Product Carousel */}
-                <div style={{ marginBottom: '32px' }}>
-                    <h2 style={{ 
-                        fontSize: '20px', 
-                        fontWeight: '600', 
-                        marginBottom: '16px',
-                        color: '#333'
-                    }}>
-                        Featured Products
-                    </h2>
+                {/* Hero Carousel */}
+                <div style={{
+                    marginBottom: '32px',
+                    background: 'linear-gradient(135deg, #0b3b23 0%, #1f6f3e 50%, #2b8a50 100%)',
+                    borderRadius: '24px',
+                    padding: '24px',
+                    color: 'white',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    boxShadow: '0 22px 40px rgba(9, 48, 27, 0.25)'
+                }}>
                     <div style={{
-                        display: 'flex',
-                        gap: '16px',
-                        overflowX: 'auto',
-                        padding: '8px 0',
-                        scrollBehavior: 'smooth'
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                        gap: '24px',
+                        alignItems: 'center'
                     }}>
-                        {/* Use carousel images instead of first 8 products */}
-                        {featuredProducts.map(product => (
-                            <div
-                                key={product.id}
-                                onClick={() => setSelectedProduct(product)}
-                                style={{
-                                    minWidth: '200px',
+                        <div>
+                            <span style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                background: 'rgba(255,255,255,0.18)',
+                                padding: '6px 12px',
+                                borderRadius: '999px',
+                                fontSize: '12px',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.8px'
+                            }}>
+                                {heroSlides[heroIndex].badge}
+                            </span>
+                            <h2 style={{ fontSize: '34px', margin: '14px 0 12px 0', lineHeight: 1.15 }}>
+                                {heroSlides[heroIndex].title}
+                            </h2>
+                            <p style={{ margin: 0, color: 'rgba(255,255,255,0.85)', fontSize: '15px', lineHeight: 1.6 }}>
+                                {heroSlides[heroIndex].subtitle}
+                            </p>
+                            <div style={{ display: 'flex', gap: '12px', marginTop: '18px', flexWrap: 'wrap' }}>
+                                <button style={{
                                     background: 'white',
-                                    borderRadius: '12px',
-                                    padding: '16px',
-                                    border: '1px solid #e0e0e0',
+                                    color: '#0b3b23',
+                                    border: 'none',
+                                    borderRadius: '999px',
+                                    padding: '10px 18px',
                                     cursor: 'pointer',
-                                    transition: 'all 0.2s ease',
-                                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.transform = 'translateY(-4px)';
-                                    e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.transform = 'translateY(0)';
-                                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
-                                }}
-                            >
-                                <div style={{ marginBottom: '12px' }}>
-                                    <img 
-                                        src={getImageUrl(product.image)} 
-                                        alt={product.name}
-                                        style={{ 
-                                            width: '100%',
-                                            height: '150px',
-                                            objectFit: 'cover',
-                                            borderRadius: '8px',
-                                            backgroundColor: '#f8f9fa'
-                                        }}
-                                        onError={(e) => {
-                                            const target = e.currentTarget;
-                                            target.style.display = 'none';
-                                            const fallback = target.nextElementSibling as HTMLElement;
-                                            if (fallback) fallback.style.display = 'flex';
-                                        }}
-                                    />
-                                    <div style={{
-                                        display: 'none',
-                                        width: '100%',
-                                        height: '150px',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        fontSize: '48px',
-                                        backgroundColor: '#f8f9fa',
-                                        borderRadius: '8px'
-                                    }}>
-                                        🌿
-                                    </div>
-                                </div>
-                                <h3 style={{
-                                    margin: '0 0 8px 0',
-                                    fontSize: '16px',
-                                    fontWeight: '600',
-                                    color: '#333',
-                                    lineHeight: '1.3'
+                                    fontWeight: 700
                                 }}>
-                                    {product.name}
-                                </h3>
-                                <p style={{
-                                    margin: '0 0 12px 0',
-                                    fontSize: '14px',
-                                    color: '#666',
-                                    lineHeight: '1.4'
+                                    {heroSlides[heroIndex].ctaPrimary}
+                                </button>
+                                <button style={{
+                                    background: 'transparent',
+                                    color: 'white',
+                                    border: '1px solid rgba(255,255,255,0.5)',
+                                    borderRadius: '999px',
+                                    padding: '10px 18px',
+                                    cursor: 'pointer',
+                                    fontWeight: 600
                                 }}>
-                                    {product.description.length > 60 
-                                        ? `${product.description.substring(0, 60)}...` 
-                                        : product.description}
-                                </p>
-                                <div style={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center'
-                                }}>
-                                    <div>
-                                        <span style={{
-                                            fontSize: '18px',
-                                            fontWeight: '700',
-                                            color: '#1a5f3a'
-                                        }}>
-                                            ₱{product.price}
-                                        </span>
-                                        {product.originalPrice && (
-                                            <span style={{
-                                                fontSize: '14px',
-                                                color: '#999',
-                                                textDecoration: 'line-through',
-                                                marginLeft: '8px'
-                                            }}>
-                                                ₱{product.originalPrice}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            addToCart(product);
-                                        }}
-                                        style={{
-                                            background: '#1a5f3a',
-                                            color: 'white',
-                                            border: 'none',
-                                            borderRadius: '8px',
-                                            padding: '8px 12px',
-                                            cursor: 'pointer',
-                                            fontSize: '14px',
-                                            transition: 'all 0.2s ease'
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            e.currentTarget.style.background = '#2d7a50';
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            e.currentTarget.style.background = '#1a5f3a';
-                                        }}
-                                    >
-                                        Add to Cart
-                                    </button>
-                                </div>
+                                    {heroSlides[heroIndex].ctaSecondary}
+                                </button>
                             </div>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'center' }}>
+                            <div style={{
+                                width: 'min(360px, 90%)',
+                                height: '240px',
+                                background: 'rgba(255,255,255,0.08)',
+                                borderRadius: '18px',
+                                padding: '16px',
+                                display: 'grid',
+                                placeItems: 'center'
+                            }}>
+                                <img
+                                    src={heroSlides[heroIndex].image}
+                                    alt={heroSlides[heroIndex].title}
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '14px' }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => setHeroIndex((prev) => (prev - 1 + heroSlides.length) % heroSlides.length)}
+                        aria-label="Previous slide"
+                        style={{
+                            position: 'absolute',
+                            left: '16px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            background: 'rgba(255,255,255,0.2)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '36px',
+                            height: '36px',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        ‹
+                    </button>
+                    <button
+                        onClick={() => setHeroIndex((prev) => (prev + 1) % heroSlides.length)}
+                        aria-label="Next slide"
+                        style={{
+                            position: 'absolute',
+                            right: '16px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            background: 'rgba(255,255,255,0.2)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '36px',
+                            height: '36px',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        ›
+                    </button>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '18px' }}>
+                        {heroSlides.map((slide, index) => (
+                            <button
+                                key={slide.id}
+                                onClick={() => setHeroIndex(index)}
+                                aria-label={`Go to slide ${index + 1}`}
+                                style={{
+                                    width: index === heroIndex ? '26px' : '8px',
+                                    height: '8px',
+                                    borderRadius: '999px',
+                                    border: 'none',
+                                    background: index === heroIndex ? 'white' : 'rgba(255,255,255,0.4)',
+                                    cursor: 'pointer',
+                                    transition: 'width 0.2s ease'
+                                }}
+                            />
                         ))}
                     </div>
                 </div>
 
-                {/* Search Bar */}
-                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '32px', position: 'relative' }}>
-                    <input
-                        aria-label="Search products"
-                        value={searchQuery}
-                        onChange={(e) => { setSearchQuery(e.target.value); setShowSuggestions(true); }}
-                        onFocus={() => setShowSuggestions(true)}
-                        onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-                        placeholder="Search products, e.g. Moringa Powder"
-                        style={{
-                            width: 'min(600px, 90%)',
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                            fontSize: '16px'
-                        }}
-                    />
-                    
-                    {showSuggestions && searchQuery.trim() !== '' && (
-                        <div style={{
-                            position: 'absolute',
-                            top: '60px',
-                            width: 'min(600px, 90%)',
-                            background: 'white',
-                            borderRadius: '12px',
-                            boxShadow: '0 12px 40px rgba(0,0,0,0.12)',
-                            maxHeight: '280px',
-                            overflowY: 'auto',
-                            zIndex: 1500,
-                            border: '1px solid #f0f0f0'
-                        }}>
-                            {products
-                                .filter(product => product.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                                .slice(0, 6)
-                                .map(product => (
-                                    <div
-                                        key={product.id}
-                                        onMouseDown={() => { setSelectedProduct(product); setSearchQuery(''); setShowSuggestions(false); }}
-                                        style={{ padding: '12px 16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #fafafa' }}
-                                    >
-                                        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                                            <img 
-                                                src={getImageUrl(product.image)} 
-                                                alt={product.name}
-                                                style={{ 
-                                                    width: '24px', 
-                                                    height: '24px', 
-                                                    objectFit: 'cover',
-                                                    borderRadius: '4px'
-                                                }}
-                                                onError={(e) => {
-                                                    // Fallback to emoji if image fails to load
-                                                    e.currentTarget.style.display = 'none';
-                                                    e.currentTarget.nextElementSibling?.removeAttribute('style');
-                                                }}
-                                            />
-                                            <div style={{ fontSize: '14px', color: '#222' }}>{product.name}</div>
-                                        </div>
-                                        <div style={{ color: '#1a5f3a', fontWeight: 700 }}>₱{product.price}</div>
-                                    </div>
-                                ))}
-                            {products.filter(product => product.name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
-                                <div style={{ padding: '12px 16px', color: '#888' }}>No results</div>
-                            )}
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                    gap: '12px',
+                    marginBottom: '24px',
+                    background: '#0f3c22',
+                    borderRadius: '16px',
+                    padding: '14px 16px',
+                    color: 'white'
+                }}>
+                    {[
+                        { icon: '🚚', title: 'Free Delivery', text: 'Orders above ₱599' },
+                        { icon: '🌿', title: '100% Organic', text: 'Certified pesticide-free' },
+                        { icon: '🧪', title: 'Lab Tested', text: 'Third-party verified purity' },
+                        { icon: '↩️', title: 'Easy Returns', text: '30-day hassle policy' }
+                    ].map(item => (
+                        <div key={item.title} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                            <div style={{ fontSize: '18px' }}>{item.icon}</div>
+                            <div>
+                                <div style={{ fontSize: '12px', fontWeight: 700 }}>{item.title}</div>
+                                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.75)' }}>{item.text}</div>
+                            </div>
                         </div>
-                    )}
+                    ))}
+                </div>
+
+                {/* Search Bar */}
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '18px', position: 'relative' }}>
+                    <div style={{ flex: 1 }}>
+                        <input
+                            aria-label="Search products"
+                            value={searchQuery}
+                            onChange={(e) => { setSearchQuery(e.target.value); setShowSuggestions(true); }}
+                            onFocus={() => setShowSuggestions(true)}
+                            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                            placeholder="Search malunggay products..."
+                            style={{
+                                width: '100%',
+                                background: '#f6faf7',
+                                border: '1px solid #d9eadf',
+                                borderRadius: '999px',
+                                padding: '14px 18px',
+                                boxShadow: '0 6px 14px rgba(15,36,25,0.08)',
+                                fontSize: '15px'
+                            }}
+                        />
+                        {showSuggestions && searchQuery.trim() !== '' && (
+                            <div style={{
+                                position: 'absolute',
+                                top: '60px',
+                                width: 'min(900px, 100%)',
+                                background: 'white',
+                                borderRadius: '12px',
+                                boxShadow: '0 12px 40px rgba(0,0,0,0.12)',
+                                maxHeight: '280px',
+                                overflowY: 'auto',
+                                zIndex: 1500,
+                                border: '1px solid #f0f0f0'
+                            }}>
+                                {products
+                                    .filter(product => product.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                                    .slice(0, 6)
+                                    .map(product => (
+                                        <div
+                                            key={product.id}
+                                            onMouseDown={() => { setSelectedProduct(product); setSearchQuery(''); setShowSuggestions(false); }}
+                                            style={{ padding: '12px 16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #fafafa' }}
+                                        >
+                                            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                                <img 
+                                                    src={getImageUrl(product.image)} 
+                                                    alt={product.name}
+                                                    style={{ 
+                                                        width: '24px', 
+                                                        height: '24px', 
+                                                        objectFit: 'cover',
+                                                        borderRadius: '4px'
+                                                    }}
+                                                    onError={(e) => {
+                                                        e.currentTarget.style.display = 'none';
+                                                        e.currentTarget.nextElementSibling?.removeAttribute('style');
+                                                    }}
+                                                />
+                                                <div style={{ fontSize: '14px', color: '#222' }}>{product.name}</div>
+                                            </div>
+                                            <div style={{ color: '#1a5f3a', fontWeight: 700 }}>₱{product.price}</div>
+                                        </div>
+                                    ))}
+                                {products.filter(product => product.name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
+                                    <div style={{ padding: '12px 16px', color: '#888' }}>No results</div>
+                                )}
+                            </div>
+                        )}
                     </div>
+                    <select
+                        aria-label="Sort products"
+                        style={{
+                            minWidth: '140px',
+                            padding: '12px 14px',
+                            borderRadius: '999px',
+                            border: '1px solid #d9eadf',
+                            background: '#f6faf7',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            color: '#1a3b2a'
+                        }}
+                        defaultValue="featured"
+                    >
+                        <option value="featured">Sort: Featured</option>
+                        <option value="new">Sort: New</option>
+                        <option value="price-low">Sort: Price Low</option>
+                        <option value="price-high">Sort: Price High</option>
+                    </select>
+                </div>
 
                     {/* Category Filter */}
                     <div style={{
                         display: 'flex',
-                        gap: '12px',
-                        marginBottom: '32px',
-                        flexWrap: 'wrap'
+                        gap: '10px',
+                        marginBottom: '28px',
+                        flexWrap: 'wrap',
+                        justifyContent: 'flex-start'
                     }}>
                         <button
                             onClick={() => setSelectedCategory('all')}
                             style={{
-                                padding: '10px 20px',
-                                borderRadius: '20px',
-                                border: selectedCategory === 'all' ? '2px solid #1a5f3a' : '2px solid #d0d0d0',
-                                background: selectedCategory === 'all' ? '#1a5f3a' : 'white',
-                                color: selectedCategory === 'all' ? 'white' : '#333',
+                                padding: '8px 16px',
+                                borderRadius: '999px',
+                                border: selectedCategory === 'all' ? '1px solid #1a5f3a' : '1px solid #cfe2d6',
+                                background: selectedCategory === 'all' ? '#1a5f3a' : '#f7fbf8',
+                                color: selectedCategory === 'all' ? 'white' : '#1a3b2a',
                                 cursor: 'pointer',
-                                fontSize: '14px',
-                                fontWeight: '500',
-                                transition: 'all 0.3s ease'
+                                fontSize: '13px',
+                                fontWeight: '600',
+                                transition: 'all 0.2s ease'
                             }}
                         >
                             All Products
@@ -560,15 +650,15 @@ const MarketScreen: React.FC = () => {
                                 key={cat.id}
                                 onClick={() => setSelectedCategory(cat.name)}
                                 style={{
-                                    padding: '10px 20px',
-                                    borderRadius: '20px',
-                                    border: selectedCategory === cat.name ? '2px solid #1a5f3a' : '2px solid #d0d0d0',
-                                    background: selectedCategory === cat.name ? '#1a5f3a' : 'white',
-                                    color: selectedCategory === cat.name ? 'white' : '#333',
+                                    padding: '8px 16px',
+                                    borderRadius: '999px',
+                                    border: selectedCategory === cat.name ? '1px solid #1a5f3a' : '1px solid #cfe2d6',
+                                    background: selectedCategory === cat.name ? '#1a5f3a' : '#f7fbf8',
+                                    color: selectedCategory === cat.name ? 'white' : '#1a3b2a',
                                     cursor: 'pointer',
-                                    fontSize: '14px',
-                                    fontWeight: '500',
-                                    transition: 'all 0.3s ease'
+                                    fontSize: '13px',
+                                    fontWeight: '600',
+                                    transition: 'all 0.2s ease'
                                 }}
                             >
                                 {cat.name}
@@ -582,46 +672,62 @@ const MarketScreen: React.FC = () => {
                             Loading products...
                         </div>
                     ) : (
-                        <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-                            gap: '24px'
-                        }}>
+                        <React.Fragment>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                <div>
+                                    <h3 style={{ margin: 0, fontSize: '20px', color: '#123b24' }}>Our Products</h3>
+                                    <div style={{ fontSize: '12px', color: '#6b7f74' }}>Showing {filteredProducts.length} products</div>
+                                </div>
+                                <button style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: '#1a5f3a',
+                                    cursor: 'pointer',
+                                    fontWeight: 600
+                                }}>
+                                    View all →
+                                </button>
+                            </div>
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+                                gap: '24px'
+                            }}>
                             {filteredProducts.length === 0 ? (
                                 <div style={{ textAlign: 'center', padding: '40px', color: '#666', gridColumn: '1 / -1' }}>
                                     No products found
                                 </div>
                             ) : (
-                                filteredProducts.map(product => (
+                                filteredProducts.map((product, index) => (
                                     <div
                                         key={product.id}
                                         onClick={() => setSelectedProduct(product)}
                                         style={{
                                             background: '#ffffff',
-                                            borderRadius: '12px',
+                                            borderRadius: '18px',
                                             overflow: 'hidden',
-                                            border: '1px solid #eef6ef',
-                                            boxShadow: '0 8px 24px rgba(15,36,25,0.06)',
+                                            border: '1px solid #e6f1ea',
+                                            boxShadow: '0 10px 22px rgba(15,36,25,0.08)',
                                             transition: 'all 0.3s ease',
                                             display: 'flex',
                                             flexDirection: 'column',
                                             cursor: 'pointer'
                                         }}
                                         onMouseEnter={(e) => {
-                                            e.currentTarget.style.boxShadow = '0 12px 30px rgba(15,36,25,0.08)';
+                                            e.currentTarget.style.boxShadow = '0 16px 30px rgba(15,36,25,0.12)';
                                             e.currentTarget.style.transform = 'translateY(-6px)';
-                                            e.currentTarget.style.border = '1px solid #bde9c9';
+                                            e.currentTarget.style.border = '1px solid #cfe5d6';
                                         }}
                                         onMouseLeave={(e) => {
-                                            e.currentTarget.style.boxShadow = '0 8px 24px rgba(15,36,25,0.06)';
+                                            e.currentTarget.style.boxShadow = '0 10px 22px rgba(15,36,25,0.08)';
                                             e.currentTarget.style.transform = 'translateY(0)';
-                                            e.currentTarget.style.border = '1px solid #eef6ef';
+                                            e.currentTarget.style.border = '1px solid #e6f1ea';
                                         }}
                                     >
                                         {/* Product Image */}
                                         <div style={{
-                                            background: 'linear-gradient(135deg, #f0fdf4 0%, #e8f5e9 100%)',
-                                            padding: '32px',
+                                            background: '#f4faf6',
+                                            padding: '26px',
                                             textAlign: 'center',
                                             fontSize: '48px',
                                             minHeight: '180px',
@@ -630,6 +736,19 @@ const MarketScreen: React.FC = () => {
                                             justifyContent: 'center',
                                             position: 'relative'
                                         }}>
+                                            <div style={{
+                                                position: 'absolute',
+                                                top: '12px',
+                                                left: '12px',
+                                                background: index % 3 === 0 ? '#ff814a' : '#31a46e',
+                                                color: 'white',
+                                                fontSize: '10px',
+                                                fontWeight: 700,
+                                                padding: '4px 8px',
+                                                borderRadius: '999px'
+                                            }}>
+                                                {index % 3 === 0 ? 'HOT' : 'NEW'}
+                                            </div>
                                             <img 
                                                 src={getImageUrl(product.image)} 
                                                 alt={product.name}
@@ -654,21 +773,6 @@ const MarketScreen: React.FC = () => {
 
                                         {/* Product Info */}
                                         <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                                            {product.originalPrice && (
-                                                <div style={{
-                                                    display: 'inline-block',
-                                                    background: '#ff6b6b',
-                                                    color: 'white',
-                                                    padding: '4px 12px',
-                                                    borderRadius: '20px',
-                                                    fontSize: '12px',
-                                                    fontWeight: 'bold',
-                                                    marginBottom: '8px',
-                                                    width: 'fit-content'
-                                                }}>
-                                                    Sale
-                                                </div>
-                                            )}
                                             <h3 style={{
                                                 fontSize: '16px',
                                                 fontWeight: '600',
@@ -680,7 +784,7 @@ const MarketScreen: React.FC = () => {
                                             </h3>
                                             <p style={{
                                                 fontSize: '12px',
-                                                color: '#999',
+                                                color: '#7a8b82',
                                                 marginBottom: '8px'
                                             }}>
                                                 {product.quantity}
@@ -723,11 +827,11 @@ const MarketScreen: React.FC = () => {
                                                         background: '#1a5f3a',
                                                         color: 'white',
                                                         border: 'none',
-                                                        padding: '8px 12px',
-                                                        borderRadius: '8px',
+                                                        padding: '8px 14px',
+                                                        borderRadius: '999px',
                                                         cursor: 'pointer',
                                                         fontWeight: '600',
-                                                        fontSize: '14px',
+                                                        fontSize: '13px',
                                                         display: 'flex',
                                                         gap: '8px',
                                                         alignItems: 'center'
@@ -743,27 +847,13 @@ const MarketScreen: React.FC = () => {
                                                 >
                                                     🛒 Add
                                                 </button>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); setSelectedProduct(product); }}
-                                                    style={{
-                                                        background: 'white',
-                                                        color: '#1a5f3a',
-                                                        border: '1px solid #1a5f3a',
-                                                        padding: '8px 12px',
-                                                        borderRadius: '8px',
-                                                        cursor: 'pointer',
-                                                        fontWeight: '600',
-                                                        fontSize: '14px'
-                                                    }}
-                                                >
-                                                    Details
-                                                </button>
                                             </div>
                                         </div>
                                     </div>
                                 ))
                             )}
-                        </div>
+                            </div>
+                        </React.Fragment>
                     )}
                 </div>
             </div>
