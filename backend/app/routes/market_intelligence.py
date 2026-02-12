@@ -172,32 +172,3 @@ def track_market():
             'success': False,
             'error': str(e)
         }), 500
-
-@market_bp.route('/categories', methods=['GET'])
-def get_market_categories():
-    """Get all available categories for market filtering."""
-    try:
-        categories = ProductCategory.objects.filter(status='active')
-        
-        # Also get categories that have products
-        product_categories = Product.objects.distinct('category')
-        
-        return jsonify({
-            'success': True,
-            'categories': [
-                {
-                    'id': str(cat.id),
-                    'name': cat.name,
-                    'description': cat.description,
-                    'has_products': cat.name.lower() in [pc.lower() for pc in product_categories]
-                }
-                for cat in categories
-            ],
-            'product_categories': product_categories
-        }), 200
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500

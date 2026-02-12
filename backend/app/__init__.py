@@ -127,10 +127,10 @@ def create_app():
     app.register_blueprint(chatbot_bp, url_prefix='/api/chatbot')
     app.register_blueprint(guides_bp, url_prefix='/api/guides')
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    app.register_blueprint(forum_bp)
+    app.register_blueprint(forum_bp, url_prefix='/api/forum')
+    app.register_blueprint(admin_bp, url_prefix='/api/admin')
     app.register_blueprint(orders_bp, url_prefix='/api/orders')
-    app.register_blueprint(admin_bp)
-
+    
     @app.route("/")
     def home():
         return "API is running!"
