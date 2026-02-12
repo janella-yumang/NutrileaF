@@ -306,7 +306,7 @@ const MarketScreen: React.FC = () => {
                 <div style={{
                     marginBottom: '32px',
                     backgroundImage: `linear-gradient(90deg, rgba(7, 43, 24, 0.98) 0%, rgba(14, 74, 39, 0.9) 45%, rgba(20, 95, 52, 0.35) 70%, rgba(20, 95, 52, 0.05) 100%), url(${heroSlides[heroIndex].image})`,
-                    backgroundSize: 'contain',
+                    backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     backgroundRepeat: 'no-repeat',
                     borderRadius: '24px',
