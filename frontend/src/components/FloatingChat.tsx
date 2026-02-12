@@ -3,6 +3,7 @@ import { MessageCircle, X } from 'lucide-react';
 
 const FloatingChat: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const [messages, setMessages] = useState<Array<{ id: string; text: string; sender: 'user' | 'bot'; timestamp: Date }>>([
     {
       id: '1',
@@ -77,9 +78,12 @@ const FloatingChat: React.FC = () => {
       {/* Chat Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         style={{
           ...styles.floatingButton,
-          background: isOpen ? '#1a5f3a' : '#2d7a50'
+          background: isOpen ? '#1a5f3a' : '#2d7a50',
+          transform: isHovered ? 'scale(1.1)' : 'scale(1)'
         }}
         title={isOpen ? 'Close chat' : 'Open chat'}
       >
@@ -167,10 +171,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     alignItems: 'center',
     justifyContent: 'center',
     boxShadow: '0 8px 24px rgba(15, 36, 25, 0.25)',
-    transition: 'all 0.3s ease',
-    hover: {
-      transform: 'scale(1.1)'
-    }
+    transition: 'all 0.3s ease'
   },
   chatWindow: {
     position: 'absolute',
