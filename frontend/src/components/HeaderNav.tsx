@@ -33,7 +33,7 @@ const HeaderNav: React.FC = () => {
         console.log('HeaderNav - User data from localStorage:', userData);
         
         // Verify role from database instead of trusting localStorage
-        const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrilea-backend.onrender.com/api';
+        const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrileaf-10.onrender.com/api';
         
         fetch(`${API_BASE}/auth/verify-role`, {
           headers: {
@@ -165,7 +165,7 @@ const HeaderNav: React.FC = () => {
         const token = localStorage.getItem('nutrileaf_token');
         if (!token) return;
 
-        const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrilea-backend.onrender.com/api';
+        const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrileaf-10.onrender.com/api';
         const response = await fetch(`${API_BASE}/auth/verify`, {
           method: 'GET',
           headers: {

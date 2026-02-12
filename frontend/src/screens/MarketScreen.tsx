@@ -42,7 +42,7 @@ const MarketScreen: React.FC = () => {
         }
         
         // If it's just a filename, construct the URL
-        const apiUrl = process.env.REACT_APP_API_URL || 'https://nutrilea-backend.onrender.com/api';
+        const apiUrl = process.env.REACT_APP_API_URL || 'https://nutrileaf-10.onrender.com/api';
         const baseUrl = apiUrl.replace('/api', '');
         return `${baseUrl}/uploads/${imageUrl}`;
     };
@@ -66,7 +66,7 @@ const MarketScreen: React.FC = () => {
     // Fetch products from API
     const fetchProducts = async () => {
         try {
-            const apiUrl = process.env.REACT_APP_API_URL || 'https://nutrilea-backend.onrender.com/api';
+            const apiUrl = process.env.REACT_APP_API_URL || 'https://nutrileaf-10.onrender.com/api';
             const response = await fetch(`${apiUrl}/market/products`);
             
             if (!response.ok) {
@@ -92,7 +92,7 @@ const MarketScreen: React.FC = () => {
     // Fetch categories
     const fetchCategories = async () => {
         try {
-            const apiUrl = process.env.REACT_APP_API_URL || 'https://nutrilea-backend.onrender.com/api';
+            const apiUrl = process.env.REACT_APP_API_URL || 'https://nutrileaf-10.onrender.com/api';
             const response = await fetch(`${apiUrl}/market/categories`);
             
             if (!response.ok) {
