@@ -1314,7 +1314,7 @@ const AdminScreen: React.FC = () => {
 
     </div>
   </div>
-  )}, [/* add dependency array here */]););
+    );
 
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
