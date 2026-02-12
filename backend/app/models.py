@@ -69,7 +69,14 @@ class Order(Document):
         }
 
 class User(Document):
-    meta = {'collection': 'users'}
+    meta = {
+        'collection': 'users',
+        'indexes': [
+            'email',  # Index for fast email lookup during login
+            'status',  # Index for status filtering
+            ('email', 'status')  # Compound index for active user lookups
+        ]
+    }
     
     email = fields.StringField(required=True, unique=True)
     name = fields.StringField()

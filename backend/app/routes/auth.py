@@ -108,97 +108,62 @@ def register():
 
 @auth_bp.route("/login", methods=["POST"])
 def login():
-    """Login with email and password against PostgreSQL."""
+    """Optimized login with MongoDB."""
     data = request.get_json(silent=True) or {}
 
     email = (data.get("email") or "").strip().lower()
     password = data.get("password") or ""
 
     if not email or not password:
-        return (
-            jsonify(
-                {
-                    "success": False,
-                    "message": "Email and password are required.",
-                }
-            ),
-            400,
-        )
+        return jsonify({
+            "success": False,
+            "message": "Email and password are required."
+        }), 400
 
     try:
-        # Use MongoEngine to query MongoDB
+        # Optimized query using indexes - filter by email and active status
         from app.models import User
         
-        user = User.objects(email=email).first()
+        # Use only() to fetch only needed fields and leverage indexes
+        user = User.objects(email=email, status='active').only('id', 'email', 'name', 'phone', 'address', 'role', 'password_hash').first()
 
         if not user or not check_password_hash(user.password_hash, password):
-            return (
-                jsonify(
-                    {
-                        "success": False,
-                        "message": "Invalid email or password.",
-                    }
-                ),
-                401,
-            )
+            return jsonify({
+                "success": False,
+                "message": "Invalid email or password."
+            }), 401
 
-        # Check if user is active
-        if user.status != 'active':
-            return (
-                jsonify(
-                    {
-                        "success": False,
-                        "message": f"Account is {user.status}.",
-                    }
-                ),
-                401,
-            )
-
-        user_data = {
-            "id": str(user.id),  # Convert ObjectId to string
-            "name": user.name,
-            "email": user.email,
-            "phone": user.phone,
-            "address": user.address,
-            "role": user.role
-        }
-
-        # Generate JWT token
+        # Generate JWT token efficiently
         secret_key = current_app.config.get('SECRET_KEY', 'supersecretkey')
         token = jwt.encode(
             {
-                'user_id': str(user.id),  # Convert ObjectId to string
+                'user_id': str(user.id),
                 'email': user.email,
-                'role': user.role,
+                'role': getattr(user, 'role', 'user'),
                 'exp': datetime.datetime.utcnow() + datetime.timedelta(days=30)
             },
             secret_key,
             algorithm='HS256'
         )
 
-        return (
-            jsonify(
-                {
-                    "success": True,
-                    "message": "Login successful.",
-                    "user": user_data,
-                    "token": token,
-                }
-            ),
-            200,
-        )
+        return jsonify({
+            "success": True,
+            "user": {
+                "id": str(user.id),
+                "name": getattr(user, 'name', ''),
+                "email": user.email,
+                "phone": getattr(user, 'phone', ''),
+                "address": getattr(user, 'address', ''),
+                "role": getattr(user, 'role', 'user')
+            },
+            "token": token,
+        }), 200
 
     except Exception as e:
-        print(f"Login error: {e}")
-        return (
-            jsonify(
-                {
-                    "success": False,
-                    "message": f"Login error: {str(e)}",
-                }
-            ),
-            500,
-        )
+        return jsonify({
+            "success": False,
+            "message": "Login failed. Please try again."
+        }), 500
 
 
 @auth_bp.route("/verify", methods=["GET"])
