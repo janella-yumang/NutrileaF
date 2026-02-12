@@ -293,75 +293,6 @@ const MarketScreen: React.FC = () => {
         <div className="screen" style={{ position: 'relative' }}>
             <div className="header" style={{ height: 0 }} />
 
-            {/* Market Header */}
-            <div style={{
-                position: 'sticky',
-                top: '0',
-                background: 'linear-gradient(90deg, #7ad95b 0%, #62c850 45%, #5bbf52 100%)',
-                borderBottom: '1px solid rgba(15, 36, 25, 0.12)',
-                padding: '14px 20px',
-                zIndex: 100
-            }}>
-                <div style={{
-                    maxWidth: '1400px',
-                    margin: '0 auto',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{
-                            width: '38px',
-                            height: '38px',
-                            borderRadius: '50%',
-                            background: 'rgba(255,255,255,0.35)',
-                            display: 'grid',
-                            placeItems: 'center',
-                            fontSize: '20px'
-                        }}>
-                            🌿
-                        </div>
-                        <div>
-                            <div style={{ fontSize: '20px', fontWeight: 700, color: '#123b24' }}>NutriLeaf</div>
-                            <div style={{ fontSize: '12px', color: '#1b4a2f' }}>Market</div>
-                        </div>
-                    </div>
-
-                    <button
-                        onClick={() => navigate('/cart')}
-                        aria-label="Shopping cart"
-                        style={{
-                            background: '#0f2e1b',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '999px',
-                            padding: '10px 16px',
-                            cursor: 'pointer',
-                            fontSize: '14px',
-                            fontWeight: 600,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            boxShadow: '0 6px 16px rgba(14, 32, 20, 0.25)'
-                        }}
-                    >
-                        🛒 Cart
-                        {cartCount > 0 && (
-                            <span style={{
-                                background: '#ff6b6b',
-                                color: 'white',
-                                borderRadius: '999px',
-                                padding: '2px 8px',
-                                fontSize: '11px',
-                                fontWeight: 700
-                            }}>
-                                {cartCount}
-                            </span>
-                        )}
-                    </button>
-                </div>
-            </div>
-
             <div style={{
                 maxWidth: '1400px',
                 margin: '0 auto',
@@ -371,81 +302,62 @@ const MarketScreen: React.FC = () => {
                 {/* Hero Carousel */}
                 <div style={{
                     marginBottom: '32px',
-                    background: 'linear-gradient(135deg, #0b3b23 0%, #1f6f3e 50%, #2b8a50 100%)',
+                    backgroundImage: `linear-gradient(90deg, rgba(7, 43, 24, 0.98) 0%, rgba(14, 74, 39, 0.9) 45%, rgba(20, 95, 52, 0.35) 70%, rgba(20, 95, 52, 0.05) 100%), url(${heroSlides[heroIndex].image})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
                     borderRadius: '24px',
-                    padding: '24px',
+                    padding: '32px',
                     color: 'white',
                     position: 'relative',
                     overflow: 'hidden',
-                    boxShadow: '0 22px 40px rgba(9, 48, 27, 0.25)'
+                    boxShadow: '0 22px 40px rgba(9, 48, 27, 0.25)',
+                    minHeight: '280px',
+                    display: 'flex',
+                    alignItems: 'center'
                 }}>
-                    <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-                        gap: '24px',
-                        alignItems: 'center'
-                    }}>
-                        <div>
-                            <span style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                background: 'rgba(255,255,255,0.18)',
-                                padding: '6px 12px',
+                    <div style={{ maxWidth: '520px' }}>
+                        <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            background: 'rgba(255,255,255,0.18)',
+                            padding: '6px 12px',
+                            borderRadius: '999px',
+                            fontSize: '12px',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.8px'
+                        }}>
+                            {heroSlides[heroIndex].badge}
+                        </span>
+                        <h2 style={{ fontSize: '36px', margin: '14px 0 12px 0', lineHeight: 1.1 }}>
+                            {heroSlides[heroIndex].title}
+                        </h2>
+                        <p style={{ margin: 0, color: 'rgba(255,255,255,0.85)', fontSize: '15px', lineHeight: 1.6 }}>
+                            {heroSlides[heroIndex].subtitle}
+                        </p>
+                        <div style={{ display: 'flex', gap: '12px', marginTop: '18px', flexWrap: 'wrap' }}>
+                            <button style={{
+                                background: 'white',
+                                color: '#0b3b23',
+                                border: 'none',
                                 borderRadius: '999px',
-                                fontSize: '12px',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.8px'
+                                padding: '10px 18px',
+                                cursor: 'pointer',
+                                fontWeight: 700
                             }}>
-                                {heroSlides[heroIndex].badge}
-                            </span>
-                            <h2 style={{ fontSize: '34px', margin: '14px 0 12px 0', lineHeight: 1.15 }}>
-                                {heroSlides[heroIndex].title}
-                            </h2>
-                            <p style={{ margin: 0, color: 'rgba(255,255,255,0.85)', fontSize: '15px', lineHeight: 1.6 }}>
-                                {heroSlides[heroIndex].subtitle}
-                            </p>
-                            <div style={{ display: 'flex', gap: '12px', marginTop: '18px', flexWrap: 'wrap' }}>
-                                <button style={{
-                                    background: 'white',
-                                    color: '#0b3b23',
-                                    border: 'none',
-                                    borderRadius: '999px',
-                                    padding: '10px 18px',
-                                    cursor: 'pointer',
-                                    fontWeight: 700
-                                }}>
-                                    {heroSlides[heroIndex].ctaPrimary}
-                                </button>
-                                <button style={{
-                                    background: 'transparent',
-                                    color: 'white',
-                                    border: '1px solid rgba(255,255,255,0.5)',
-                                    borderRadius: '999px',
-                                    padding: '10px 18px',
-                                    cursor: 'pointer',
-                                    fontWeight: 600
-                                }}>
-                                    {heroSlides[heroIndex].ctaSecondary}
-                                </button>
-                            </div>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'center' }}>
-                            <div style={{
-                                width: 'min(360px, 90%)',
-                                height: '240px',
-                                background: 'rgba(255,255,255,0.08)',
-                                borderRadius: '18px',
-                                padding: '16px',
-                                display: 'grid',
-                                placeItems: 'center'
+                                {heroSlides[heroIndex].ctaPrimary}
+                            </button>
+                            <button style={{
+                                background: 'transparent',
+                                color: 'white',
+                                border: '1px solid rgba(255,255,255,0.5)',
+                                borderRadius: '999px',
+                                padding: '10px 18px',
+                                cursor: 'pointer',
+                                fontWeight: 600
                             }}>
-                                <img
-                                    src={heroSlides[heroIndex].image}
-                                    alt={heroSlides[heroIndex].title}
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '14px' }}
-                                />
-                            </div>
+                                {heroSlides[heroIndex].ctaSecondary}
+                            </button>
                         </div>
                     </div>
                     <button
