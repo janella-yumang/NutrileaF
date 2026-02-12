@@ -53,6 +53,7 @@ const ForumScreen: React.FC = () => {
   const [newComment, setNewComment] = useState<{ [key: string]: string }>({});
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<'recent' | 'trending' | 'myPosts'>('recent');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -69,6 +70,7 @@ const ForumScreen: React.FC = () => {
     try {
       const userData = JSON.parse(user);
       setUserId(userData.id);
+      setUserName(userData.name);
       setIsLoggedIn(true);
     } catch (error) {
       console.error('Failed to parse user data:', error);
@@ -186,18 +188,25 @@ const ForumScreen: React.FC = () => {
 
   // Filter posts based on active filter
   const getFilteredPosts = useCallback(() => {
+    let filtered = posts;
+    
+    // Filter by user for myPosts
+    if (activeFilter === 'myPosts') {
+      filtered = posts.filter(post => post.author === userName);
+    }
+    
+    // Sort based on filter type
     switch (activeFilter) {
       case 'recent':
-        return posts.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        return filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       case 'trending':
-        return posts.sort((a, b) => (b.views_count || 0) - (a.views_count || 0));
+        return filtered.sort((a, b) => (b.views_count || 0) - (a.views_count || 0));
       case 'myPosts':
-        // Since we don't have userId in the new structure, just return recent posts
-        return posts.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        return filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       default:
-        return posts;
+        return filtered;
     }
-  }, [posts, activeFilter]);
+  }, [posts, activeFilter, userName]);
 
   const getUserProfileImage = (userName: string) => {
     try {
@@ -363,7 +372,7 @@ const ForumScreen: React.FC = () => {
             onClick={() => setActiveFilter('myPosts')}
           >
             👤 Your Posts
-            <span className="count">{posts.length}</span>
+            <span className="count">{posts.filter(p => p.author === userName).length}</span>
           </button>
         </div>
 
