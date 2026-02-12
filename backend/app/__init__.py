@@ -8,30 +8,42 @@ from mongoengine import connect
 
 def create_app():
     app = Flask(__name__)
-    # Get allowed origins from environment or use defaults
-    cors_origins_env = os.environ.get('CORS_ORIGINS', 
-        'http://localhost:3000,https://nutrilea-f.vercel.app,https://nutrilea-f.vercel.app/,https://nutrileaf-10.onrender.com'
-    )
-    allowed_origins = [origin.strip() for origin in cors_origins_env.split(',')]
     
-    # Add development origins
-    if os.environ.get('FLASK_ENV') == 'development':
-        allowed_origins.extend([
-            'http://127.0.0.1:3000',
-            'http://localhost:3000',
-            'http://127.0.0.1:5000',
-            'http://localhost:5000'
-        ])
+    # Explicit CORS configuration for production
+    allowed_origins = [
+        'https://nutrilea-f.vercel.app',
+        'https://nutrilea-f.vercel.app/',
+        'https://nutrilea-10.onrender.com',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://localhost:5000',
+        'http://127.0.0.1:5000'
+    ]
     
+    # Add any additional origins from environment
+    cors_origins_env = os.environ.get('CORS_ORIGINS', '')
+    if cors_origins_env:
+        additional_origins = [origin.strip() for origin in cors_origins_env.split(',') if origin.strip()]
+        allowed_origins.extend(additional_origins)
+    
+    # Configure CORS with explicit settings for preflight handling
     CORS(app, 
          supports_credentials=True, 
-         expose_headers=['Content-Type'],
+         expose_headers=['Content-Type', 'X-Admin-Role'],
          origins=allowed_origins,
-         allow_headers=['Content-Type', 'Authorization', 'X-Admin-Role'],
-         methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
+         allow_headers=['Content-Type', 'Authorization', 'X-Admin-Role', 'X-Requested-With'],
+         methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+         max_age=86400)  # Cache preflight for 24 hours
 
     app.config.from_object(Config)
     
+    # Explicit OPTIONS handler for CORS preflight - must be before blueprints
+    @app.route('/api/<path:path>', methods=['OPTIONS'])
+    @app.route('/<path:path>', methods=['OPTIONS'])
+    def handle_options(path=None):
+        """Handle CORS preflight requests"""
+        return '', 200
+
     # Connect to MongoDB with better error handling
     max_retries = 3
     for attempt in range(max_retries):
