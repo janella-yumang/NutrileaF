@@ -34,7 +34,7 @@ const AdminScreen: React.FC = () => {
   const [createData, setCreateData] = useState<any>({});
   const [editModalData, setEditModalData] = useState<any>({});
   
-  const apiBase = (process.env.REACT_APP_API_URL || 'https://nutrilea-backend.onrender.com/api').replace(/\/api\/?$/, '');
+  const apiBase = process.env.REACT_APP_API_URL || 'https://nutrileaf-10.onrender.com/api';
   const getAdminHeaders = () => {
     const token = localStorage.getItem('nutrileaf_token');
     return {
@@ -88,7 +88,7 @@ const AdminScreen: React.FC = () => {
   // Fetch categories for dropdown
   const fetchCategoriesForDropdown = async () => {
     try {
-      const res = await fetch(`${apiBase}/api/products/categories`, {
+      const res = await fetch(`${apiBase}/admin/categories`, {
         headers: getAdminHeaders()
       });
       const data = await res.json();
