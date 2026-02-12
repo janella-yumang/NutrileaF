@@ -4,7 +4,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from flask import Flask, send_from_directory
 from flask_cors import CORS
 from config import Config
-from app.models import db
+from mongoengine import connect
 
 def create_app():
     app = Flask(__name__)
@@ -31,10 +31,8 @@ def create_app():
          methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
 
     app.config.from_object(Config)
-    app.config['SQLALCHEMY_DATABASE_URI'] = app.config.get('DATABASE_URI')
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    db.init_app(app)
-    print(f"DEBUG: Using database: {app.config.get('SQLALCHEMY_DATABASE_URI')[:50]}..." if app.config.get('SQLALCHEMY_DATABASE_URI') else "ERROR: No database configured")
+    connect(host=Config.MONGODB_URI, alias='default')
+    print(f"DEBUG: Using MongoDB: {Config.MONGODB_URI[:50]}..." if Config.MONGODB_URI else "ERROR: No database configured")
 
     # Serve uploaded files
     @app.route('/uploads/<path:filename>')
