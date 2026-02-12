@@ -10,12 +10,8 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
     
-    # CORS configuration - allow all origins (Vercel domains vary)
-    CORS(app, 
-         resources={r"/*": {"origins": "*"}},
-         supports_credentials=False,
-         allow_headers=["Content-Type", "Authorization"],
-         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+    # CORS configuration - allow all origins
+    CORS(app, origins="*", supports_credentials=False)
 
     connect(host=Config.MONGODB_URI, alias='default')
     print(f"DEBUG: Using MongoDB: {Config.MONGODB_URI[:50]}..." if Config.MONGODB_URI else "ERROR: No database configured")
