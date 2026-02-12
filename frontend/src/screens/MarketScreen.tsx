@@ -66,7 +66,9 @@ const MarketScreen: React.FC = () => {
     // Fetch products from API
     const fetchProducts = async () => {
         try {
-            const apiUrl = process.env.REACT_APP_API_URL || 'https://nutrileaf-10.onrender.com/api';
+            const apiUrl = process.env.REACT_APP_API_URL || 'https://nutrilea-10.onrender.com/api';
+            console.log('MarketScreen - API URL:', apiUrl);
+            console.log('MarketScreen - Full products URL:', `${apiUrl}/market/products`);
             const response = await fetch(`${apiUrl}/market/products`);
             
             if (!response.ok) {
@@ -92,8 +94,11 @@ const MarketScreen: React.FC = () => {
     // Fetch categories
     const fetchCategories = async () => {
         try {
-            const apiUrl = process.env.REACT_APP_API_URL || 'https://nutrileaf-10.onrender.com/api';
+            const apiUrl = process.env.REACT_APP_API_URL || 'https://nutrilea-10.onrender.com/api';
+            console.log('MarketScreen - API URL:', apiUrl);
+            console.log('MarketScreen - Full categories URL:', `${apiUrl}/market/categories`);
             const response = await fetch(`${apiUrl}/market/categories`);
+            console.log('MarketScreen - Categories response:', response);
             
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);

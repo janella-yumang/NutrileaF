@@ -166,6 +166,8 @@ const HeaderNav: React.FC = () => {
         if (!token) return;
 
         const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrileaf-10.onrender.com/api';
+        console.log('HeaderNav - API_BASE:', API_BASE);
+        console.log('HeaderNav - Full auth verify URL:', `${API_BASE}/auth/verify`);
         const response = await fetch(`${API_BASE}/auth/verify`, {
           method: 'GET',
           headers: {
