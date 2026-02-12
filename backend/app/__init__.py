@@ -37,12 +37,10 @@ def create_app():
 
     app.config.from_object(Config)
     
-    # Explicit OPTIONS handler for CORS preflight - must be before blueprints
-    @app.route('/api/<path:path>', methods=['OPTIONS'])
-    @app.route('/<path:path>', methods=['OPTIONS'])
-    def handle_options(path=None):
-        """Handle CORS preflight requests"""
-        return '', 200
+    # Debug logging middleware
+    @app.before_request
+    def log_request_info():
+        print(f"DEBUG: {request.method} {request.path} - Origin: {request.headers.get('Origin', 'None')}")
 
     # Connect to MongoDB with better error handling
     max_retries = 3
