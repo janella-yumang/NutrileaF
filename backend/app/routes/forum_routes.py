@@ -3,10 +3,31 @@ Forum routes for MongoDB integration.
 Handles forum threads and replies.
 """
 
-from flask import Blueprint, request, jsonify
-from app.models import ForumThread, ForumReply
+import jwt
+from flask import Blueprint, request, jsonify, current_app
+from app.models import ForumThread, ForumReply, User
 
 forum_bp = Blueprint('forum', __name__, url_prefix='/api/forum')
+
+def get_user_from_token():
+    """Extract user from JWT token in Authorization header."""
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return None
+    
+    try:
+        token = auth_header.split(' ')[1]
+        secret_key = current_app.config.get('SECRET_KEY', 'supersecretkey')
+        payload = jwt.decode(token, secret_key, algorithms=['HS256'])
+        user_id = payload.get('user_id')
+        
+        if user_id:
+            user = User.objects(id=user_id).first()
+            return user
+    except:
+        pass
+    
+    return None
 
 # ==================== FORUM THREADS ====================
 
@@ -42,6 +63,8 @@ def list_forum_threads():
                 'category': thread.category,
                 'status': thread.status,
                 'views_count': thread.views_count,
+                'likeCount': thread.likes_count,
+                'commentCount': thread.replies_count,
                 'created_at': thread.created_at.isoformat() if thread.created_at else None,
                 'updated_at': thread.updated_at.isoformat() if thread.updated_at else None
             } for thread in paginated_threads],
@@ -77,13 +100,15 @@ def get_forum_thread(thread_id):
                 'category': thread.category,
                 'status': thread.status,
                 'views_count': thread.views_count,
+                'likeCount': thread.likes_count,
+                'commentCount': thread.replies_count,
                 'created_at': thread.created_at.isoformat() if thread.created_at else None,
                 'updated_at': thread.updated_at.isoformat() if thread.updated_at else None
             },
             'replies': [{
                 'id': str(reply.id),
                 'thread_id': str(reply.thread_id),
-                'author': reply.author,
+                'author': reply.user_name,
                 'content': reply.content,
                 'created_at': reply.created_at.isoformat() if reply.created_at else None
             } for reply in replies],
@@ -94,14 +119,21 @@ def get_forum_thread(thread_id):
 
 @forum_bp.route('/threads', methods=['POST'])
 def create_forum_thread():
-    """Create a new forum thread."""
-    data = request.get_json()
-    
+    """Create a new forum thread. Accepts both JSON and FormData."""
     try:
-        title = data.get('title', '').strip()
-        content = data.get('content', '').strip()
-        user_name = data.get('userName', '').strip()
-        category = data.get('category', 'general').strip()
+        # Handle both JSON and FormData
+        if request.is_json:
+            data = request.get_json() or {}
+            title = data.get('title', '').strip()
+            content = data.get('content', '').strip()
+            user_name = data.get('userName', '').strip()
+            category = data.get('category', 'general').strip()
+        else:
+            # Handle FormData (multipart/form-data)
+            title = request.form.get('title', '').strip()
+            content = request.form.get('content', '').strip()
+            user_name = request.form.get('userName', '').strip()
+            category = request.form.get('category', 'general').strip()
         
         if not all([title, content, user_name]):
             return jsonify({
@@ -142,6 +174,8 @@ def create_forum_thread():
                 'category': thread.category,
                 'status': thread.status,
                 'views_count': thread.views_count,
+                'likeCount': thread.likes_count,
+                'commentCount': thread.replies_count,
                 'created_at': thread.created_at.isoformat() if thread.created_at else None,
                 'updated_at': thread.updated_at.isoformat() if thread.updated_at else None
             }
@@ -206,25 +240,56 @@ def delete_forum_thread(thread_id):
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@forum_bp.route('/threads/<string:thread_id>/like', methods=['POST'])
+def like_forum_thread(thread_id):
+    """Like a forum thread."""
+    try:
+        thread = ForumThread.objects(id=thread_id).first()
+        if not thread:
+            return jsonify({'success': False, 'error': 'Thread not found'}), 404
+        
+        # Increment like count
+        thread.likes_count += 1
+        thread.save()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Thread liked successfully',
+            'likeCount': thread.likes_count
+        }), 200
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 # ==================== FORUM REPLIES ====================
 
 @forum_bp.route('/replies/<string:thread_id>', methods=['POST'])
 def create_forum_reply(thread_id):
     """Add a reply to a forum thread."""
-    data = request.get_json()
+    data = request.get_json() or {}
     
     try:
         thread = ForumThread.objects(id=thread_id).first()
         if not thread:
             return jsonify({'success': False, 'error': 'Thread not found'}), 404
         
-        content = data.get('content', '').strip()
-        user_name = data.get('userName', '').strip()
+        # Try to get user from JWT token, fallback to userName in request
+        user = get_user_from_token()
+        if user:
+            user_name = user.name or user.email
+        else:
+            user_name = data.get('userName', '').strip()
+            if not user_name:
+                return jsonify({
+                    'success': False,
+                    'error': 'Authentication required to post comment'
+                }), 401
         
-        if not all([content, user_name]):
+        content = data.get('content', '').strip()
+        
+        if not content:
             return jsonify({
                 'success': False,
-                'error': 'Missing required fields: content, userName'
+                'error': 'Missing required field: content'
             }), 400
         
         if len(content) < 5:
@@ -249,10 +314,10 @@ def create_forum_reply(thread_id):
             'success': True,
             'message': 'Reply created successfully',
             'replyId': str(reply.id),
-            'reply': {
+            'comment': {
                 'id': str(reply.id),
                 'thread_id': str(reply.thread_id),
-                'author': reply.author,
+                'author': reply.user_name,
                 'content': reply.content,
                 'created_at': reply.created_at.isoformat() if reply.created_at else None
             }
@@ -281,7 +346,7 @@ def update_forum_reply(reply_id):
             'reply': {
                 'id': str(reply.id),
                 'thread_id': str(reply.thread_id),
-                'author': reply.author,
+                'author': reply.user_name,
                 'content': reply.content,
                 'created_at': reply.created_at.isoformat() if reply.created_at else None
             }

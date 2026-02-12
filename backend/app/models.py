@@ -112,6 +112,7 @@ class ForumThread(Document):
     category = fields.StringField(required=True)  # e.g., 'health-tips', 'recipes', 'wellness'
     views_count = fields.IntField(default=0)
     replies_count = fields.IntField(default=0)
+    likes_count = fields.IntField(default=0)  # Track number of likes
     status = fields.StringField(default='active')  # active, closed, pinned
     created_at = fields.DateTimeField(default=datetime.utcnow)
     updated_at = fields.DateTimeField(default=datetime.utcnow)
@@ -125,6 +126,7 @@ class ForumThread(Document):
             'category': self.category,
             'viewsCount': self.views_count,
             'repliesCount': self.replies_count,
+            'likeCount': self.likes_count,
             'status': self.status,
             'createdAt': self.created_at.isoformat() if self.created_at else None,
             'updatedAt': self.updated_at.isoformat() if self.updated_at else None
