@@ -67,7 +67,7 @@ const MarketScreen: React.FC = () => {
     const fetchProducts = async () => {
         try {
             const apiUrl = process.env.REACT_APP_API_URL || 'https://nutrilea-backend.onrender.com/api';
-            const response = await fetch(`${apiUrl}/products`);
+            const response = await fetch(`${apiUrl}/market/products`);
             
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -93,7 +93,7 @@ const MarketScreen: React.FC = () => {
     const fetchCategories = async () => {
         try {
             const apiUrl = process.env.REACT_APP_API_URL || 'https://nutrilea-backend.onrender.com/api';
-            const response = await fetch(`${apiUrl}/categories`);
+            const response = await fetch(`${apiUrl}/market/categories`);
             
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);

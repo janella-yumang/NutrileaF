@@ -47,8 +47,8 @@ const HeaderNav: React.FC = () => {
           if (roleData.success) {
             const freshUserData = {
               ...userData,
-              role: roleData.user.role,
-              status: roleData.user.status
+              role: roleData.user?.role ?? roleData.role ?? null,
+              status: roleData.user?.status ?? userData.status
             };
             
             // Update localStorage with fresh data
@@ -58,7 +58,7 @@ const HeaderNav: React.FC = () => {
             setUserName(userData.name || userData.fullName);
             setUserEmail(userData.email);
             setUserPhone(userData.phone);
-            setUserRole(roleData.user.role);
+            setUserRole(roleData.user?.role ?? roleData.role ?? null);
             
             console.log('HeaderNav - Set userRole from database:', roleData.user.role);
           } else {
@@ -165,7 +165,7 @@ const HeaderNav: React.FC = () => {
         const token = localStorage.getItem('nutrileaf_token');
         if (!token) return;
 
-        const API_BASE = process.env.REACT_APP_API_URL?.replace('/api', '') || 'https://nutrilea-backend.onrender.com';
+        const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrilea-backend.onrender.com/api';
         const response = await fetch(`${API_BASE}/auth/verify`, {
           method: 'GET',
           headers: {
