@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Heart, MessageCircle, Upload } from 'lucide-react';
 import HeaderNav from '../components/HeaderNav';
 import { Footer } from '../components/Footer';
+import FloatingChat from '../components/FloatingChat';
 
 interface Post {
   id: string;
@@ -516,6 +517,7 @@ const ForumScreen: React.FC = () => {
       </div>
 
       <Footer />
+      <FloatingChat />
     </div>
   );
 };

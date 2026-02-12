@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import HeaderNav from '../components/HeaderNav';
+import FloatingChat from '../components/FloatingChat';
 
 const AnalyticsScreen: React.FC = () => {
     const navigate = useNavigate();
@@ -223,6 +224,7 @@ const AnalyticsScreen: React.FC = () => {
             </div>
 
             <HeaderNav />
+            <FloatingChat />
         </div>
     );
 };

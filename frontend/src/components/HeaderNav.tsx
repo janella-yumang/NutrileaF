@@ -353,7 +353,6 @@ const HeaderNav: React.FC = () => {
     { label: 'Home', path: '/' },
     { label: 'Scan', path: '/scan' },
     { label: 'Market', path: '/market' },
-    { label: 'Chat', path: '/chat' },
     { label: 'Forum', path: '/forum' },
     ...(userRole === 'admin' ? [{ label: 'Admin Dashboard', path: '/admin' }] : []),
   ];

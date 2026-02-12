@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HeaderNav from '../components/HeaderNav';
+import FloatingChat from '../components/FloatingChat';
 
 interface Product {
     id: number;
@@ -892,6 +893,7 @@ const MarketScreen: React.FC = () => {
             )}
 
         <HeaderNav />
+        <FloatingChat />
         </React.Fragment>
     );
 };

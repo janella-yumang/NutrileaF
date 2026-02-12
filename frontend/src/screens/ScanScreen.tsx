@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Camera, Upload, X } from 'lucide-react';
 import HeaderNav from '../components/HeaderNav';
+import FloatingChat from '../components/FloatingChat';
 
 const ScanScreen = () => {
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -731,6 +732,7 @@ const ScanScreen = () => {
         }
       `}</style>
             </div>
+            <FloatingChat />
         </div>
     );
 

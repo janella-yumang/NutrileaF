@@ -1694,7 +1694,9 @@ const styles: { [key: string]: React.CSSProperties } = {
     padding: '20px',
     boxShadow: '0 14px 30px rgba(15, 36, 25, 0.10)',
     border: '1px solid rgba(15, 36, 25, 0.08)',
-    width: '100%'
+    width: '100%',
+    maxWidth: '1000px',
+    margin: '0 auto'
   },
   dashboardSection: {
     backgroundColor: 'white',
@@ -1710,7 +1712,9 @@ const styles: { [key: string]: React.CSSProperties } = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '20px'
+    marginBottom: '20px',
+    flexWrap: 'wrap',
+    gap: '10px'
   },
   createBtn: {
     padding: '8px 16px',
@@ -1964,7 +1968,8 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: '12px',
     border: '1px solid rgba(15, 36, 25, 0.08)',
     fontSize: '14px',
-    backgroundColor: 'white'
+    backgroundColor: 'white',
+    tableLayout: 'auto'
   },
   input: {
     width: '100%',

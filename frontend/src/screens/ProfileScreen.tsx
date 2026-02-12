@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { User, Camera } from 'lucide-react';
 import HeaderNav from '../components/HeaderNav';
 import { Footer } from '../components/Footer';
+import FloatingChat from '../components/FloatingChat';
 
 interface UserData {
   id: string;
@@ -423,6 +424,7 @@ const ProfileScreen: React.FC = () => {
       </div>
 
       <Footer />
+      <FloatingChat />
     </div>
   );
 };

@@ -12,6 +12,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import HeaderNav from '../components/HeaderNav';
 import { Footer } from '../components/Footer';
+import FloatingChat from '../components/FloatingChat';
 
 const HomeScreen: React.FC = () => {
   const navigate = useNavigate();
@@ -192,6 +193,7 @@ const HomeScreen: React.FC = () => {
       <Footer />
 
       <HeaderNav />
+      <FloatingChat />
     </div>
   );
 };
