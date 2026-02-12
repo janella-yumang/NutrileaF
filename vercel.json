@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "buildCommand": "cd frontend && npm run build",
+  "outputDirectory": "frontend/build",
+  "framework": "create-react-app",
+  "installCommand": "cd frontend && npm install --legacy-peer-deps",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "env": {
+    "REACT_APP_API_URL": "https://nutrilea-10.onrender.com/api"
+  }
+}
