@@ -1647,12 +1647,14 @@ const styles: { [key: string]: React.CSSProperties } = {
   container: {
     padding: '24px',
     paddingTop: '140px',
-    maxWidth: '1400px',
+    width: '100%',
+    maxWidth: '1600px',
     margin: '0 auto',
     backgroundColor: 'transparent',
     display: 'flex',
     flexDirection: 'column',
-    alignItems: 'center'
+    alignItems: 'center',
+    minHeight: '100vh'
   },
   header: {
     textAlign: 'center',
@@ -1665,13 +1667,13 @@ const styles: { [key: string]: React.CSSProperties } = {
     display: 'flex',
     justifyContent: 'center',
     gap: '10px',
-    marginBottom: '16px',
-    borderBottom: '1px solid rgba(15, 36, 25, 0.10)',
+    marginBottom: '24px',
     backgroundColor: 'rgba(255,255,255,0.7)',
     backdropFilter: 'blur(8px)',
     borderRadius: '12px',
     padding: '8px',
-    width: '100%'
+    width: '100%',
+    flexWrap: 'wrap'
   },
   tab: {
     padding: '10px 16px',
@@ -1691,30 +1693,30 @@ const styles: { [key: string]: React.CSSProperties } = {
   section: {
     backgroundColor: 'white',
     borderRadius: '16px',
-    padding: '20px',
+    padding: '24px',
     boxShadow: '0 14px 30px rgba(15, 36, 25, 0.10)',
     border: '1px solid rgba(15, 36, 25, 0.08)',
     width: '100%',
-    maxWidth: '1000px',
+    maxWidth: '1500px',
     margin: '0 auto'
   },
   dashboardSection: {
     backgroundColor: 'white',
     borderRadius: '16px',
-    padding: '20px',
+    padding: '24px',
     boxShadow: '0 14px 30px rgba(15, 36, 25, 0.10)',
     border: '1px solid rgba(15, 36, 25, 0.08)',
     width: '100%',
-    maxWidth: '1200px',
+    maxWidth: '1500px',
     margin: '0 auto'
   },
   sectionHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '20px',
+    marginBottom: '24px',
     flexWrap: 'wrap',
-    gap: '10px'
+    gap: '12px'
   },
   createBtn: {
     padding: '8px 16px',
@@ -1773,86 +1775,102 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   statsGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: '15px',
-    marginTop: '20px'
+    gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+    gap: '16px',
+    marginTop: '24px',
+    marginBottom: '24px'
   },
   statCard: {
     background: 'linear-gradient(135deg, #1a5f3a 0%, #2d7a50 60%, #3a8f60 100%)',
     color: 'white',
-    padding: '20px',
+    padding: '24px',
     borderRadius: '14px',
     textAlign: 'left',
-    boxShadow: '0 12px 22px rgba(15, 36, 25, 0.18)'
+    boxShadow: '0 12px 22px rgba(15, 36, 25, 0.18)',
+    minHeight: '120px',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between'
   },
   statValue: {
-    fontSize: '32px',
+    fontSize: '36px',
     fontWeight: 'bold'
   },
   statLabel: {
     fontSize: '14px',
-    marginTop: '10px',
-    opacity: 0.9
+    marginTop: '8px',
+    opacity: 0.9,
+    fontWeight: 500
   },
   analyticsBlock: {
-    marginTop: '28px',
-    paddingTop: '12px',
-    borderTop: '1px solid rgba(15, 36, 25, 0.08)'
+    marginTop: '32px',
+    paddingTop: '24px',
+    borderTop: '2px solid rgba(15, 36, 25, 0.08)'
   },
   analyticsHeader: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '6px',
-    marginBottom: '16px'
+    gap: '8px',
+    marginBottom: '24px'
   },
   analyticsTitle: {
     margin: 0,
-    fontSize: '20px'
+    fontSize: '22px',
+    fontWeight: 700,
+    color: '#0f2419'
   },
   analyticsSubtitle: {
     margin: 0,
     color: '#567064',
-    fontSize: '13px'
+    fontSize: '14px'
   },
   analyticsGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-    gap: '12px',
-    marginBottom: '18px'
+    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+    gap: '14px',
+    marginBottom: '24px'
   },
   analyticsCard: {
     background: 'linear-gradient(135deg, #f2f8f5 0%, #ffffff 100%)',
     borderRadius: '12px',
-    padding: '14px',
-    border: '1px solid rgba(15, 36, 25, 0.08)'
+    padding: '16px',
+    border: '1px solid rgba(15, 36, 25, 0.08)',
+    minHeight: '80px',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between'
   },
   analyticsLabel: {
     fontSize: '12px',
     textTransform: 'uppercase',
     letterSpacing: '0.8px',
-    color: '#6b7f74'
+    color: '#6b7f74',
+    fontWeight: 600
   },
   analyticsValue: {
-    fontSize: '20px',
+    fontSize: '24px',
     fontWeight: 700,
-    marginTop: '6px'
+    marginTop: '8px',
+    color: '#1a5f3a'
   },
   analyticsCharts: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-    gap: '16px'
+    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+    gap: '18px'
   },
   chartCard: {
     background: '#ffffff',
-    borderRadius: '16px',
-    padding: '16px',
+    borderRadius: '14px',
+    padding: '20px',
     border: '1px solid rgba(15, 36, 25, 0.08)',
-    boxShadow: '0 10px 22px rgba(15, 36, 25, 0.08)'
+    boxShadow: '0 10px 22px rgba(15, 36, 25, 0.06)'
   },
   chartTitle: {
     marginTop: 0,
-    marginBottom: '10px',
-    fontSize: '15px'
+    marginBottom: '14px',
+    fontSize: '16px',
+    fontWeight: 600,
+    color: '#0f2419'
   },
   chartList: {
     display: 'flex',
@@ -1963,7 +1981,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   table: {
     width: '100%',
     borderCollapse: 'collapse',
-    marginTop: '12px',
+    marginTop: '16px',
     overflow: 'hidden',
     borderRadius: '12px',
     border: '1px solid rgba(15, 36, 25, 0.08)',
@@ -1973,14 +1991,14 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   input: {
     width: '100%',
-    padding: '8px',
+    padding: '10px',
     border: '1px solid #ddd',
     borderRadius: '4px',
     fontFamily: 'inherit'
   },
   actions: {
     display: 'flex',
-    gap: '5px'
+    gap: '8px'
   },
   editBtn: {
     padding: '6px 12px',
@@ -1989,7 +2007,8 @@ const styles: { [key: string]: React.CSSProperties } = {
     border: 'none',
     borderRadius: '4px',
     cursor: 'pointer',
-    fontSize: '12px'
+    fontSize: '12px',
+    fontWeight: 500
   },
   deleteBtn: {
     padding: '6px 12px',
@@ -1998,35 +2017,38 @@ const styles: { [key: string]: React.CSSProperties } = {
     border: 'none',
     borderRadius: '4px',
     cursor: 'pointer',
-    fontSize: '12px'
+    fontSize: '12px',
+    fontWeight: 500
   },
   saveBtn: {
-    padding: '6px 12px',
+    padding: '8px 14px',
     backgroundColor: '#27ae60',
     color: 'white',
     border: 'none',
     borderRadius: '4px',
     cursor: 'pointer',
-    fontSize: '12px'
+    fontSize: '13px',
+    fontWeight: 600
   },
   cancelBtn: {
-    padding: '6px 12px',
+    padding: '8px 14px',
     backgroundColor: '#95a5a6',
     color: 'white',
     border: 'none',
     borderRadius: '4px',
     cursor: 'pointer',
-    fontSize: '12px'
+    fontSize: '13px',
+    fontWeight: 600
   },
   tableCell: {
-    padding: '16px 12px',
+    padding: '14px 12px',
     textAlign: 'left',
     borderBottom: '1px solid rgba(15, 36, 25, 0.06)',
     verticalAlign: 'middle',
     lineHeight: '1.5'
   },
   tableHeader: {
-    padding: '18px 12px',
+    padding: '16px 12px',
     textAlign: 'left',
     backgroundColor: '#f8faf9',
     fontWeight: '600',

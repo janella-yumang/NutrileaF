@@ -76,7 +76,8 @@ const MarketScreen: React.FC = () => {
             const apiUrl = process.env.REACT_APP_API_URL || 'https://nutrilea-10.onrender.com/api';
             console.log('MarketScreen - API URL:', apiUrl);
             console.log('MarketScreen - Full products URL:', `${apiUrl}/market/products`);
-            const response = await fetch(`${apiUrl}/market/products`);
+            const timestamp = Date.now(); // Cache busting
+            const response = await fetch(`${apiUrl}/market/products?t=${timestamp}`);
             
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
