@@ -29,10 +29,10 @@ def register():
         )
 
     try:
-        from app.models import User
+        from app.models import db, User
         
         # Check if user already exists
-        existing_user = User.objects(email=email).first()
+        existing_user = User.query.filter_by(email=email).first()
         if existing_user:
             return (
                 jsonify(
@@ -58,7 +58,8 @@ def register():
             status='active'
         )
         
-        new_user.save()
+        db.session.add(new_user)
+        db.session.commit()
         
         print(f"DEBUG: User registered successfully with ID: {new_user.id}")
         print(f"DEBUG: User data: {name}, {email}")
@@ -67,7 +68,7 @@ def register():
         secret_key = current_app.config.get('SECRET_KEY', 'supersecretkey')
         token = jwt.encode(
             {
-                'user_id': str(new_user.id),  # Convert ObjectId to string
+                'user_id': new_user.id,
                 'email': email,
                 'role': 'user',
                 'exp': datetime.datetime.utcnow() + datetime.timedelta(days=30)
@@ -81,7 +82,7 @@ def register():
                 {
                     "success": True,
                     "user": {
-                        "id": str(new_user.id),  # Convert ObjectId to string
+                        "id": new_user.id,
                         "name": name,
                         "email": email,
                         "phone": phone,
@@ -94,6 +95,7 @@ def register():
             201,
         )
     except Exception as e:
+        db.session.rollback()
         print(f"Registration error: {e}")
         return (
             jsonify(
@@ -108,96 +110,97 @@ def register():
 
 @auth_bp.route("/login", methods=["POST"])
 def login():
-    """Optimized login with MongoDB."""
+    """Login with email and password against PostgreSQL."""
     data = request.get_json(silent=True) or {}
 
     email = (data.get("email") or "").strip().lower()
     password = data.get("password") or ""
 
     if not email or not password:
-        return jsonify({
-            "success": False,
-            "message": "Email and password are required."
-        }), 400
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "message": "Email and password are required.",
+                }
+            ),
+            400,
+        )
 
     try:
-        # Optimized query using indexes - filter by email and active status
-        from app.models import User
+        # Use SQLAlchemy to query PostgreSQL
+        from app.models import db, User
         
-        # Use only() to fetch only needed fields and leverage indexes
-        user = User.objects(email=email, status='active').only('id', 'email', 'name', 'phone', 'address', 'role', 'password_hash').first()
+        user = User.query.filter_by(email=email).first()
 
         if not user or not check_password_hash(user.password_hash, password):
-            return jsonify({
-                "success": False,
-                "message": "Invalid email or password."
-            }), 401
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "message": "Invalid email or password.",
+                    }
+                ),
+                401,
+            )
 
-        # Generate JWT token efficiently
+        # Check if user is active
+        if user.status != 'active':
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "message": f"Account is {user.status}.",
+                    }
+                ),
+                401,
+            )
+
+        user_data = {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "phone": user.phone,
+            "address": user.address,
+            "role": user.role
+        }
+
+        # Generate JWT token
         secret_key = current_app.config.get('SECRET_KEY', 'supersecretkey')
         token = jwt.encode(
             {
-                'user_id': str(user.id),
+                'user_id': user.id,
                 'email': user.email,
-                'role': getattr(user, 'role', 'user'),
+                'role': user.role,
                 'exp': datetime.datetime.utcnow() + datetime.timedelta(days=30)
             },
             secret_key,
             algorithm='HS256'
         )
 
-        return jsonify({
-            "success": True,
-            "user": {
-                "id": str(user.id),
-                "name": getattr(user, 'name', ''),
-                "email": user.email,
-                "phone": getattr(user, 'phone', ''),
-                "address": getattr(user, 'address', ''),
-                "role": getattr(user, 'role', 'user')
-            },
-            "token": token,
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "message": "Login successful.",
+                    "user": user_data,
+                    "token": token,
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "message": "Login failed. Please try again."
-        }), 500
-
-
-@auth_bp.route("/verify-role", methods=["GET"])
-def verify_role():
-    """Verify JWT token and return user role"""
-    auth_header = request.headers.get('Authorization')
-    
-    if not auth_header or not auth_header.startswith('Bearer '):
-        return jsonify({'success': False, 'message': 'Missing or invalid token'}), 401
-    
-    token = auth_header.split(' ')[1]
-    secret_key = current_app.config.get('SECRET_KEY', 'supersecretkey')
-    
-    try:
-        payload = jwt.decode(token, secret_key, algorithms=['HS256'])
-        user_id = payload.get('user_id')
-        
-        from app.models import User
-        user = User.objects(id=user_id).only('id', 'role').first()
-        
-        if not user:
-            return jsonify({'success': False, 'message': 'User not found'}), 404
-        
-        return jsonify({
-            'success': True,
-            'role': getattr(user, 'role', 'user'),
-            'user_id': str(user.id)
-        })
-    except jwt.ExpiredSignatureError:
-        return jsonify({'success': False, 'message': 'Token expired'}), 401
-    except jwt.InvalidTokenError:
-        return jsonify({'success': False, 'message': 'Invalid token'}), 401
-    except Exception as e:
-        return jsonify({'success': False, 'message': 'Verification failed'}), 500
+        print(f"Login error: {e}")
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "message": f"Login error: {str(e)}",
+                }
+            ),
+            500,
+        )
 
 
 @auth_bp.route("/verify", methods=["GET"])
@@ -216,7 +219,7 @@ def verify_token():
         user_id = payload.get('user_id')
         
         from app.models import User
-        user = User.objects(id=user_id).first()  # Use MongoEngine syntax
+        user = User.query.get(user_id)
         
         if not user:
             return jsonify({'success': False, 'message': 'User not found'}), 404
@@ -224,7 +227,7 @@ def verify_token():
         return jsonify({
             'success': True,
             'user': {
-                'id': str(user.id),  # Convert ObjectId to string
+                'id': user.id,
                 'name': user.name,
                 'email': user.email,
                 'phone': user.phone,
@@ -268,8 +271,8 @@ def update_profile():
         return jsonify({'success': False, 'message': 'Full name is required'}), 400
     
     try:
-        from app.models import User
-        user = User.objects(id=user_id).first()
+        from app.models import db, User
+        user = User.query.get(user_id)
         
         if not user:
             return jsonify({'success': False, 'message': 'User not found'}), 404
@@ -277,13 +280,13 @@ def update_profile():
         user.name = full_name
         user.phone = phone
         user.address = address
-        user.save()
+        db.session.commit()
         
         return jsonify({
             'success': True,
             'message': 'Profile updated successfully',
             'user': {
-                'id': str(user.id),  # Convert ObjectId to string
+                'id': user.id,
                 'name': user.name,
                 'email': user.email,
                 'phone': user.phone,
@@ -291,5 +294,6 @@ def update_profile():
             }
         })
     except Exception as e:
+        db.session.rollback()
         return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
 

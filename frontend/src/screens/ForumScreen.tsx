@@ -35,7 +35,7 @@ interface Comment {
 
 const ForumScreen: React.FC = () => {
   const navigate = useNavigate();
-  const API_BASE = process.env.REACT_APP_API_URL || 'http://127.0.0.1:5000/api';
+  const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrilea-backend.onrender.com/api';
   const BASE_URL = API_BASE.replace('/api', '');
 
   const [posts, setPosts] = useState<Post[]>([]);

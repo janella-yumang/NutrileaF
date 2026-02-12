@@ -1,0 +1,9 @@
+backend
+venv_312
+.env
+.env.local
+*.pyc
+__pycache__
+node_modules
+frontend/node_modules
+.git

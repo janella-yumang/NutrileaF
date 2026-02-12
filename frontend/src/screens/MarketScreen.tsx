@@ -128,6 +128,49 @@ const MarketScreen: React.FC = () => {
         .filter(p => selectedCategory === 'all' ? true : p.category === selectedCategory)
         .filter(p => searchQuery.trim() === '' ? true : p.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
+    const featuredProducts: Product[] = [
+        {
+            id: 1,
+            name: 'Premium Moringa Powder',
+            category: 'featured',
+            price: 299,
+            description: '100% organic moringa leaf powder',
+            image: '/images/products1.jpg',
+            benefits: [],
+            quantity: '250g'
+        },
+        {
+            id: 2,
+            name: 'Moringa Capsules',
+            category: 'featured',
+            price: 399,
+            description: 'Convenient moringa supplement capsules',
+            image: '/images/products2.jpg',
+            benefits: [],
+            quantity: '60 caps'
+        },
+        {
+            id: 3,
+            name: 'Moringa Tea',
+            category: 'featured',
+            price: 199,
+            description: 'Refreshing moringa herbal tea blend',
+            image: '/images/products3.jpg',
+            benefits: [],
+            quantity: '20 bags'
+        },
+        {
+            id: 4,
+            name: 'Moringa Oil',
+            category: 'featured',
+            price: 499,
+            description: 'Cold-pressed moringa essential oil',
+            image: '/images/products4.jpg',
+            benefits: [],
+            quantity: '30ml'
+        }
+    ];
+
     const addToCart = (product: Product) => {
         setCart(prevCart => {
             const existing = prevCart.find(item => item.id === product.id);
@@ -188,7 +231,18 @@ const MarketScreen: React.FC = () => {
 
     const cartCount = cart.reduce((sum, item) => sum + item.cartQuantity, 0);
 
+    const selected = selectedProduct;
+    const selectedImage = selected?.image;
+    const selectedEmoji =
+        typeof selectedImage === 'string' &&
+        selectedImage.length > 0 &&
+        !selectedImage.startsWith('http') &&
+        !selectedImage.startsWith('/uploads/')
+            ? selectedImage
+            : '🌿';
+
     return (
+        <React.Fragment>
         <div className="screen" style={{ position: 'relative' }}>
             <div className="header" style={{ height: 0 }} />
 
@@ -285,12 +339,7 @@ const MarketScreen: React.FC = () => {
                         scrollBehavior: 'smooth'
                     }}>
                         {/* Use carousel images instead of first 8 products */}
-                        {[
-                            { id: 1, name: 'Premium Moringa Powder', price: 299, description: '100% organic moringa leaf powder', image: '/images/products1.jpg' },
-                            { id: 2, name: 'Moringa Capsules', price: 399, description: 'Convenient moringa supplement capsules', image: '/images/products2.jpg' },
-                            { id: 3, name: 'Moringa Tea', price: 199, description: 'Refreshing moringa herbal tea blend', image: '/images/products3.jpg' },
-                            { id: 4, name: 'Moringa Oil', price: 499, description: 'Cold-pressed moringa essential oil', image: '/images/products4.jpg' }
-                        ].map(product => (
+                        {featuredProducts.map(product => (
                             <div
                                 key={product.id}
                                 onClick={() => setSelectedProduct(product)}
@@ -719,8 +768,8 @@ const MarketScreen: React.FC = () => {
                 </div>
             </div>
 
-            {/* Product Detail Modal */}
-            {selectedProduct && (
+        {/* Product Detail Modal */}
+        {selected && (
                 <div
                     onClick={() => setSelectedProduct(null)}
                     style={{
@@ -748,8 +797,8 @@ const MarketScreen: React.FC = () => {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
                             <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
                                 <img 
-                                    src={getImageUrl(selectedProduct.image)} 
-                                    alt={selectedProduct.name}
+                                    src={getImageUrl(selected?.image)} 
+                                    alt={selected.name}
                                     style={{ 
                                         width: '80px',
                                         height: '80px',
@@ -766,47 +815,47 @@ const MarketScreen: React.FC = () => {
                                     fontSize: '48px',
                                     display: 'none' // Hidden by default, shown if image fails
                                 }}>
-                                    {typeof selectedProduct.image === 'string' && selectedProduct.image.length > 0 && !selectedProduct.image.startsWith('http') && !selectedProduct.image.startsWith('/uploads/') ? selectedProduct.image : '🌿'}
+                                    {selectedEmoji}
                                 </div>
                                 <div>
-                                    <h2 style={{ margin: 0 }}>{selectedProduct.name}</h2>
-                                    <div style={{ color: '#666', fontSize: '14px' }}>{selectedProduct.quantity}</div>
+                                    <h2 style={{ margin: 0 }}>{selected.name}</h2>
+                                    <div style={{ color: '#666', fontSize: '14px' }}>{selected.quantity}</div>
                                 </div>
                             </div>
                             <div style={{ textAlign: 'right' }}>
-                                <div style={{ fontSize: '20px', fontWeight: '700', color: '#1a5f3a' }}>₱{selectedProduct.price}</div>
-                                {selectedProduct.originalPrice && (
-                                    <div style={{ textDecoration: 'line-through', color: '#999' }}>₱{selectedProduct.originalPrice}</div>
+                                <div style={{ fontSize: '20px', fontWeight: '700', color: '#1a5f3a' }}>₱{selected.price}</div>
+                                {selected.originalPrice && (
+                                    <div style={{ textDecoration: 'line-through', color: '#999' }}>₱{selected.originalPrice}</div>
                                 )}
                             </div>
                         </div>
 
                         <hr style={{ margin: '16px 0' }} />
 
-                        <p style={{ color: '#444' }}>{selectedProduct.description}</p>
+                        <p style={{ color: '#444' }}>{selected.description}</p>
 
-                        {selectedProduct.uses && (
+                        {selected.uses && (
                             <div style={{ marginTop: '10px' }}>
                                 <h4 style={{ marginBottom: '8px' }}>What it's for</h4>
                                 <ul>
-                                    {selectedProduct.uses.map((u, i) => <li key={i}>{u}</li>)}
+                                    {selected.uses.map((u, i) => <li key={i}>{u}</li>)}
                                 </ul>
                             </div>
                         )}
 
-                        {selectedProduct.howToUse && (
+                        {selected.howToUse && (
                             <div style={{ marginTop: '10px' }}>
                                 <h4 style={{ marginBottom: '8px' }}>How to use</h4>
                                 <ol>
-                                    {selectedProduct.howToUse.map((s, i) => <li key={i}>{s}</li>)}
+                                    {selected.howToUse.map((s, i) => <li key={i}>{s}</li>)}
                                 </ol>
                             </div>
                         )}
 
-                        {selectedProduct.reviews && (
+                        {selected.reviews && (
                             <div style={{ marginTop: '10px' }}>
                                 <h4 style={{ marginBottom: '8px' }}>Reviews</h4>
-                                {selectedProduct.reviews.map((r, i) => (
+                                {selected.reviews.map((r, i) => (
                                     <div key={i} style={{ padding: '8px 0', borderBottom: '1px solid #f0f0f0' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <strong>{r.author}</strong>
@@ -820,7 +869,7 @@ const MarketScreen: React.FC = () => {
 
                         <div style={{ display: 'flex', gap: '12px', marginTop: '16px', alignItems: 'center' }}>
                             <button
-                                onClick={() => { selectedProduct && addToCart(selectedProduct); setSelectedProduct(null); }}
+                                onClick={() => { addToCart(selected); setSelectedProduct(null); }}
                                 style={{ background: '#1a5f3a', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}
                             >
                                 Add to cart
@@ -836,8 +885,8 @@ const MarketScreen: React.FC = () => {
                 </div>
             )}
 
-            <HeaderNav />
-        </div>
+        <HeaderNav />
+        </React.Fragment>
     );
 };
 

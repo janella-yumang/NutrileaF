@@ -34,7 +34,7 @@ const RegisterScreen: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
-  const API_BASE = process.env.REACT_APP_API_URL || 'https://orange-bushes-pick.loca.lt/api';
+  const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrilea-backend.onrender.com/api';
 
   const validateForm = (): boolean => {
     const errors: FormErrors = {};
