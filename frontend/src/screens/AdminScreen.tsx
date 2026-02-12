@@ -1323,23 +1323,29 @@ const styles: { [key: string]: React.CSSProperties } = {
     paddingTop: '140px',
     maxWidth: '1400px',
     margin: '0 auto',
-    backgroundColor: 'transparent'
+    backgroundColor: 'transparent',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center'
   },
   header: {
-    textAlign: 'left',
+    textAlign: 'center',
     marginBottom: '18px',
     borderBottom: '1px solid rgba(15, 36, 25, 0.12)',
-    paddingBottom: '12px'
+    paddingBottom: '12px',
+    width: '100%'
   },
   tabContainer: {
     display: 'flex',
+    justifyContent: 'center',
     gap: '10px',
     marginBottom: '16px',
     borderBottom: '1px solid rgba(15, 36, 25, 0.10)',
     backgroundColor: 'rgba(255,255,255,0.7)',
     backdropFilter: 'blur(8px)',
     borderRadius: '12px',
-    padding: '8px'
+    padding: '8px',
+    width: '100%'
   },
   tab: {
     padding: '10px 16px',
@@ -1361,7 +1367,8 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: '16px',
     padding: '20px',
     boxShadow: '0 14px 30px rgba(15, 36, 25, 0.10)',
-    border: '1px solid rgba(15, 36, 25, 0.08)'
+    border: '1px solid rgba(15, 36, 25, 0.08)',
+    width: '100%'
   },
   sectionHeader: {
     display: 'flex',
