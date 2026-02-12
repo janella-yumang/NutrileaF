@@ -166,6 +166,40 @@ def login():
         }), 500
 
 
+@auth_bp.route("/verify-role", methods=["GET"])
+def verify_role():
+    """Verify JWT token and return user role"""
+    auth_header = request.headers.get('Authorization')
+    
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({'success': False, 'message': 'Missing or invalid token'}), 401
+    
+    token = auth_header.split(' ')[1]
+    secret_key = current_app.config.get('SECRET_KEY', 'supersecretkey')
+    
+    try:
+        payload = jwt.decode(token, secret_key, algorithms=['HS256'])
+        user_id = payload.get('user_id')
+        
+        from app.models import User
+        user = User.objects(id=user_id).only('id', 'role').first()
+        
+        if not user:
+            return jsonify({'success': False, 'message': 'User not found'}), 404
+        
+        return jsonify({
+            'success': True,
+            'role': getattr(user, 'role', 'user'),
+            'user_id': str(user.id)
+        })
+    except jwt.ExpiredSignatureError:
+        return jsonify({'success': False, 'message': 'Token expired'}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({'success': False, 'message': 'Invalid token'}), 401
+    except Exception as e:
+        return jsonify({'success': False, 'message': 'Verification failed'}), 500
+
+
 @auth_bp.route("/verify", methods=["GET"])
 def verify_token():
     """Verify JWT token and return user info"""

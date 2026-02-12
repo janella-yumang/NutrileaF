@@ -3,6 +3,96 @@ from app.models import Product, ProductCategory
 
 market_bp = Blueprint('market', __name__)
 
+@market_bp.route('/products', methods=['GET'])
+def get_products():
+    """Get all products with optional category filtering."""
+    try:
+        # Get query parameters
+        category = request.args.get('category')
+        region = request.args.get('region', 'Luzon')
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        
+        # Build base query using MongoEngine
+        query = Product.objects
+        
+        # Filter by category if provided
+        if category and category != 'all':
+            query = query.filter(category=category)
+        
+        # Get products for analysis with pagination
+        skip = (page - 1) * per_page
+        products = query.skip(skip).limit(per_page)
+        total = query.count()
+        
+        if not products:
+            return jsonify({
+                'success': False,
+                'error': 'No products found for the specified criteria'
+            }), 404
+        
+        # Convert products to dict with proper ObjectId serialization
+        products_list = []
+        for product in products:
+            product_dict = {
+                'id': str(product.id),
+                'name': product.name,
+                'category': product.category,
+                'price': product.price,
+                'original_price': product.original_price,
+                'description': product.description,
+                'image': product.image,
+                'quantity': product.quantity,
+                'benefits': product.benefits,
+                'uses': product.uses,
+                'how_to_use': product.how_to_use,
+                'reviews': product.reviews
+            }
+            products_list.append(product_dict)
+        
+        return jsonify({
+            'success': True,
+            'products': products_list,
+            'total': total,
+            'pages': (total + per_page - 1) // per_page,
+            'current_page': page
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@market_bp.route('/categories', methods=['GET'])
+def get_categories():
+    """Get all available categories for frontend use."""
+    try:
+        categories = ProductCategory.objects(status='active')
+        
+        # Convert to dict with proper ObjectId serialization
+        categories_list = []
+        for category in categories:
+            category_dict = {
+                'id': str(category.id),
+                'name': category.name,
+                'description': category.description,
+                'image': category.image
+            }
+            categories_list.append(category_dict)
+        
+        return jsonify({
+            'success': True,
+            'categories': categories_list,
+            'total': len(categories_list)
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 @market_bp.route('/track', methods=['GET'])
 def track_market():
     """Get market intelligence with optional category filtering."""
