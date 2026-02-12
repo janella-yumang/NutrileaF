@@ -37,7 +37,7 @@ const ProfileScreen: React.FC = () => {
   const [apiError, setApiError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const API_BASE = process.env.REACT_APP_API_URL || 'http://127.0.0.1:5000/api';
+  const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrilea-10.onrender.com/api';
 
   // Load user data on mount
   useEffect(() => {

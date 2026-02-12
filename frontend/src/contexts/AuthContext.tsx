@@ -46,7 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const API_BASE = process.env.REACT_APP_API_URL?.replace('/api', '') || 'https://nutrilea-backend.onrender.com';
+      const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrilea-10.onrender.com/api';
       const response = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -77,7 +77,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (userData: any) => {
     setIsLoading(true);
     try {
-      const API_BASE = process.env.REACT_APP_API_URL?.replace('/api', '') || 'https://nutrilea-backend.onrender.com';
+      const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrilea-10.onrender.com/api';
       const response = await fetch(`${API_BASE}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

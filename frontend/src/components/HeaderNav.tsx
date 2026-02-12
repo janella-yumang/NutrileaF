@@ -75,7 +75,7 @@ const HeaderNav: React.FC = () => {
         
         // Set profile image from backend user data
         if (userData.profileImage) {
-          const API_BASE = process.env.REACT_APP_API_URL || 'http://127.0.0.1:5000/api';
+          const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrilea-10.onrender.com/api';
           const BASE_URL = API_BASE.replace('/api', '');
           const fullProfileImageUrl = userData.profileImage.startsWith('http') 
             ? userData.profileImage 
@@ -112,7 +112,7 @@ const HeaderNav: React.FC = () => {
           
           // Set profile image from backend user data
           if (userData.profileImage) {
-            const API_BASE = process.env.REACT_APP_API_URL || 'http://127.0.0.1:5000/api';
+            const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrilea-10.onrender.com/api';
             const BASE_URL = API_BASE.replace('/api', '');
             const fullProfileImageUrl = userData.profileImage.startsWith('http') 
               ? userData.profileImage 
@@ -217,7 +217,7 @@ const HeaderNav: React.FC = () => {
         
         // Set profile image from backend user data
         if (userData.profileImage) {
-          const API_BASE = process.env.REACT_APP_API_URL || 'http://127.0.0.1:5000/api';
+          const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrilea-10.onrender.com/api';
           const BASE_URL = API_BASE.replace('/api', '');
           const fullProfileImageUrl = userData.profileImage.startsWith('http') 
             ? userData.profileImage 
