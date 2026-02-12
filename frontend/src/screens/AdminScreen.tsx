@@ -128,7 +128,7 @@ const AdminScreen: React.FC = () => {
   const fetchProducts = async () => {
     setProductsLoading(true);
     try {
-      const res = await fetch(`${apiBase}/api/admin/products`, { headers: getAdminHeaders() });
+      const res = await fetch(`${apiBase}/admin/products`, { headers: getAdminHeaders() });
       const data = await res.json();
       if (data.success) {
         setProducts(data.products);
@@ -214,7 +214,7 @@ const AdminScreen: React.FC = () => {
   const fetchCategories = async () => {
     setCategoriesLoading(true);
     try {
-      const res = await fetch(`${apiBase}/api/admin/categories`, { headers: getAdminHeaders() });
+      const res = await fetch(`${apiBase}/admin/categories`, { headers: getAdminHeaders() });
       const data = await res.json();
       if (data.success) {
         setCategories(data.categories);
