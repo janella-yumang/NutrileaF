@@ -192,144 +192,248 @@ const MarketScreen: React.FC = () => {
         <div className="screen" style={{ position: 'relative' }}>
             <div className="header" style={{ height: 0 }} />
 
+            {/* Simple Header with Cart */}
+            <div style={{
+                position: 'sticky',
+                top: '0',
+                background: 'white',
+                borderBottom: '1px solid #e0e0e0',
+                padding: '16px 20px',
+                zIndex: 100,
+                maxWidth: '1400px',
+                margin: '0 auto'
+            }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h1 style={{ 
+                        margin: 0, 
+                        fontSize: '24px', 
+                        fontWeight: '600',
+                        color: '#1a5f3a'
+                    }}>
+                        🌿 NutriLeaf Store
+                    </h1>
+                    
+                    <button
+                        onClick={() => navigate('/cart')}
+                        aria-label="Shopping cart"
+                        style={{
+                            background: '#1a5f3a',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '12px',
+                            padding: '12px 16px',
+                            cursor: 'pointer',
+                            fontSize: '16px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            boxShadow: '0 4px 12px rgba(26, 95, 58, 0.2)',
+                            transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-2px)';
+                            e.currentTarget.style.boxShadow = '0 6px 16px rgba(26, 95, 58, 0.3)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(26, 95, 58, 0.2)';
+                        }}
+                    >
+                        🛒 Cart
+                        {cartCount > 0 && (
+                            <span style={{
+                                background: '#ff6b6b',
+                                color: 'white',
+                                borderRadius: '50%',
+                                width: '24px',
+                                height: '24px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '12px',
+                                fontWeight: '700',
+                                marginLeft: '4px'
+                            }}>
+                                {cartCount}
+                            </span>
+                        )}
+                    </button>
+                </div>
+            </div>
+
             <div style={{
                 maxWidth: '1400px',
                 margin: '0 auto',
                 padding: '24px 20px 80px 20px',
-                minHeight: 'calc(100vh - 140px)',
-                display: 'flex',
-                gap: '24px'
+                minHeight: 'calc(100vh - 140px)'
             }}>
-                {/* Main Content */}
-                <div style={{ flex: 1 }}>
-                    {/* Hero Section */}
-                    <div style={{
-                        position: 'relative',
-                        background: 'linear-gradient(135deg, #1a5f3a 0%, #2d7a50 100%)',
-                        borderRadius: '16px',
-                        padding: '56px 48px 40px 48px',
-                        color: 'white',
+                {/* Product Carousel */}
+                <div style={{ marginBottom: '32px' }}>
+                    <h2 style={{ 
+                        fontSize: '20px', 
+                        fontWeight: '600', 
                         marginBottom: '16px',
-                        textAlign: 'center'
+                        color: '#333'
                     }}>
-
-                        {/* Buttons over hero */}
-                        <div style={{ position: 'absolute', top: '18px', left: 0, right: 0, display: 'flex', justifyContent: 'space-between', padding: '0 18px', zIndex: 1500 }}>
-                            <button
-                                onClick={() => navigate(-1)}
-                                aria-label="Back"
+                        Featured Products
+                    </h2>
+                    <div style={{
+                        display: 'flex',
+                        gap: '16px',
+                        overflowX: 'auto',
+                        padding: '8px 0',
+                        scrollBehavior: 'smooth'
+                    }}>
+                        {/* Use carousel images instead of first 8 products */}
+                        {[
+                            { id: 1, name: 'Premium Moringa Powder', price: 299, description: '100% organic moringa leaf powder', image: '/images/products1.jpg' },
+                            { id: 2, name: 'Moringa Capsules', price: 399, description: 'Convenient moringa supplement capsules', image: '/images/products2.jpg' },
+                            { id: 3, name: 'Moringa Tea', price: 199, description: 'Refreshing moringa herbal tea blend', image: '/images/products3.jpg' },
+                            { id: 4, name: 'Moringa Oil', price: 499, description: 'Cold-pressed moringa essential oil', image: '/images/products4.jpg' }
+                        ].map(product => (
+                            <div
+                                key={product.id}
+                                onClick={() => setSelectedProduct(product)}
                                 style={{
-                                    width: '48px',
-                                    height: '48px',
-                                    background: 'rgba(255,255,255,0.95)',
-                                    border: '1px solid rgba(0,0,0,0.06)',
+                                    minWidth: '200px',
+                                    background: 'white',
                                     borderRadius: '12px',
+                                    padding: '16px',
+                                    border: '1px solid #e0e0e0',
                                     cursor: 'pointer',
-                                    fontSize: '20px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    boxShadow: '0 6px 18px rgba(15,36,25,0.06)'
+                                    transition: 'all 0.2s ease',
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(-4px)';
+                                    e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(0)';
+                                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
                                 }}
                             >
-                                ←
-                            </button>
-
-                            <button
-                                onClick={() => navigate('/cart')}
-                                aria-label="Open cart"
-                                style={{
-                                    width: '48px',
-                                    height: '48px',
-                                    background: 'rgba(255,255,255,0.95)',
-                                    border: '1px solid rgba(0,0,0,0.06)',
-                                    borderRadius: '12px',
-                                    cursor: 'pointer',
-                                    fontSize: '20px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    position: 'relative',
-                                    boxShadow: '0 6px 18px rgba(15,36,25,0.06)'
-                                }}
-                            >
-                                🛒
-                                {cartCount > 0 && (
+                                <div style={{ marginBottom: '12px' }}>
+                                    <img 
+                                        src={getImageUrl(product.image)} 
+                                        alt={product.name}
+                                        style={{ 
+                                            width: '100%',
+                                            height: '150px',
+                                            objectFit: 'cover',
+                                            borderRadius: '8px',
+                                            backgroundColor: '#f8f9fa'
+                                        }}
+                                        onError={(e) => {
+                                            const target = e.currentTarget;
+                                            target.style.display = 'none';
+                                            const fallback = target.nextElementSibling as HTMLElement;
+                                            if (fallback) fallback.style.display = 'flex';
+                                        }}
+                                    />
                                     <div style={{
-                                        position: 'absolute',
-                                        top: '-8px',
-                                        right: '-8px',
-                                        background: '#ff6b6b',
-                                        color: 'white',
-                                        borderRadius: '50%',
-                                        width: '22px',
-                                        height: '22px',
-                                        display: 'flex',
+                                        display: 'none',
+                                        width: '100%',
+                                        height: '150px',
                                         alignItems: 'center',
                                         justifyContent: 'center',
-                                        fontSize: '12px',
-                                        fontWeight: '700'
+                                        fontSize: '48px',
+                                        backgroundColor: '#f8f9fa',
+                                        borderRadius: '8px'
                                     }}>
-                                        {cartCount}
+                                        🌿
                                     </div>
-                                )}
-                            </button>
-                        </div>
-                        <div style={{ fontSize: '64px', marginBottom: '20px' }}>🌿</div>
-                        <h1 style={{
-                            fontFamily: "'Playfair Display', serif",
-                            fontSize: '42px',
-                            fontWeight: '700',
-                            marginBottom: '12px',
-                            letterSpacing: '-0.5px'
-                        }}>
-                            Welcome to Moringa Store
-                        </h1>
-                        <p style={{
-                            fontSize: '18px',
-                            opacity: 0.95,
-                            maxWidth: '600px',
-                            margin: '0 auto'
-                        }}>
-                            Discover premium moringa products sourced and packaged with care. Packed with nutrients to support your wellness journey.
-                        </p>
+                                </div>
+                                <h3 style={{
+                                    margin: '0 0 8px 0',
+                                    fontSize: '16px',
+                                    fontWeight: '600',
+                                    color: '#333',
+                                    lineHeight: '1.3'
+                                }}>
+                                    {product.name}
+                                </h3>
+                                <p style={{
+                                    margin: '0 0 12px 0',
+                                    fontSize: '14px',
+                                    color: '#666',
+                                    lineHeight: '1.4'
+                                }}>
+                                    {product.description.length > 60 
+                                        ? `${product.description.substring(0, 60)}...` 
+                                        : product.description}
+                                </p>
+                                <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center'
+                                }}>
+                                    <div>
+                                        <span style={{
+                                            fontSize: '18px',
+                                            fontWeight: '700',
+                                            color: '#1a5f3a'
+                                        }}>
+                                            ₱{product.price}
+                                        </span>
+                                        {product.originalPrice && (
+                                            <span style={{
+                                                fontSize: '14px',
+                                                color: '#999',
+                                                textDecoration: 'line-through',
+                                                marginLeft: '8px'
+                                            }}>
+                                                ₱{product.originalPrice}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            addToCart(product);
+                                        }}
+                                        style={{
+                                            background: '#1a5f3a',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '8px',
+                                            padding: '8px 12px',
+                                            cursor: 'pointer',
+                                            fontSize: '14px',
+                                            transition: 'all 0.2s ease'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.background = '#2d7a50';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.background = '#1a5f3a';
+                                        }}
+                                    >
+                                        Add to Cart
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
                     </div>
+                </div>
 
-                    {/* Search Bar with Autocomplete */}
-                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px', position: 'relative' }}>
-                        <input
-                            aria-label="Search products"
-                            value={searchQuery}
-                            onChange={(e) => { setSearchQuery(e.target.value); setShowSuggestions(true); }}
-                            onFocus={() => setShowSuggestions(true)}
-                            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-                            placeholder="Search products, e.g. Moringa Powder"
-                            style={{
-                                width: 'min(800px, 95%)',
-                                padding: '12px 16px',
-                                borderRadius: '12px',
-                                border: '1px solid #e0e0e0',
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
-                            }}
-                        />
-
-                        {showSuggestions && searchQuery.trim() !== '' && (
-                            <div style={{
-                                position: 'absolute',
-                                top: '56px',
-                                width: 'min(800px, 95%)',
-                                background: 'white',
-                                borderRadius: '8px',
-                                boxShadow: '0 12px 40px rgba(0,0,0,0.12)',
-                                maxHeight: '280px',
-                                overflowY: 'auto',
-                                zIndex: 1500,
-                                border: '1px solid #f0f0f0'
-                            }}>
-                                {products
-                                    .filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                                    .slice(0, 6)
-                                    .map(p => (
+                {/* Search Bar */}
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '32px', position: 'relative' }}>
+                    <input
+                        aria-label="Search products"
+                        value={searchQuery}
+                        onChange={(e) => { setSearchQuery(e.target.value); setShowSuggestions(true); }}
+                        onFocus={() => setShowSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                        placeholder="Search products, e.g. Moringa Powder"
+                        style={{
+                            width: 'min(600px, 90%)',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                            fontSize: '16px'
+                        }}
+                    />
+                    
+                    {showSuggestions && searchQuery.trim() !== '' && (
                                         <div
                                             key={p.id}
                                             onMouseDown={() => { setSelectedProduct(p); setSearchQuery(''); setShowSuggestions(false); }}
