@@ -1,4 +1,4 @@
-import sys, os, re
+import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from flask import Flask, send_from_directory
@@ -8,23 +8,15 @@ from mongoengine import connect
 
 def create_app():
     app = Flask(__name__)
-    # Allow localhost and all Vercel domains
-    allowed_origins = [
-        'http://localhost:3000',
-        'http://127.0.0.1:3000',
-        'http://localhost:5000',
-        'http://127.0.0.1:5000',
-        re.compile(r"^https://.*\.vercel\.app$")
-    ]
-    
-    CORS(app, 
-         supports_credentials=True, 
-         expose_headers=['Content-Type'],
-         origins=allowed_origins,
-         allow_headers=['Content-Type', 'Authorization'],
-         methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
-
     app.config.from_object(Config)
+    
+    # CORS configuration - allow all origins (Vercel domains vary)
+    CORS(app, 
+         resources={r"/*": {"origins": "*"}},
+         supports_credentials=False,
+         allow_headers=["Content-Type", "Authorization"],
+         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+
     connect(host=Config.MONGODB_URI, alias='default')
     print(f"DEBUG: Using MongoDB: {Config.MONGODB_URI[:50]}..." if Config.MONGODB_URI else "ERROR: No database configured")
 
