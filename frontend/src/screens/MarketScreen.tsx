@@ -1027,44 +1027,44 @@ const MarketScreen: React.FC = () => {
                         style={{
                             width: 'min(1000px, 95%)',
                             maxHeight: '90vh',
-                            overflowY: 'auto',
                             background: 'white',
                             borderRadius: '12px',
-                            boxShadow: '0 12px 40px rgba(0,0,0,0.2)'
+                            boxShadow: '0 12px 40px rgba(0,0,0,0.2)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            overflow: 'hidden'
                         }}
                     >
                         {/* Image on top, details below */}
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            {/* TOP: Product Image */}
-                            <div style={{ 
-                                padding: '24px',
-                                background: '#f9f9f9',
-                                borderBottom: '1px solid #f0f0f0',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                minHeight: '300px',
-                                maxHeight: '40vh',
-                                overflowY: 'auto'
-                            }}>
-                                {getImageUrl(selected.image) ? (
-                                    <img 
-                                        src={getImageUrl(selected.image)} 
-                                        alt={selected.name}
-                                        style={{
-                                            maxWidth: '100%',
-                                            maxHeight: '100%',
-                                            objectFit: 'contain',
-                                            borderRadius: '8px'
-                                        }}
-                                    />
-                                ) : (
-                                    <div style={{ fontSize: '64px' }}>{getImageEmoji(selected.image)}</div>
-                                )}
-                            </div>
+                        {/* TOP: Product Image */}
+                        <div style={{ 
+                            padding: '24px',
+                            background: '#f9f9f9',
+                            borderBottom: '1px solid #f0f0f0',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            height: '300px',
+                            flexShrink: 0
+                        }}>
+                            {getImageUrl(selected.image) ? (
+                                <img 
+                                    src={getImageUrl(selected.image)} 
+                                    alt={selected.name}
+                                    style={{
+                                        maxWidth: '100%',
+                                        maxHeight: '100%',
+                                        objectFit: 'contain',
+                                        borderRadius: '8px'
+                                    }}
+                                />
+                            ) : (
+                                <div style={{ fontSize: '64px' }}>{getImageEmoji(selected.image)}</div>
+                            )}
+                        </div>
 
-                            {/* BOTTOM: Text Details */}
-                            <div style={{ padding: '32px', overflowY: 'auto', maxHeight: '50vh' }}>
+                        {/* BOTTOM: Text Details with scrollable content */}
+                        <div style={{ padding: '32px', overflowY: 'auto', flex: 1 }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
                                     <div>
                                         <h2 style={{ margin: '0 0 8px 0', fontSize: '28px', fontWeight: '700', color: '#0f2419' }}>{selected.name}</h2>
@@ -1145,7 +1145,6 @@ const MarketScreen: React.FC = () => {
                                     </button>
                                 </div>
                             </div>
-                        </div>
 
                         {/* REVIEWS SECTION */}
                         <div style={{ padding: '32px', borderTop: '1px solid #f0f0f0', background: '#f9f9f9' }}>

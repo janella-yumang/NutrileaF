@@ -24,25 +24,6 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-
-@admin_bp.route('/stats', methods=['GET'])
-@admin_required
-def get_admin_stats():
-    """Get admin dashboard stats."""
-    try:
-        stats = {
-            'products': Product.objects.count(),
-            'users': User.objects.count(),
-            'orders': Order.objects.count(),
-            'forumThreads': ForumThread.objects.count(),
-            'categories': ProductCategory.objects.count(),
-            'reviews': Review.objects.count(),
-        }
-
-        return jsonify({'success': True, 'stats': stats}), 200
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
 # ==================== PRODUCTS ====================
 
 @admin_bp.route('/products', methods=['GET'])
