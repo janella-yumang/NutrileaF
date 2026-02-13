@@ -74,6 +74,60 @@ def test_forum():
             'db_connected': False
         }), 500
 
+@forum_bp.route('/threads-all', methods=['GET'])
+def list_all_forum_threads():
+    """Fallback endpoint: Get ALL forum threads without status filter."""
+    try:
+        print("=== FORUM THREADS-ALL ENDPOINT (NO STATUS FILTER) ===")
+        
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+        
+        print(f"Page: {page}, Per page: {per_page}")
+        
+        # Get ALL threads
+        all_threads = ForumThread.objects()
+        total = all_threads.count()
+        print(f"Total threads in DB: {total}")
+        
+        # Get paginated threads
+        paginated = (all_threads
+                    .order_by('-created_at')
+                    .skip((page - 1) * per_page)
+                    .limit(per_page))
+        
+        threads_list = []
+        for thread in paginated:
+            try:
+                thread_dict = thread.to_dict()
+                thread_dict['author'] = thread_dict.get('userName', 'Anonymous')
+                thread_dict['viewCount'] = thread_dict.get('viewsCount', 0)
+                thread_dict['commentCount'] = thread_dict.get('repliesCount', 0)
+                threads_list.append(thread_dict)
+            except Exception as e:
+                print(f"Error serializing thread: {str(e)}")
+                continue
+        
+        print(f"Returning {len(threads_list)} threads")
+        
+        return jsonify({
+            'success': True,
+            'threads': threads_list,
+            'total': total,
+            'pages': (total + per_page - 1) // per_page if per_page > 0 else 0,
+            'current_page': page,
+            'note': 'No status filter applied'
+        }), 200
+    except Exception as e:
+        print(f"ERROR in list_all_forum_threads: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'type': type(e).__name__
+        }), 500
+
 @forum_bp.route('/threads', methods=['GET'])
 def list_forum_threads():
     """Get all forum threads with pagination."""
