@@ -1072,32 +1072,11 @@ const MarketScreen: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* RIGHT: Image */}
-                            <div style={{ padding: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f9f9f9' }}>
-                                {getImageUrl(selected?.image) ? (
-                                    <img 
-                                        src={getImageUrl(selected?.image)} 
-                                        alt={selected.name}
-                                        style={{ 
-                                            maxWidth: '100%',
-                                            maxHeight: '400px',
-                                            objectFit: 'contain',
-                                            borderRadius: '8px'
-                                        }}
-                                    />
-                                ) : (
-                                    <div style={{ 
-                                        fontSize: '120px',
-                                        opacity: 0.3
-                                    }}>
-                                        {getImageEmoji(selected?.image)}
-                                    </div>
-                                )}
                             </div>
                         </div>
 
-                        {/* REVIEWS SECTION - Below the split */}
-                        <div style={{ padding: '32px', borderTop: '1px solid #f0f0f0' }}>
+                        {/* REVIEWS SECTION */}
+                        <div style={{ padding: '32px', borderTop: '1px solid #f0f0f0', background: '#f9f9f9' }}>
                             <h3 style={{ marginTop: 0, marginBottom: '16px', color: '#0f2419', fontSize: '18px', fontWeight: '600' }}>Customer Reviews</h3>
                             
                             {/* Review Form - Only show if user is logged in */}

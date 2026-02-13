@@ -127,26 +127,22 @@ def seed_forum_threads():
         {
             'title': 'Best time to take malunggay supplements?',
             'content': 'I recently started taking malunggay capsules and I was wondering what the best time of day to take them is. Should I take them in the morning with breakfast or at night before bed? Also, should I take them with food or on an empty stomach? Would love to hear from others who have been taking malunggay supplements for a while.',
-            'user_name': 'HealthEnthusiast',
-            'category': 'health-tips'
+            'user_name': 'HealthEnthusiast'
         },
         {
             'title': 'Delicious malunggay smoothie recipe',
             'content': 'I wanted to share this amazing smoothie recipe I discovered! Ingredients: 1 banana, 1 cup spinach, 1 teaspoon malunggay powder, 1 cup almond milk, and 1 tablespoon honey. Blend everything together and you get a nutritious green smoothie that tastes great! The malunggay powder doesn\'t affect the taste much but adds so many nutrients. Has anyone else tried similar combinations?',
-            'user_name': 'GreenSmoothieLover',
-            'category': 'recipes'
+            'user_name': 'GreenSmoothieLover'
         },
         {
             'title': 'Growing malunggay at home tips',
             'content': 'I\'m thinking about growing my own malunggay tree at home. For those who have experience with this, what tips can you share? I live in an apartment with a small balcony, so I\'m wondering if it\'s possible to grow it in a container. How much sun does it need? How often should I water it? Any advice would be greatly appreciated!',
-            'user_name': 'UrbanGardener',
-            'category': 'plant-care'
+            'user_name': 'UrbanGardener'
         },
         {
             'title': 'Malunggay benefits for skin health',
             'content': 'I\'ve been using malunggay soap for about a month now and I\'ve noticed significant improvements in my skin. My acne has reduced and my skin feels smoother. I also started taking the capsules internally. Has anyone else experienced skin benefits from malunggay? I\'m curious about the science behind it and how long it took others to see results.',
-            'user_name': 'SkincareJunkie',
-            'category': 'wellness'
+            'user_name': 'SkincareJunkie'
         }
     ]
     

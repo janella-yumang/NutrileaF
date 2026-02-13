@@ -45,16 +45,12 @@ def get_user_from_token():
 
 @forum_bp.route('/threads', methods=['GET'])
 def list_forum_threads():
-    """Get all forum threads with optional category and pagination."""
-    category = request.args.get('category')
+    """Get all forum threads with pagination."""
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
     
     try:
         query = ForumThread.objects.filter(status='active')
-        
-        if category:
-            query = query.filter(category=category)
         
         # Order by newest
         threads = query.order_by('-created_at')
@@ -62,30 +58,29 @@ def list_forum_threads():
         # Manual pagination for MongoEngine
         start = (page - 1) * per_page
         end = start + per_page
-        paginated_threads = threads[start:end]
+        paginated_threads = list(threads[start:end])
         total = threads.count()
+        
+        # Use to_dict() for proper serialization
+        threads_list = []
+        for thread in paginated_threads:
+            thread_dict = thread.to_dict()
+            # Add additional fields for frontend
+            thread_dict['author'] = thread_dict.get('userName', 'Anonymous')
+            thread_dict['viewCount'] = thread_dict.get('viewsCount', 0)
+            thread_dict['commentCount'] = thread_dict.get('repliesCount', 0)
+            threads_list.append(thread_dict)
         
         return jsonify({
             'success': True,
-            'threads': [{
-                'id': str(thread.id),
-                'title': thread.title,
-                'content': thread.content,
-                'author': thread.user_name,
-                'category': thread.category,
-                'status': thread.status,
-                'views_count': thread.views_count,
-                'likeCount': thread.likes_count,
-                'commentCount': thread.replies_count,
-                'attachments': thread.attachments or [],
-                'created_at': thread.created_at.isoformat() if thread.created_at else None,
-                'updated_at': thread.updated_at.isoformat() if thread.updated_at else None
-            } for thread in paginated_threads],
+            'threads': threads_list,
             'total': total,
             'pages': (total + per_page - 1) // per_page,
             'current_page': page
         }), 200
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @forum_bp.route('/threads/<string:thread_id>', methods=['GET'])
@@ -110,7 +105,6 @@ def get_forum_thread(thread_id):
                 'title': thread.title,
                 'content': thread.content,
                 'author': thread.user_name,
-                'category': thread.category,
                 'status': thread.status,
                 'views_count': thread.views_count,
                 'likeCount': thread.likes_count,
@@ -141,13 +135,11 @@ def create_forum_thread():
             title = data.get('title', '').strip()
             content = data.get('content', '').strip()
             user_name = data.get('userName', '').strip()
-            category = data.get('category', 'general').strip()
         else:
             # Handle FormData (multipart/form-data)
             title = request.form.get('title', '').strip()
             content = request.form.get('content', '').strip()
             user_name = request.form.get('userName', '').strip()
-            category = request.form.get('category', 'general').strip()
         
         if not all([title, content, user_name]):
             return jsonify({
@@ -219,7 +211,6 @@ def create_forum_thread():
             title=title,
             content=content,
             user_name=user_name,
-            category=category,
             attachments=attachments
         )
         
@@ -234,7 +225,6 @@ def create_forum_thread():
                 'title': thread.title,
                 'content': thread.content,
                 'author': thread.user_name,
-                'category': thread.category,
                 'status': thread.status,
                 'views_count': thread.views_count,
                 'likeCount': thread.likes_count,
@@ -274,7 +264,6 @@ def update_forum_thread(thread_id):
                 'title': thread.title,
                 'content': thread.content,
                 'author': thread.user_name,
-                'category': thread.category,
                 'status': thread.status,
                 'views_count': thread.views_count,
                 'created_at': thread.created_at.isoformat() if thread.created_at else None,
@@ -440,20 +429,3 @@ def delete_forum_reply(reply_id):
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-# ==================== CATEGORIES ====================
-
-@forum_bp.route('/categories', methods=['GET'])
-def get_forum_categories():
-    """Get available forum categories."""
-    categories = [
-        'general',
-        'health-tips',
-        'recipes',
-        'wellness',
-        'plant-care',
-        'nutrition'
-    ]
-    return jsonify({
-        'success': True,
-        'categories': categories
-    }), 200

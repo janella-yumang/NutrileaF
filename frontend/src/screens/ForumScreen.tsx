@@ -10,7 +10,6 @@ interface Post {
   title: string;
   content: string;
   author: string;
-  category: string;
   status: string;
   views_count: number;
   created_at: string;
@@ -290,7 +289,6 @@ const ForumScreen: React.FC = () => {
       formData.append('title', newPostTitle);
       formData.append('content', newPostContent);
       formData.append('userName', userName);
-      formData.append('category', 'general');
       
       // Append files if selected
       if (selectedFiles && selectedFiles.length > 0) {
@@ -513,30 +511,41 @@ const ForumScreen: React.FC = () => {
 
                 <p className="post-content">{post.content}</p>
 
-                {post.attachments && post.attachments.length > 0 && (
-                  <div className="post-attachments">
-                    {post.attachments.map((attachment, index) => (
-                      <div key={`${post.id}-attachment-${index}`} className="post-attachment">
-                        {attachment.type === 'video' ? (
-                          <video
-                            src={resolveMediaUrl(attachment.url)}
-                            controls
-                            className="post-attachment-video"
-                          />
-                        ) : (
-                          <img
-                            src={resolveMediaUrl(attachment.url)}
-                            alt={attachment.name || 'Attachment'}
-                            className="post-attachment-image"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                            }}
-                          />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
+                {post.attachments && post.attachments.length > 0 && (() => {
+                  const total = post.attachments.length;
+                  const visible = total > 4 ? post.attachments.slice(0, 4) : post.attachments;
+                  const extraCount = total - visible.length;
+                  const countClass = `post-attachments--count-${Math.min(total, 4)}`;
+                  const gridClass = total > 1 ? 'post-attachments--grid' : 'post-attachments--single';
+
+                  return (
+                    <div className={`post-attachments ${gridClass} ${countClass}`}>
+                      {visible.map((attachment, index) => (
+                        <div key={`${post.id}-attachment-${index}`} className="post-attachment">
+                          {attachment.type === 'video' ? (
+                            <video
+                              src={resolveMediaUrl(attachment.url)}
+                              controls
+                              className="post-attachment-video"
+                            />
+                          ) : (
+                            <img
+                              src={resolveMediaUrl(attachment.url)}
+                              alt={attachment.name || 'Attachment'}
+                              className="post-attachment-image"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          )}
+                          {extraCount > 0 && index === visible.length - 1 && (
+                            <div className="post-attachment-overlay">+{extraCount}</div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
 
                 <div className="post-meta">
                   <span className="post-date">

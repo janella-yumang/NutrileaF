@@ -54,11 +54,15 @@ const CheckoutScreen: React.FC = () => {
         setError('');
 
         try {
-            // Call backend API to save order to PostgreSQL
+            // Call backend API to save order
             const apiUrl = process.env.REACT_APP_API_URL || 'https://nutrilea-backend.onrender.com/api';
-            const response = await fetch(`${apiUrl}/api/orders/create`, {
+            const token = localStorage.getItem('nutrileaf_token');
+            const response = await fetch(`${apiUrl}/orders/create`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
                 body: JSON.stringify({
                     userName: name,
                     userPhone: phone,
