@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 import jwt
 import datetime
+from config import Config
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -330,6 +331,21 @@ def verify_role():
         return jsonify({'success': False, 'message': 'Token expired'}), 401
     except jwt.InvalidTokenError:
         return jsonify({'success': False, 'message': 'Invalid token'}), 401
+
+
+@auth_bp.route("/cloudinary-debug", methods=["GET"])
+def cloudinary_debug():
+    """Return Cloudinary config presence for debugging (no secrets)."""
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({'success': False, 'message': 'Missing or invalid token'}), 401
+
+    return jsonify({
+        'success': True,
+        'cloud_name': Config.CLOUDINARY_CLOUD_NAME,
+        'api_key_set': bool(Config.CLOUDINARY_API_KEY),
+        'api_secret_set': bool(Config.CLOUDINARY_API_SECRET)
+    }), 200
 
 
 @auth_bp.route("/upload-profile-image", methods=["POST"])
