@@ -50,26 +50,30 @@ def list_forum_threads():
     per_page = request.args.get('per_page', 10, type=int)
     
     try:
-        query = ForumThread.objects.filter(status='active')
+        # Get total count first
+        total = ForumThread.objects(status='active').count()
         
-        # Order by newest
-        threads = query.order_by('-created_at')
+        # Get paginated threads using skip and limit
+        threads = (ForumThread.objects(status='active')
+                   .order_by('-created_at')
+                   .skip((page - 1) * per_page)
+                   .limit(per_page))
         
-        # Manual pagination for MongoEngine
-        start = (page - 1) * per_page
-        end = start + per_page
-        paginated_threads = list(threads[start:end])
-        total = threads.count()
-        
-        # Use to_dict() for proper serialization
+        # Convert to list and serialize
         threads_list = []
-        for thread in paginated_threads:
-            thread_dict = thread.to_dict()
-            # Add additional fields for frontend
-            thread_dict['author'] = thread_dict.get('userName', 'Anonymous')
-            thread_dict['viewCount'] = thread_dict.get('viewsCount', 0)
-            thread_dict['commentCount'] = thread_dict.get('repliesCount', 0)
-            threads_list.append(thread_dict)
+        for thread in threads:
+            try:
+                thread_dict = thread.to_dict()
+                # Add additional fields for frontend
+                thread_dict['author'] = thread_dict.get('userName', 'Anonymous')
+                thread_dict['viewCount'] = thread_dict.get('viewsCount', 0)
+                thread_dict['commentCount'] = thread_dict.get('repliesCount', 0)
+                threads_list.append(thread_dict)
+            except Exception as thread_err:
+                print(f"Error serializing thread {thread.id}: {str(thread_err)}")
+                import traceback
+                traceback.print_exc()
+                continue
         
         return jsonify({
             'success': True,
@@ -79,6 +83,7 @@ def list_forum_threads():
             'current_page': page
         }), 200
     except Exception as e:
+        print(f"Error in list_forum_threads: {str(e)}")
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
