@@ -30,6 +30,8 @@ const MarketScreen: React.FC = () => {
     const [cart, setCart] = useState<CartItem[]>([]);
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+    const [productReviews, setProductReviews] = useState<any[]>([]);
+    const [reviewsLoading, setReviewsLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [cartOpen, setCartOpen] = useState(false);
@@ -161,6 +163,30 @@ const MarketScreen: React.FC = () => {
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [cartOpen]);
+
+    // Fetch reviews when product is selected
+    useEffect(() => {
+        if (!selectedProduct || !selectedProduct.id) {
+            setProductReviews([]);
+            return;
+        }
+
+        setReviewsLoading(true);
+        fetch(`${API_BASE}/reviews/product/${selectedProduct.id}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.reviews) {
+                    setProductReviews(data.reviews);
+                } else {
+                    setProductReviews([]);
+                }
+            })
+            .catch(err => {
+                console.error('Error fetching reviews:', err);
+                setProductReviews([]);
+            })
+            .finally(() => setReviewsLoading(false));
+    }, [selectedProduct, API_BASE]);
 
     const filteredProducts = products
         .filter(p => selectedCategory === 'all' ? true : p.category === selectedCategory)
@@ -1146,7 +1172,7 @@ const MarketScreen: React.FC = () => {
                                             const rating = parseInt((e.target as any).reviewRating.value);
                                             
                                             const token = localStorage.getItem('nutrileaf_token');
-                                            fetch('https://nutrilea-backend.onrender.com/api/reviews/submit', {
+                                            fetch(`${API_BASE}/reviews/submit`, {
                                                 method: 'POST',
                                                 headers: {
                                                     'Content-Type': 'application/json',
@@ -1164,9 +1190,17 @@ const MarketScreen: React.FC = () => {
                                                 if (data.success) {
                                                     alert('Review submitted successfully!');
                                                     (e.target as any).reset();
-                                                    // Refresh modal to show new review
-                                                    setSelectedProduct(null);
-                                                    setSelectedProduct(selected);
+                                                    // Refresh reviews list to show new review
+                                                    if (selectedProduct && selectedProduct.id) {
+                                                        fetch(`${API_BASE}/reviews/product/${selectedProduct.id}`)
+                                                            .then(res => res.json())
+                                                            .then(reviewData => {
+                                                                if (reviewData.success && reviewData.reviews) {
+                                                                    setProductReviews(reviewData.reviews);
+                                                                }
+                                                            })
+                                                            .catch(err => console.error('Error refreshing reviews:', err));
+                                                    }
                                                 } else {
                                                     alert(data.error || 'Failed to submit review');
                                                 }
@@ -1225,16 +1259,21 @@ const MarketScreen: React.FC = () => {
 
                             {/* Reviews List */}
                             <div>
-                                {selected.reviews && selected.reviews.length > 0 ? (
+                                {reviewsLoading ? (
+                                    <div style={{ color: '#999', fontSize: '14px', textAlign: 'center', padding: '24px' }}>
+                                        Loading reviews...
+                                    </div>
+                                ) : productReviews && productReviews.length > 0 ? (
                                     <div>
-                                        {selected.reviews.map((r: any, i: number) => (
+                                        {productReviews.map((r: any, i: number) => (
                                             <div key={i} style={{ paddingBottom: '16px', borderBottom: '1px solid #f0f0f0', marginBottom: '16px' }}>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
-                                                    <div style={{ fontWeight: '600', color: '#0f2419' }}>{r.author || 'Anonymous'}</div>
+                                                    <div style={{ fontWeight: '600', color: '#0f2419' }}>{r.userName || r.author || 'Anonymous'}</div>
                                                     <div style={{ color: '#1a5f3a', fontSize: '14px', fontWeight: '600' }}>{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</div>
                                                 </div>
                                                 {r.title && <div style={{ fontSize: '13px', fontWeight: '600', color: '#333', marginBottom: '4px' }}>{r.title}</div>}
-                                                <div style={{ color: '#555', fontSize: '13px', lineHeight: '1.5' }}>{r.comment}</div>
+                                                <div style={{ color: '#555', fontSize: '13px', lineHeight: '1.5' }}>{r.content}</div>
+                                                {r.verifiedPurchase && <div style={{ fontSize: '12px', color: '#1a5f3a', marginTop: '8px', fontWeight: '600' }}>✓ Verified Purchase</div>}
                                             </div>
                                         ))}
                                     </div>
