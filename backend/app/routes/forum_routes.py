@@ -77,47 +77,81 @@ def test_forum():
 @forum_bp.route('/threads', methods=['GET'])
 def list_forum_threads():
     """Get all forum threads with pagination."""
-    page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 10, type=int)
-    
     try:
-        # Get total count first
-        total = ForumThread.objects(status='active').count()
+        print("=== FORUM THREADS ENDPOINT ===")
         
-        # Get paginated threads using skip and limit
-        threads = (ForumThread.objects(status='active')
-                   .order_by('-created_at')
-                   .skip((page - 1) * per_page)
-                   .limit(per_page))
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+        
+        print(f"Page: {page}, Per page: {per_page}")
+        
+        # First, try to get all threads without filtering
+        all_threads = ForumThread.objects()
+        print(f"Total threads in DB: {all_threads.count()}")
+        
+        # Get active threads
+        active_threads = ForumThread.objects(status='active')
+        active_count = active_threads.count()
+        print(f"Active threads: {active_count}")
+        
+        # Get total for pagination
+        total = active_count
+        
+        # Get paginated threads
+        paginated = (active_threads
+                    .order_by('-created_at')
+                    .skip((page - 1) * per_page)
+                    .limit(per_page))
+        
+        print(f"Paginated query built successfully")
         
         # Convert to list and serialize
         threads_list = []
-        for thread in threads:
+        for idx, thread in enumerate(paginated):
+            print(f"Processing thread {idx}: {thread.title}")
             try:
                 thread_dict = thread.to_dict()
+                print(f"  Serialized successfully: {thread_dict.get('id')}")
+                
                 # Add additional fields for frontend
                 thread_dict['author'] = thread_dict.get('userName', 'Anonymous')
                 thread_dict['viewCount'] = thread_dict.get('viewsCount', 0)
                 thread_dict['commentCount'] = thread_dict.get('repliesCount', 0)
                 threads_list.append(thread_dict)
             except Exception as thread_err:
-                print(f"Error serializing thread {thread.id}: {str(thread_err)}")
+                print(f"  ERROR serializing thread {thread.id}: {str(thread_err)}")
                 import traceback
                 traceback.print_exc()
                 continue
         
-        return jsonify({
+        print(f"Successfully processed {len(threads_list)} threads")
+        
+        response = {
             'success': True,
             'threads': threads_list,
             'total': total,
-            'pages': (total + per_page - 1) // per_page,
+            'pages': (total + per_page - 1) // per_page if per_page > 0 else 0,
             'current_page': page
-        }), 200
+        }
+        
+        print(f"Returning response: {response}")
+        return jsonify(response), 200
+        
     except Exception as e:
-        print(f"Error in list_forum_threads: {str(e)}")
+        print(f"=== ERROR in list_forum_threads ===")
+        print(f"Error: {str(e)}")
         import traceback
         traceback.print_exc()
-        return jsonify({'success': False, 'error': str(e)}), 500
+        
+        # Return plain JSON error, not HTML
+        error_response = {
+            'success': False,
+            'error': str(e),
+            'type': type(e).__name__
+        }
+        
+        print(f"Returning error response: {error_response}")
+        return jsonify(error_response), 500
 
 @forum_bp.route('/threads/<string:thread_id>', methods=['GET'])
 def get_forum_thread(thread_id):
