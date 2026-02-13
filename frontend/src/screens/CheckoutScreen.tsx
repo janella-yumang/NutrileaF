@@ -1,19 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import HeaderNav from '../components/HeaderNav';
 
 const CheckoutScreen: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const cart = (location.state && (location.state as any).cart) || [];
-
+    const locationCart = (location.state && (location.state as any).cart) || [];
+    
     const [name, setName] = useState('');
     const [address, setAddress] = useState('');
     const [phone, setPhone] = useState('');
+    const [cart, setCart] = useState(locationCart.length > 0 ? locationCart : []);
     const [paymentMethod, setPaymentMethod] = useState<'cod'|'gcash'|'card'>('cod');
     const [cardNumber, setCardNumber] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
+
+    // Autofill from user profile on mount
+    useEffect(() => {
+        // If no cart from location state, try localStorage
+        if (locationCart.length === 0) {
+            try {
+                const raw = localStorage.getItem('cart');
+                if (raw) setCart(JSON.parse(raw));
+            } catch (e) {}
+        }
+
+        // Autofill user info from profile or localStorage
+        try {
+            const userJson = localStorage.getItem('nutrileaf_user');
+            if (userJson) {
+                const user = JSON.parse(userJson);
+                if (user.name) setName(user.name);
+                if (user.phone) setPhone(user.phone);
+                if (user.address) setAddress(user.address);
+            }
+        } catch (e) {}
+    }, [locationCart]);
 
     const total = cart.reduce((s: number, it: any) => s + (it.price || 0) * (it.cartQuantity || 1), 0);
 
@@ -51,8 +74,8 @@ const CheckoutScreen: React.FC = () => {
             if (response.ok) {
                 // Clear cart from localStorage
                 localStorage.removeItem('cart');
-                alert(`Order #${data.orderId} placed successfully!`);
-                navigate('/market', { replace: true });
+                // Redirect to order history instead of market
+                navigate('/order-history', { replace: true });
             } else {
                 setError(data.error || 'Failed to place order');
             }

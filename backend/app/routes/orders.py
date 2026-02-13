@@ -2,11 +2,32 @@
 Order API routes - saves checkout orders to MongoDB
 """
 
-from flask import Blueprint, request, jsonify
-from app.models import Order
+import jwt
+from flask import Blueprint, request, jsonify, current_app
+from app.models import Order, User
 from datetime import datetime
 
 orders_bp = Blueprint('orders', __name__)
+
+def get_user_from_token():
+    """Extract user from JWT token in Authorization header."""
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return None
+    
+    try:
+        token = auth_header.split(' ')[1]
+        secret_key = current_app.config.get('SECRET_KEY', 'supersecretkey')
+        payload = jwt.decode(token, secret_key, algorithms=['HS256'])
+        user_id = payload.get('user_id')
+        
+        if user_id:
+            user = User.objects(id=user_id).first()
+            return user
+    except:
+        pass
+    
+    return None
 
 @orders_bp.route('/create', methods=['POST'])
 def create_order():
@@ -33,8 +54,13 @@ def create_order():
         if not all(k in data for k in required):
             return jsonify({'error': 'Missing required fields'}), 400
         
+        # Get authenticated user ID
+        user = get_user_from_token()
+        user_id = str(user.id) if user else None
+        
         # Create order
         order = Order(
+            user_id=user_id,
             user_name=data['userName'],
             user_phone=data['userPhone'],
             delivery_address=data['deliveryAddress'],
@@ -48,10 +74,29 @@ def create_order():
         
         return jsonify({
             'success': True,
-            'orderId': order.id,
+            'orderId': str(order.id),
             'order': order.to_dict()
         }), 201
     
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@orders_bp.route('/my', methods=['GET'])
+def my_orders():
+    """Get orders for the logged-in user."""
+    try:
+        user = get_user_from_token()
+        if not user:
+            return jsonify({'error': 'Unauthorized'}), 401
+        
+        # Fetch orders for this user
+        orders = Order.objects(user_id=str(user.id)).order_by('-created_at')
+        
+        return jsonify({
+            'success': True,
+            'count': orders.count(),
+            'orders': [o.to_dict() for o in orders]
+        }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

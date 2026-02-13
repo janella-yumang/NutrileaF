@@ -12,6 +12,7 @@ import AnalysisScreen from './screens/AnalysisScreen';
 import MarketScreen from './screens/MarketScreen';
 import CheckoutScreen from './screens/CheckoutScreen';
 import CartScreen from './screens/CartScreen';
+import OrderHistoryScreen from './screens/OrderHistoryScreen';
 import ChatScreen from './screens/ChatScreen';
 import AnalyticsScreen from './screens/AnalyticsScreen';
 import AdminScreen from './screens/AdminScreen';
@@ -34,6 +35,7 @@ function App() {
                     <Route path="/market" element={<MarketScreen />} />
                     <Route path="/cart" element={<CartScreen />} />
                     <Route path="/checkout" element={<CheckoutScreen />} />
+                    <Route path="/order-history" element={<OrderHistoryScreen />} />
                     <Route path="/chat" element={<ChatScreen />} />
                     <Route path="/analytics" element={<AnalyticsScreen />} />
                     <Route path="/admin" element={<AdminScreen />} />

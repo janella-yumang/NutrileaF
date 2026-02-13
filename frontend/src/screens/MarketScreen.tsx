@@ -979,105 +979,246 @@ const MarketScreen: React.FC = () => {
                     <div
                         onClick={(e) => e.stopPropagation()}
                         style={{
-                            width: 'min(900px, 95%)',
+                            width: 'min(1000px, 95%)',
                             maxHeight: '90vh',
                             overflowY: 'auto',
                             background: 'white',
                             borderRadius: '12px',
-                            padding: '20px',
                             boxShadow: '0 12px 40px rgba(0,0,0,0.2)'
                         }}
                     >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
-                            <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                        {/* 50/50 Split: Image (right) and Details (left) */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', minHeight: '500px' }}>
+                            {/* LEFT: Text Details */}
+                            <div style={{ padding: '32px', borderRight: '1px solid #f0f0f0', overflowY: 'auto', maxHeight: '90vh' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+                                    <div>
+                                        <h2 style={{ margin: '0 0 8px 0', fontSize: '28px', fontWeight: '700', color: '#0f2419' }}>{selected.name}</h2>
+                                        <div style={{ color: '#7a8b82', fontSize: '14px' }}>{selected.quantity}</div>
+                                    </div>
+                                    <button
+                                        onClick={() => setSelectedProduct(null)}
+                                        style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            fontSize: '24px',
+                                            cursor: 'pointer',
+                                            color: '#999'
+                                        }}
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+
+                                <div style={{ fontSize: '24px', fontWeight: '700', color: '#1a5f3a', marginBottom: '8px' }}>
+                                    ₱{selected.price}
+                                </div>
+                                {selected.originalPrice && (
+                                    <div style={{ textDecoration: 'line-through', color: '#999', marginBottom: '16px' }}>
+                                        ₱{selected.originalPrice}
+                                    </div>
+                                )}
+
+                                <p style={{ color: '#444', lineHeight: '1.6', marginBottom: '16px' }}>{selected.description}</p>
+
+                                {selected.benefits && selected.benefits.length > 0 && (
+                                    <div style={{ marginBottom: '16px' }}>
+                                        <h4 style={{ marginBottom: '8px', color: '#0f2419', fontSize: '14px', fontWeight: '600' }}>Benefits</h4>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                            {selected.benefits.map((b: string, i: number) => (
+                                                <div key={i} style={{ background: '#f0fdf4', color: '#1a5f3a', padding: '6px 12px', borderRadius: '999px', fontSize: '13px' }}>
+                                                    ✓ {b}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {selected.uses && selected.uses.length > 0 && (
+                                    <div style={{ marginBottom: '16px' }}>
+                                        <h4 style={{ marginBottom: '8px', color: '#0f2419', fontSize: '14px', fontWeight: '600' }}>What it's for</h4>
+                                        <ul style={{ margin: '0', paddingLeft: '24px' }}>
+                                            {selected.uses.map((u: string, i: number) => <li key={i} style={{ color: '#555', marginBottom: '4px' }}>{u}</li>)}
+                                        </ul>
+                                    </div>
+                                )}
+
+                                {selected.howToUse && selected.howToUse.length > 0 && (
+                                    <div style={{ marginBottom: '16px' }}>
+                                        <h4 style={{ marginBottom: '8px', color: '#0f2419', fontSize: '14px', fontWeight: '600' }}>How to use</h4>
+                                        <ol style={{ margin: '0', paddingLeft: '24px' }}>
+                                            {selected.howToUse.map((s: string, i: number) => <li key={i} style={{ color: '#555', marginBottom: '4px' }}>{s}</li>)}
+                                        </ol>
+                                    </div>
+                                )}
+
+                                <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+                                    <button
+                                        onClick={() => { addToCart(selected); setSelectedProduct(null); }}
+                                        style={{ 
+                                            flex: 1, 
+                                            background: '#1a5f3a', 
+                                            color: 'white', 
+                                            border: 'none', 
+                                            padding: '12px 16px', 
+                                            borderRadius: '8px', 
+                                            cursor: 'pointer', 
+                                            fontWeight: '600',
+                                            fontSize: '14px'
+                                        }}
+                                    >
+                                        🛒 Add to cart
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* RIGHT: Image */}
+                            <div style={{ padding: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f9f9f9' }}>
                                 {getImageUrl(selected?.image) ? (
                                     <img 
                                         src={getImageUrl(selected?.image)} 
                                         alt={selected.name}
                                         style={{ 
-                                            width: '80px',
-                                            height: '80px',
-                                            objectFit: 'cover',
+                                            maxWidth: '100%',
+                                            maxHeight: '400px',
+                                            objectFit: 'contain',
                                             borderRadius: '8px'
                                         }}
                                     />
                                 ) : (
                                     <div style={{ 
-                                        width: '80px',
-                                        height: '80px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        fontSize: '48px',
-                                        backgroundColor: '#f0f0f0',
-                                        borderRadius: '8px'
+                                        fontSize: '120px',
+                                        opacity: 0.3
                                     }}>
                                         {getImageEmoji(selected?.image)}
                                     </div>
                                 )}
-                                <div>
-                                    <h2 style={{ margin: 0 }}>{selected.name}</h2>
-                                    <div style={{ color: '#666', fontSize: '14px' }}>{selected.quantity}</div>
-                                </div>
-                            </div>
-                            <div style={{ textAlign: 'right' }}>
-                                <div style={{ fontSize: '20px', fontWeight: '700', color: '#1a5f3a' }}>₱{selected.price}</div>
-                                {selected.originalPrice && (
-                                    <div style={{ textDecoration: 'line-through', color: '#999' }}>₱{selected.originalPrice}</div>
-                                )}
                             </div>
                         </div>
 
-                        <hr style={{ margin: '16px 0' }} />
-
-                        <p style={{ color: '#444' }}>{selected.description}</p>
-
-                        {selected.uses && (
-                            <div style={{ marginTop: '10px' }}>
-                                <h4 style={{ marginBottom: '8px' }}>What it's for</h4>
-                                <ul>
-                                    {selected.uses.map((u, i) => <li key={i}>{u}</li>)}
-                                </ul>
-                            </div>
-                        )}
-
-                        {selected.howToUse && (
-                            <div style={{ marginTop: '10px' }}>
-                                <h4 style={{ marginBottom: '8px' }}>How to use</h4>
-                                <ol>
-                                    {selected.howToUse.map((s, i) => <li key={i}>{s}</li>)}
-                                </ol>
-                            </div>
-                        )}
-
-                        {selected.reviews && (
-                            <div style={{ marginTop: '10px' }}>
-                                <h4 style={{ marginBottom: '8px' }}>Reviews</h4>
-                                {selected.reviews.map((r, i) => (
-                                    <div key={i} style={{ padding: '8px 0', borderBottom: '1px solid #f0f0f0' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <strong>{r.author}</strong>
-                                            <span style={{ color: '#1a5f3a' }}>{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</span>
-                                        </div>
-                                        <div style={{ color: '#555' }}>{r.comment}</div>
+                        {/* REVIEWS SECTION - Below the split */}
+                        <div style={{ padding: '32px', borderTop: '1px solid #f0f0f0' }}>
+                            <h3 style={{ marginTop: 0, marginBottom: '16px', color: '#0f2419', fontSize: '18px', fontWeight: '600' }}>Customer Reviews</h3>
+                            
+                            {/* Review Form - Only show if user is logged in */}
+                            {(() => {
+                                const userJson = localStorage.getItem('nutrileaf_user');
+                                const user = userJson ? JSON.parse(userJson) : null;
+                                
+                                return user && (
+                                    <div style={{ 
+                                        background: '#f9f9f9', 
+                                        padding: '16px', 
+                                        borderRadius: '8px', 
+                                        marginBottom: '24px',
+                                        border: '1px solid #f0f0f0'
+                                    }}>
+                                        <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: '600' }}>Share your experience</h4>
+                                        <form onSubmit={(e) => {
+                                            e.preventDefault();
+                                            const title = (e.target as any).reviewTitle.value;
+                                            const content = (e.target as any).reviewContent.value;
+                                            const rating = parseInt((e.target as any).reviewRating.value);
+                                            
+                                            const token = localStorage.getItem('nutrileaf_token');
+                                            fetch('https://nutrilea-backend.onrender.com/api/reviews/submit', {
+                                                method: 'POST',
+                                                headers: {
+                                                    'Content-Type': 'application/json',
+                                                    'Authorization': `Bearer ${token}`
+                                                },
+                                                body: JSON.stringify({
+                                                    productId: selected.id,
+                                                    rating,
+                                                    title,
+                                                    content
+                                                })
+                                            })
+                                            .then(r => r.json())
+                                            .then(data => {
+                                                if (data.success) {
+                                                    alert('Review submitted successfully!');
+                                                    (e.target as any).reset();
+                                                    // Refresh modal to show new review
+                                                    setSelectedProduct(null);
+                                                    setSelectedProduct(selected);
+                                                } else {
+                                                    alert(data.error || 'Failed to submit review');
+                                                }
+                                            })
+                                            .catch(err => alert('Error: ' + err.message));
+                                        }}>
+                                            <div style={{ marginBottom: '12px' }}>
+                                                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '4px' }}>Rating</label>
+                                                <select name="reviewRating" required style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '13px' }}>
+                                                    <option value="">Select rating...</option>
+                                                    <option value="1">1 star</option>
+                                                    <option value="2">2 stars</option>
+                                                    <option value="3">3 stars</option>
+                                                    <option value="4">4 stars</option>
+                                                    <option value="5">5 stars</option>
+                                                </select>
+                                            </div>
+                                            <div style={{ marginBottom: '12px' }}>
+                                                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '4px' }}>Title</label>
+                                                <input 
+                                                    type="text" 
+                                                    name="reviewTitle" 
+                                                    placeholder="e.g., Great quality product" 
+                                                    required 
+                                                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '13px', boxSizing: 'border-box' }} 
+                                                />
+                                            </div>
+                                            <div style={{ marginBottom: '12px' }}>
+                                                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '4px' }}>Review</label>
+                                                <textarea 
+                                                    name="reviewContent" 
+                                                    placeholder="Share your experience..." 
+                                                    required 
+                                                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '13px', boxSizing: 'border-box', minHeight: '80px' }} 
+                                                />
+                                            </div>
+                                            <button 
+                                                type="submit"
+                                                style={{ 
+                                                    background: '#1a5f3a', 
+                                                    color: 'white', 
+                                                    border: 'none', 
+                                                    padding: '8px 16px', 
+                                                    borderRadius: '4px', 
+                                                    cursor: 'pointer', 
+                                                    fontWeight: '600',
+                                                    fontSize: '13px'
+                                                }}
+                                            >
+                                                Submit Review
+                                            </button>
+                                        </form>
                                     </div>
-                                ))}
-                            </div>
-                        )}
+                                );
+                            })()}
 
-                        <div style={{ display: 'flex', gap: '12px', marginTop: '16px', alignItems: 'center' }}>
-                            <button
-                                onClick={() => { addToCart(selected); setSelectedProduct(null); }}
-                                style={{ background: '#1a5f3a', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}
-                            >
-                                Add to cart
-                            </button>
-                            <button
-                                onClick={() => setSelectedProduct(null)}
-                                style={{ background: 'white', color: '#1a5f3a', border: '1px solid #1a5f3a', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}
-                            >
-                                Close
-                            </button>
+                            {/* Reviews List */}
+                            <div>
+                                {selected.reviews && selected.reviews.length > 0 ? (
+                                    <div>
+                                        {selected.reviews.map((r: any, i: number) => (
+                                            <div key={i} style={{ paddingBottom: '16px', borderBottom: '1px solid #f0f0f0', marginBottom: '16px' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
+                                                    <div style={{ fontWeight: '600', color: '#0f2419' }}>{r.author || 'Anonymous'}</div>
+                                                    <div style={{ color: '#1a5f3a', fontSize: '14px', fontWeight: '600' }}>{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</div>
+                                                </div>
+                                                {r.title && <div style={{ fontSize: '13px', fontWeight: '600', color: '#333', marginBottom: '4px' }}>{r.title}</div>}
+                                                <div style={{ color: '#555', fontSize: '13px', lineHeight: '1.5' }}>{r.comment}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div style={{ color: '#999', fontSize: '14px', textAlign: 'center', padding: '24px' }}>
+                                        No reviews yet. Be the first to review!
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>

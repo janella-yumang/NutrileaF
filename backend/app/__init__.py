@@ -52,6 +52,7 @@ def create_app():
     from app.routes.auth import auth_bp
     from app.routes.forum_routes import forum_bp
     from app.routes.orders import orders_bp
+    from app.routes.reviews import reviews_bp
     from app.routes.admin import admin_bp
 
     app.register_blueprint(image_analysis_bp, url_prefix='/api/image')
@@ -66,6 +67,7 @@ def create_app():
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(forum_bp)
     app.register_blueprint(orders_bp, url_prefix='/api/orders')
+    app.register_blueprint(reviews_bp, url_prefix='/api/reviews')
     app.register_blueprint(admin_bp)
 
     @app.route("/")

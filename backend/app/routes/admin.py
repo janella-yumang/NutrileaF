@@ -412,7 +412,7 @@ def get_all_users():
 @admin_bp.route('/users/<string:user_id>', methods=['PUT'])
 @admin_required
 def update_user(user_id):
-    """Update a user (role, status, etc)."""
+    """Update a user status only (activate/deactivate)."""
     data = request.form if request.files else (request.get_json() or {})
     user = User.objects(id=user_id).first()  # Use MongoEngine syntax
     
@@ -420,23 +420,14 @@ def update_user(user_id):
         return jsonify({'success': False, 'error': 'User not found'}), 404
     
     try:
-        if 'image' in request.files and request.files['image'].filename:
-            upload_result = upload_to_cloudinary(request.files['image'], 'nutrilea/users', resource_type='image')
-            secure_url = upload_result.get('secure_url')
-            if secure_url:
-                user.image = secure_url
-        elif 'image' in data:
-            user.image = data['image']
-        if 'name' in data:
-            user.name = data['name']
-        if 'email' in data:
-            user.email = data['email']
-        if 'phone' in data:
-            user.phone = data['phone']
-        if 'address' in data:
-            user.address = data['address']
-        if 'role' in data:
-            user.role = data['role']  # 'admin' or 'user'
+        if request.files:
+            return jsonify({'success': False, 'error': 'Only status updates are allowed'}), 400
+
+        allowed_keys = {'status'}
+        extra_keys = set(data.keys()) - allowed_keys
+        if extra_keys:
+            return jsonify({'success': False, 'error': 'Only status updates are allowed'}), 400
+
         if 'status' in data:
             user.status = data['status']  # 'active', 'inactive', 'suspended'
         
@@ -461,17 +452,8 @@ def update_user(user_id):
 @admin_bp.route('/users/<string:user_id>', methods=['DELETE'])
 @admin_required
 def delete_user(user_id):
-    """Delete a user."""
-    user = User.objects(id=user_id).first()  # Use MongoEngine syntax
-    
-    if not user:
-        return jsonify({'success': False, 'error': 'User not found'}), 404
-    
-    try:
-        user.delete()  # Use MongoEngine delete()
-        return jsonify({'success': True, 'message': 'User deleted'}), 200
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+    """Delete a user (disabled)."""
+    return jsonify({'success': False, 'error': 'User deletion is disabled'}), 403
 
 # ==================== ORDERS ====================
 
@@ -624,6 +606,95 @@ def get_dashboard_stats():
                 'pendingOrders': pending_orders,
                 'totalForumThreads': total_forum_threads,
                 'totalRevenue': total_revenue
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@admin_bp.route('/analytics', methods=['GET'])
+@admin_required
+def get_dashboard_analytics():
+    """Get dashboard analytics data for charts."""
+    try:
+        from datetime import datetime, timedelta
+        
+        # Get all orders
+        all_orders = list(Order.objects.order_by('created_at'))
+        
+        # Revenue trend (last 6 months)
+        revenue_trend = []
+        for i in range(6, -1, -1):
+            month_date = datetime.utcnow() - timedelta(days=30*i)
+            month_start = month_date.replace(day=1)
+            month_end = (month_start + timedelta(days=32)).replace(day=1)
+            
+            month_revenue = sum(
+                o.total_amount for o in all_orders 
+                if o.created_at and month_start <= o.created_at < month_end and o.status == 'completed'
+            )
+            revenue_trend.append(max(0, int(month_revenue / 1000)))  # Convert to thousands
+        
+        # Top products by order count
+        product_order_count = {}
+        for order in all_orders:
+            if order.status == 'completed' and order.items:
+                for item in order.items:
+                    product_id = str(item.get('id', 'unknown'))
+                    product_order_count[product_id] = product_order_count.get(product_id, 0) + item.get('cartQuantity', 1)
+        
+        top_products = sorted(
+            product_order_count.items(),
+            key=lambda x: x[1],
+            reverse=True
+        )[:5]
+        
+        top_product_data = []
+        for prod_id, count in top_products:
+            product = Product.objects(id=prod_id).first()
+            if product:
+                top_product_data.append({
+                    'name': product.name,
+                    'orders': count
+                })
+        
+        # Category performance
+        category_stats = {}
+        for product in Product.objects:
+            category = product.category or 'Uncategorized'
+            if category not in category_stats:
+                category_stats[category] = 0
+            category_stats[category] += 1
+        
+        # Review stats
+        avg_rating = 0
+        total_reviews = Review.objects.count()
+        if total_reviews > 0:
+            reviews = Review.objects
+            total_rating = sum(r.rating for r in reviews)
+            avg_rating = round(total_rating / total_reviews, 1)
+        
+        # User growth trend (last 7 days)
+        user_trend = []
+        for i in range(7, -1, -1):
+            day_date = datetime.utcnow() - timedelta(days=i)
+            day_start = day_date.replace(hour=0, minute=0, second=0)
+            day_end = day_start + timedelta(days=1)
+            
+            day_users = User.objects(
+                created_at__gte=day_start,
+                created_at__lt=day_end
+            ).count()
+            user_trend.append(day_users)
+        
+        return jsonify({
+            'success': True,
+            'analytics': {
+                'revenueTrend': revenue_trend,
+                'topProducts': top_product_data,
+                'categoryStats': category_stats,
+                'averageRating': avg_rating,
+                'totalReviews': total_reviews,
+                'userTrend': user_trend
             }
         }), 200
     except Exception as e:

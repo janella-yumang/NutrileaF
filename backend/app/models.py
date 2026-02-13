@@ -72,18 +72,20 @@ class Product(Document):
 class Order(Document):
     meta = {'collection': 'orders'}
     
+    user_id = fields.StringField()  # Store authenticated user ID for linking orders to users
     user_name = fields.StringField(required=True)
     user_phone = fields.StringField(required=True)
     delivery_address = fields.StringField(required=True)
     payment_method = fields.StringField()
     total_amount = fields.FloatField(required=True)
     items = fields.ListField(fields.DictField())
-    status = fields.StringField(default='pending')
+    status = fields.StringField(default='pending')  # pending, processing, shipped, delivered, cancelled
     created_at = fields.DateTimeField(default=datetime.utcnow)
 
     def to_dict(self):
         return {
             'id': str(self.id),
+            'userId': self.user_id,
             'userName': self.user_name,
             'userPhone': self.user_phone,
             'deliveryAddress': self.delivery_address,
@@ -135,7 +137,6 @@ class ForumThread(Document):
     title = fields.StringField(required=True)
     content = fields.StringField(required=True)
     user_name = fields.StringField(required=True)
-    category = fields.StringField(required=True)  # e.g., 'health-tips', 'recipes', 'wellness'
     views_count = fields.IntField(default=0)
     replies_count = fields.IntField(default=0)
     likes_count = fields.IntField(default=0)  # Track number of likes
@@ -150,7 +151,6 @@ class ForumThread(Document):
             'title': self.title,
             'content': self.content,
             'userName': self.user_name,
-            'category': self.category,
             'viewsCount': self.views_count,
             'repliesCount': self.replies_count,
             'likeCount': self.likes_count,
@@ -208,6 +208,7 @@ class Review(Document):
     rating = fields.IntField(required=True)  # 1-5 stars
     title = fields.StringField()
     content = fields.StringField(required=True)
+    verified_purchase = fields.BooleanField(default=False)  # True if user completed order with this product
     status = fields.StringField(default='active')  # active, hidden, reported
     created_at = fields.DateTimeField(default=datetime.utcnow)
     updated_at = fields.DateTimeField(default=datetime.utcnow)
@@ -220,6 +221,7 @@ class Review(Document):
             'rating': self.rating,
             'title': self.title,
             'content': self.content,
+            'verifiedPurchase': self.verified_purchase,
             'status': self.status,
             'createdAt': self.created_at.isoformat() if self.created_at else None,
             'updatedAt': self.updated_at.isoformat() if self.updated_at else None,

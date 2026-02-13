@@ -12,6 +12,14 @@ const AdminScreen: React.FC = () => {
     totalForumThreads: 0,
     totalRevenue: 0
   });
+  const [analytics, setAnalytics] = useState({
+    revenueTrend: [0, 0, 0, 0, 0, 0, 0],
+    topProducts: [] as any[],
+    categoryStats: {} as Record<string, number>,
+    averageRating: 0,
+    totalReviews: 0,
+    userTrend: [0, 0, 0, 0, 0, 0, 0, 0]
+  });
   
   const [products, setProducts] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -44,6 +52,12 @@ const AdminScreen: React.FC = () => {
     if (image.startsWith('/')) return `${apiOrigin}${image}`;
     return `${apiOrigin}/${image}`;
   };
+  const resolveMediaUrl = (url?: string) => {
+    if (!url) return '';
+    if (url.startsWith('http')) return url;
+    if (url.startsWith('/')) return `${apiOrigin}${url}`;
+    return `${apiOrigin}/${url}`;
+  };
 
   const scanParts = [
     { label: 'Leaves', value: 420, color: '#1f6a45' },
@@ -64,7 +78,7 @@ const AdminScreen: React.FC = () => {
       return `${x},${y}`;
     })
     .join(' ');
-  const marketValueTrend = [120, 135, 150, 165, 180, 210];
+  const marketValueTrend = analytics.revenueTrend.length > 0 ? analytics.revenueTrend : [120, 135, 150, 165, 180, 210];
   const marketMax = Math.max(...marketValueTrend);
   const getAdminHeaders = () => {
     const token = localStorage.getItem('nutrileaf_token');
@@ -109,12 +123,34 @@ const AdminScreen: React.FC = () => {
     }
   }, [apiBase]);
 
-  // Fetch dashboard stats
+  const fetchAnalytics = useCallback(async () => {
+    try {
+      const res = await fetch(`${apiBase}/admin/analytics`, {
+        headers: getAdminHeaders(),
+        method: 'GET'
+      });
+      
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      
+      const data = await res.json();
+      
+      if (data.success) {
+        setAnalytics(data.analytics);
+      }
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+    }
+  }, [apiBase]);
+
+  // Fetch dashboard stats and analytics
   useEffect(() => {
     if (activeTab === 'dashboard') {
       fetchStats();
+      fetchAnalytics();
     }
-  }, [activeTab, fetchStats]);
+  }, [activeTab, fetchStats, fetchAnalytics]);
 
   // Fetch categories for dropdown
   const fetchCategoriesForDropdown = useCallback(async () => {
@@ -444,6 +480,27 @@ const AdminScreen: React.FC = () => {
     }
   };
 
+  const handleUserStatusToggle = async (user: any) => {
+    const nextStatus = user.status === 'active' ? 'inactive' : 'active';
+    try {
+      const res = await fetch(`${apiBase}/admin/users/${user.id}`, {
+        method: 'PUT',
+        headers: getAdminHeaders(),
+        body: JSON.stringify({ status: nextStatus })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        fetchUsers();
+      } else {
+        alert(data.error || 'Failed to update user status');
+      }
+    } catch (error) {
+      console.error('Error updating user status:', error);
+      alert('Failed to update user status');
+    }
+  };
+
   // Delete handler
   const handleDelete = async (id: string, type: string) => {
     if (!window.confirm('Are you sure you want to delete this item?')) return;
@@ -689,7 +746,15 @@ const AdminScreen: React.FC = () => {
               </div>
               <div className="admin-analytics-card" style={{ ['--delay' as any]: '320ms' }}>
                 <div className="admin-analytics-label">Market value</div>
-                <div className="admin-analytics-value">PHP {marketValueTrend[marketValueTrend.length - 1]}k</div>
+                <div className="admin-analytics-value">PHP {marketValueTrend[marketValueTrend.length - 1] * 1}k</div>
+              </div>
+              <div className="admin-analytics-card" style={{ ['--delay' as any]: '400ms' }}>
+                <div className="admin-analytics-label">Avg review rating</div>
+                <div className="admin-analytics-value">{analytics.averageRating.toFixed(1)} ⭐</div>
+              </div>
+              <div className="admin-analytics-card" style={{ ['--delay' as any]: '480ms' }}>
+                <div className="admin-analytics-label">Total reviews</div>
+                <div className="admin-analytics-value">{analytics.totalReviews}</div>
               </div>
             </div>
 
@@ -792,6 +857,38 @@ const AdminScreen: React.FC = () => {
                   ))}
                 </div>
               </div>
+
+              {/* Top Products */}
+              <div className="admin-chart-card">
+                <div className="admin-card-header">
+                  <h4>Top products by orders</h4>
+                  <span className="admin-chip">This month</span>
+                </div>
+                <div className="admin-chart-list">
+                  {analytics.topProducts.length > 0 ? (
+                    analytics.topProducts.map((product, index) => {
+                      const maxOrders = Math.max(...analytics.topProducts.map(p => p.orders), 1);
+                      return (
+                        <div key={`top-product-${index}`} className="admin-chart-row">
+                          <div className="admin-chart-label">{product.name}</div>
+                          <div className="admin-chart-track">
+                            <div
+                              className="admin-chart-fill"
+                              style={{
+                                width: `${Math.round((product.orders / maxOrders) * 100)}%`,
+                                background: '#1a5f3a'
+                              }}
+                            />
+                          </div>
+                          <div className="admin-chart-value">{product.orders}</div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div style={{ padding: '16px', color: '#999', textAlign: 'center' }}>No orders yet</div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -871,7 +968,6 @@ const AdminScreen: React.FC = () => {
           <div className="admin-section">
           <div className="admin-section-header">
             <h2>Manage Users</h2>
-            <button onClick={() => handleCreate('user')} className="admin-button">+ Create User</button>
           </div>
           {usersLoading ? <p>Loading...</p> : (
             <div className="admin-table-card">
@@ -916,16 +1012,10 @@ const AdminScreen: React.FC = () => {
                     </td>
                     <td style={{...styles.tableCell, ...styles.actions}}>
                       <button
-                        onClick={() => handleEdit(user, 'user')}
-                        style={styles.editBtn}
+                        onClick={() => handleUserStatusToggle(user)}
+                        style={user.status === 'active' ? styles.deactivateBtn : styles.activateBtn}
                       >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(user.id, 'user')}
-                        style={styles.deleteBtn}
-                      >
-                        Delete
+                        {user.status === 'active' ? 'Deactivate' : 'Activate'}
                       </button>
                     </td>
                   </tr>
@@ -1034,72 +1124,114 @@ const AdminScreen: React.FC = () => {
                   <th style={styles.tableHeader}>ID</th>
                   <th style={styles.tableHeader}>Title</th>
                   <th style={styles.tableHeader}>Author</th>
-                  <th style={styles.tableHeader}>Category</th>
                   <th style={styles.tableHeader}>Status</th>
                   <th style={styles.tableHeader}>Replies</th>
+                  <th style={styles.tableHeader}>Created</th>
+                  <th style={styles.tableHeader}>Attachment</th>
                   <th style={styles.tableHeader}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {forumThreads.map(thread => (
-                  <tr key={thread.id} style={styles.tableRow}>
-                    <td style={styles.tableCell}>{thread.id}</td>
-                    <td style={styles.tableCell}>{thread.title}</td>
-                    <td style={styles.tableCell}>{thread.userName}</td>
-                    <td style={styles.tableCell}>{thread.category}</td>
-                    <td style={styles.tableCell}>
-                      {editingId === thread.id ? (
-                        <select
-                          value={editData.status}
-                          onChange={e => setEditData({ ...editData, status: e.target.value })}
-                          style={styles.input}
-                        >
-                          <option value="active">active</option>
-                          <option value="closed">closed</option>
-                          <option value="pinned">pinned</option>
-                        </select>
-                      ) : (
-                        <span style={{ fontWeight: thread.status === 'pinned' ? 'bold' : 'normal' }}>
-                          {thread.status === 'pinned' ? '📌' : ''} {thread.status}
-                        </span>
-                      )}
-                    </td>
-                    <td style={styles.tableCell}>{thread.repliesCount}</td>
-                    <td style={{...styles.tableCell, ...styles.actions}}>
-                      {editingId === thread.id ? (
-                        <>
-                          <button
-                            onClick={() => handleUpdate(thread.id, 'thread')}
-                            style={styles.saveBtn}
+                {forumThreads.map(thread => {
+                  const createdAt = thread.createdAt || thread.created_at;
+                  const attachments = thread.attachments || [];
+                  const firstAttachment = attachments[0];
+                  const attachmentUrl = firstAttachment ? resolveMediaUrl(firstAttachment.url) : '';
+
+                  return (
+                    <tr key={thread.id} style={styles.tableRow}>
+                      <td style={styles.tableCell}>{thread.id}</td>
+                      <td style={styles.tableCell}>{thread.title}</td>
+                      <td style={styles.tableCell}>{thread.userName}</td>
+                      <td style={styles.tableCell}>
+                        {editingId === thread.id ? (
+                          <select
+                            value={editData.status}
+                            onChange={e => setEditData({ ...editData, status: e.target.value })}
+                            style={styles.input}
                           >
-                            Save
-                          </button>
-                          <button
-                            onClick={() => setEditingId(null)}
-                            style={styles.cancelBtn}
-                          >
-                            Cancel
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            onClick={() => handleInlineEdit(thread)}
-                            style={styles.editBtn}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDelete(thread.id, 'thread')}
-                            style={styles.deleteBtn}
-                          >
-                            Delete
-                          </button>
-                        </>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                            <option value="active">active</option>
+                            <option value="closed">closed</option>
+                            <option value="pinned">pinned</option>
+                          </select>
+                        ) : (
+                          <span style={{ fontWeight: thread.status === 'pinned' ? 'bold' : 'normal' }}>
+                            {thread.status === 'pinned' ? '📌' : ''} {thread.status}
+                          </span>
+                        )}
+                      </td>
+                      <td style={styles.tableCell}>{thread.repliesCount}</td>
+                      <td style={styles.tableCell}>
+                        {createdAt ? new Date(createdAt).toLocaleString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        }) : '—'}
+                      </td>
+                      <td style={styles.tableCell}>
+                        {firstAttachment ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            {firstAttachment.type === 'video' ? (
+                              <video
+                                src={attachmentUrl}
+                                muted
+                                playsInline
+                                preload="metadata"
+                                style={styles.thumb}
+                              />
+                            ) : (
+                              <img
+                                src={attachmentUrl}
+                                alt={firstAttachment.name || 'Attachment'}
+                                style={styles.thumb}
+                              />
+                            )}
+                            {attachments.length > 1 && (
+                              <span style={styles.mutedText}>+{attachments.length - 1}</span>
+                            )}
+                          </div>
+                        ) : (
+                          <span style={styles.mutedText}>None</span>
+                        )}
+                      </td>
+                      <td style={{...styles.tableCell, ...styles.actions}}>
+                        {editingId === thread.id ? (
+                          <>
+                            <button
+                              onClick={() => handleUpdate(thread.id, 'thread')}
+                              style={styles.saveBtn}
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => setEditingId(null)}
+                              style={styles.cancelBtn}
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => handleInlineEdit(thread)}
+                              style={styles.editBtn}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDelete(thread.id, 'thread')}
+                              style={styles.deleteBtn}
+                            >
+                              Delete
+                            </button>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
             </div>
@@ -2050,6 +2182,26 @@ const styles: { [key: string]: React.CSSProperties } = {
     cursor: 'pointer',
     fontSize: '12px',
     fontWeight: 500
+  },
+  activateBtn: {
+    padding: '6px 12px',
+    backgroundColor: '#1a5f3a',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '12px',
+    fontWeight: 600
+  },
+  deactivateBtn: {
+    padding: '6px 12px',
+    backgroundColor: '#b23b3b',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '12px',
+    fontWeight: 600
   },
   saveBtn: {
     padding: '8px 14px',

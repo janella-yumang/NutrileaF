@@ -70,7 +70,8 @@ const CartScreen: React.FC = () => {
 
                         <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
                             <button onClick={() => navigate('/market')} style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #ddd', background: 'white' }}>Continue shopping</button>
-                            <button onClick={() => navigate('/checkout')} style={{ padding: '10px 16px', borderRadius: 8, border: 'none', background: '#1a5f3a', color: 'white' }}>Proceed to Checkout</button>
+                            <button onClick={() => navigate('/order-history')} style={{ padding: '10px 16px', borderRadius: 8, border: '1px solid #ddd', background: 'white' }}>Order History</button>
+                            <button onClick={() => navigate('/checkout', { state: { cart } })} style={{ padding: '10px 16px', borderRadius: 8, border: 'none', background: '#1a5f3a', color: 'white' }}>Proceed to Checkout</button>
                         </div>
                     </div>
                 )}
