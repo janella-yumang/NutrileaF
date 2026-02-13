@@ -581,6 +581,26 @@ const MarketScreen: React.FC = () => {
                         <option value="price-low">Sort: Price Low</option>
                         <option value="price-high">Sort: Price High</option>
                     </select>
+                    <button
+                        type="button"
+                        onClick={() => navigate('/order-history')}
+                        style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            borderRadius: '999px',
+                            padding: '12px 14px',
+                            background: '#f6faf7',
+                            color: '#1a5f3a',
+                            border: '1px solid #d9eadf',
+                            cursor: 'pointer',
+                            fontWeight: 600,
+                            fontSize: '13px',
+                            whiteSpace: 'nowrap'
+                        }}
+                    >
+                        📋 Order History
+                    </button>
                     <div ref={cartRef} style={{ position: 'relative' }}>
                         <button
                             type="button"
@@ -987,10 +1007,38 @@ const MarketScreen: React.FC = () => {
                             boxShadow: '0 12px 40px rgba(0,0,0,0.2)'
                         }}
                     >
-                        {/* 50/50 Split: Image (right) and Details (left) */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', minHeight: '500px' }}>
-                            {/* LEFT: Text Details */}
-                            <div style={{ padding: '32px', borderRight: '1px solid #f0f0f0', overflowY: 'auto', maxHeight: '90vh' }}>
+                        {/* Image on top, details below */}
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            {/* TOP: Product Image */}
+                            <div style={{ 
+                                padding: '24px',
+                                background: '#f9f9f9',
+                                borderBottom: '1px solid #f0f0f0',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                minHeight: '300px',
+                                maxHeight: '40vh',
+                                overflowY: 'auto'
+                            }}>
+                                {getImageUrl(selected.image) ? (
+                                    <img 
+                                        src={getImageUrl(selected.image)} 
+                                        alt={selected.name}
+                                        style={{
+                                            maxWidth: '100%',
+                                            maxHeight: '100%',
+                                            objectFit: 'contain',
+                                            borderRadius: '8px'
+                                        }}
+                                    />
+                                ) : (
+                                    <div style={{ fontSize: '64px' }}>{getImageEmoji(selected.image)}</div>
+                                )}
+                            </div>
+
+                            {/* BOTTOM: Text Details */}
+                            <div style={{ padding: '32px', overflowY: 'auto', maxHeight: '50vh' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
                                     <div>
                                         <h2 style={{ margin: '0 0 8px 0', fontSize: '28px', fontWeight: '700', color: '#0f2419' }}>{selected.name}</h2>
@@ -1070,8 +1118,6 @@ const MarketScreen: React.FC = () => {
                                         🛒 Add to cart
                                     </button>
                                 </div>
-                            </div>
-
                             </div>
                         </div>
 
