@@ -1032,7 +1032,7 @@ const MarketScreen: React.FC = () => {
                             boxShadow: '0 12px 40px rgba(0,0,0,0.2)',
                             display: 'flex',
                             flexDirection: 'column',
-                            overflow: 'hidden'
+                            overflow: 'auto'
                         }}
                     >
                         {/* Image on top, details below */}
@@ -1044,8 +1044,7 @@ const MarketScreen: React.FC = () => {
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            height: '300px',
-                            flexShrink: 0
+                            minHeight: '280px'
                         }}>
                             {getImageUrl(selected.image) ? (
                                 <img 
@@ -1053,7 +1052,7 @@ const MarketScreen: React.FC = () => {
                                     alt={selected.name}
                                     style={{
                                         maxWidth: '100%',
-                                        maxHeight: '100%',
+                                        maxHeight: '280px',
                                         objectFit: 'contain',
                                         borderRadius: '8px'
                                     }}
@@ -1063,8 +1062,8 @@ const MarketScreen: React.FC = () => {
                             )}
                         </div>
 
-                        {/* BOTTOM: Text Details with scrollable content */}
-                        <div style={{ padding: '32px', overflowY: 'auto', flex: 1 }}>
+                        {/* BOTTOM: Text Details */}
+                        <div style={{ padding: '32px' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
                                     <div>
                                         <h2 style={{ margin: '0 0 8px 0', fontSize: '28px', fontWeight: '700', color: '#0f2419' }}>{selected.name}</h2>
