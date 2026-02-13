@@ -132,38 +132,33 @@ def list_all_forum_threads():
 def list_forum_threads():
     """Get all forum threads with pagination."""
     try:
-        print("=== FORUM THREADS ENDPOINT ===")
+        print("=== FORUM THREADS ENDPOINT (SIMPLIFIED) ===")
         
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 10, type=int)
         
         print(f"Page: {page}, Per page: {per_page}")
         
-        # First, try to get all threads without filtering
+        # Simplified: Get ALL threads without status filter to avoid MongoEngine issues
         all_threads = ForumThread.objects()
         print(f"Total threads in DB: {all_threads.count()}")
         
-        # Get active threads
-        active_threads = ForumThread.objects(status='active')
-        active_count = active_threads.count()
-        print(f"Active threads: {active_count}")
+        # Get pagination values
+        total = all_threads.count()
+        skip_count = (page - 1) * per_page
         
-        # Get total for pagination
-        total = active_count
+        print(f"Skip: {skip_count}, Limit: {per_page}")
         
-        # Get paginated threads
-        paginated = (active_threads
-                    .order_by('-created_at')
-                    .skip((page - 1) * per_page)
-                    .limit(per_page))
+        # Get paginated threads - use simple skip/limit
+        paginated_list = list(all_threads.skip(skip_count).limit(per_page))
         
-        print(f"Paginated query built successfully")
+        print(f"Got {len(paginated_list)} threads from paginated query")
         
         # Convert to list and serialize
         threads_list = []
-        for idx, thread in enumerate(paginated):
-            print(f"Processing thread {idx}: {thread.title}")
+        for idx, thread in enumerate(paginated_list):
             try:
+                print(f"Processing thread {idx}: {thread.title}")
                 thread_dict = thread.to_dict()
                 print(f"  Serialized successfully: {thread_dict.get('id')}")
                 
@@ -188,7 +183,7 @@ def list_forum_threads():
             'current_page': page
         }
         
-        print(f"Returning response: {response}")
+        print(f"Returning response with {len(threads_list)} threads")
         return jsonify(response), 200
         
     except Exception as e:
