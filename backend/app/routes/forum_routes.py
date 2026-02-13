@@ -43,6 +43,37 @@ def get_user_from_token():
 
 # ==================== FORUM THREADS ====================
 
+@forum_bp.route('/test', methods=['GET'])
+def test_forum():
+    """Debug endpoint to test forum database."""
+    try:
+        # Test 1: Count threads
+        total_threads = ForumThread.objects.count()
+        active_threads = ForumThread.objects(status='active').count()
+        
+        # Test 2: Get first thread if exists
+        first_thread = ForumThread.objects.first()
+        first_thread_dict = first_thread.to_dict() if first_thread else None
+        
+        return jsonify({
+            'success': True,
+            'debug': {
+                'total_threads': total_threads,
+                'active_threads': active_threads,
+                'first_thread': first_thread_dict,
+                'db_connected': True
+            }
+        }), 200
+    except Exception as e:
+        print(f"Database error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'db_connected': False
+        }), 500
+
 @forum_bp.route('/threads', methods=['GET'])
 def list_forum_threads():
     """Get all forum threads with pagination."""

@@ -141,7 +141,7 @@ class ForumThread(Document):
     replies_count = fields.IntField(default=0)
     likes_count = fields.IntField(default=0)  # Track number of likes
     status = fields.StringField(default='active')  # active, closed, pinned
-    attachments = fields.ListField(fields.DictField(), default=list)
+    attachments = fields.ListField(fields.DictField(), default=[])
     created_at = fields.DateTimeField(default=datetime.utcnow)
     updated_at = fields.DateTimeField(default=datetime.utcnow)
 
