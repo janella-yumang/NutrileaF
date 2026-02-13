@@ -25,6 +25,8 @@ interface CartItem extends Product {
 
 const MarketScreen: React.FC = () => {
     const navigate = useNavigate();
+    const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrilea-10.onrender.com/api';
+    const BASE_URL = API_BASE.replace('/api', '');
     const [cart, setCart] = useState<CartItem[]>([]);
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -45,14 +47,15 @@ const MarketScreen: React.FC = () => {
         if (isEmoji) return undefined; // Return undefined for emoji, we'll handle separately
         
         // If it's already a full URL or starts with /uploads/, return as is
-        if (imageUrl.startsWith('http') || imageUrl.startsWith('/uploads/')) {
+        if (imageUrl.startsWith('http')) {
             return imageUrl;
+        }
+        if (imageUrl.startsWith('/uploads/')) {
+            return `${BASE_URL}${imageUrl}`;
         }
         
         // If it's just a filename, construct the URL
-        const apiUrl = process.env.REACT_APP_API_URL || 'https://nutrileaf-10.onrender.com/api';
-        const baseUrl = apiUrl.replace('/api', '');
-        return `${baseUrl}/uploads/${imageUrl}`;
+        return `${BASE_URL}/uploads/${imageUrl}`;
     };
 
     // Helper function to get emoji from image
@@ -87,11 +90,10 @@ const MarketScreen: React.FC = () => {
     // Fetch products from API
     const fetchProducts = useCallback(async () => {
         try {
-            const apiUrl = process.env.REACT_APP_API_URL || 'https://nutrilea-10.onrender.com/api';
-            console.log('MarketScreen - API URL:', apiUrl);
-            console.log('MarketScreen - Full products URL:', `${apiUrl}/market/products`);
+            console.log('MarketScreen - API URL:', API_BASE);
+            console.log('MarketScreen - Full products URL:', `${API_BASE}/market/products`);
             const timestamp = Date.now(); // Cache busting
-            const response = await fetch(`${apiUrl}/market/products?t=${timestamp}`);
+            const response = await fetch(`${API_BASE}/market/products?t=${timestamp}`);
             
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -116,10 +118,9 @@ const MarketScreen: React.FC = () => {
     // Fetch categories
     const fetchCategories = useCallback(async () => {
         try {
-            const apiUrl = process.env.REACT_APP_API_URL || 'https://nutrilea-10.onrender.com/api';
-            console.log('MarketScreen - API URL:', apiUrl);
-            console.log('MarketScreen - Full categories URL:', `${apiUrl}/market/categories`);
-            const response = await fetch(`${apiUrl}/market/categories`);
+            console.log('MarketScreen - API URL:', API_BASE);
+            console.log('MarketScreen - Full categories URL:', `${API_BASE}/market/categories`);
+            const response = await fetch(`${API_BASE}/market/categories`);
             console.log('MarketScreen - Categories response:', response);
             
             if (!response.ok) {

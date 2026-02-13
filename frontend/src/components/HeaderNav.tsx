@@ -24,6 +24,14 @@ const HeaderNav: React.FC = () => {
     if (!name) return null;
     return name.trim().split(' ')[0] || name;
   };
+  const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrilea-10.onrender.com/api';
+  const BASE_URL = API_BASE.replace('/api', '');
+  const resolveImageUrl = (image?: string | null) => {
+    if (!image) return null;
+    if (image.startsWith('http')) return image;
+    if (image.startsWith('/')) return `${BASE_URL}${image}`;
+    return `${BASE_URL}/${image}`;
+  };
 
   // Check login status on mount
   useEffect(() => {
@@ -37,8 +45,6 @@ const HeaderNav: React.FC = () => {
         console.log('HeaderNav - User data from localStorage:', userData);
         
         // Verify role from database instead of trusting localStorage
-        const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrileaf-10.onrender.com/api';
-        
         fetch(`${API_BASE}/auth/verify-role`, {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -66,13 +72,9 @@ const HeaderNav: React.FC = () => {
             setUserPhone(userData.phone);
             setUserRole(roleData.user?.role ?? roleData.role ?? null);
 
-            if (freshUserData.image) {
-              const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrilea-10.onrender.com/api';
-              const BASE_URL = API_BASE.replace('/api', '');
-              const fullProfileImageUrl = freshUserData.image.startsWith('http')
-                ? freshUserData.image
-                : `${BASE_URL}${freshUserData.image}`;
-              setUserProfileImage(fullProfileImageUrl);
+            const resolvedImage = resolveImageUrl(freshUserData.image);
+            if (resolvedImage) {
+              setUserProfileImage(resolvedImage);
             }
             
             console.log('HeaderNav - Set userRole from database:', roleData.user.role);
@@ -89,13 +91,9 @@ const HeaderNav: React.FC = () => {
         });
         
         // Set profile image from backend user data
-        if (userData.image) {
-          const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrilea-10.onrender.com/api';
-          const BASE_URL = API_BASE.replace('/api', '');
-          const fullProfileImageUrl = userData.image.startsWith('http')
-            ? userData.image
-            : `${BASE_URL}${userData.image}`;
-          setUserProfileImage(fullProfileImageUrl);
+        const resolvedImage = resolveImageUrl(userData.image);
+        if (resolvedImage) {
+          setUserProfileImage(resolvedImage);
         }
         
         // Load profile icon from localStorage (fallback)
@@ -126,13 +124,9 @@ const HeaderNav: React.FC = () => {
         setUserRole(userData.role || 'user');
           
           // Set profile image from backend user data
-          if (userData.image) {
-            const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrilea-10.onrender.com/api';
-            const BASE_URL = API_BASE.replace('/api', '');
-            const fullProfileImageUrl = userData.image.startsWith('http')
-              ? userData.image
-              : `${BASE_URL}${userData.image}`;
-            setUserProfileImage(fullProfileImageUrl);
+          const resolvedImage = resolveImageUrl(userData.image);
+          if (resolvedImage) {
+            setUserProfileImage(resolvedImage);
           }
           
           // Load profile icon from localStorage (fallback)
@@ -166,12 +160,10 @@ const HeaderNav: React.FC = () => {
           setUserName(toFirstName(customEvent.detail.name));
         }
         if (customEvent.detail.image) {
-          const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrileaf-10.onrender.com/api';
-          const BASE_URL = API_BASE.replace('/api', '');
-          const fullImageUrl = customEvent.detail.image.startsWith('http')
-            ? customEvent.detail.image
-            : `${BASE_URL}${customEvent.detail.image}`;
-          setUserProfileImage(fullImageUrl);
+          const resolvedImage = resolveImageUrl(customEvent.detail.image);
+          if (resolvedImage) {
+            setUserProfileImage(resolvedImage);
+          }
         }
       }
     };
@@ -203,7 +195,6 @@ const HeaderNav: React.FC = () => {
         const token = localStorage.getItem('nutrileaf_token');
         if (!token) return;
 
-        const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrileaf-10.onrender.com/api';
         console.log('HeaderNav - API_BASE:', API_BASE);
         console.log('HeaderNav - Full auth verify URL:', `${API_BASE}/auth/verify`);
         const response = await fetch(`${API_BASE}/auth/verify`, {
@@ -225,11 +216,9 @@ const HeaderNav: React.FC = () => {
           localStorage.setItem('nutrileaf_user', JSON.stringify(data.user));
           
           // Update state with profile image
-          if (data.user.profileImage) {
-            const fullProfileImageUrl = data.user.profileImage.startsWith('http') 
-              ? data.user.profileImage 
-              : `${API_BASE}${data.user.profileImage}`;
-            setUserProfileImage(fullProfileImageUrl);
+          const resolvedImage = resolveImageUrl(data.user.image);
+          if (resolvedImage) {
+            setUserProfileImage(resolvedImage);
           }
         }
       } catch (error) {
@@ -256,13 +245,9 @@ const HeaderNav: React.FC = () => {
         setUserRole(userData.role || 'user');
         
         // Set profile image from backend user data
-        if (userData.profileImage) {
-          const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrilea-10.onrender.com/api';
-          const BASE_URL = API_BASE.replace('/api', '');
-          const fullProfileImageUrl = userData.profileImage.startsWith('http') 
-            ? userData.profileImage 
-            : `${BASE_URL}${userData.profileImage}`;
-          setUserProfileImage(fullProfileImageUrl);
+        const resolvedImage = resolveImageUrl(userData.image);
+        if (resolvedImage) {
+          setUserProfileImage(resolvedImage);
         }
         
         // Load profile icon from localStorage (fallback)

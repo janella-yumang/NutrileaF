@@ -38,8 +38,14 @@ interface Comment {
 
 const ForumScreen: React.FC = () => {
   const navigate = useNavigate();
-  const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrilea-backend.onrender.com/api';
+  const API_BASE = process.env.REACT_APP_API_URL || 'https://nutrilea-10.onrender.com/api';
   const BASE_URL = API_BASE.replace('/api', '');
+  const resolveMediaUrl = (url?: string) => {
+    if (!url) return undefined;
+    if (url.startsWith('http')) return url;
+    if (url.startsWith('/')) return `${BASE_URL}${url}`;
+    return `${BASE_URL}/${url}`;
+  };
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -130,8 +136,9 @@ const ForumScreen: React.FC = () => {
 
       if (response.ok) {
         const data = await response.json();
-        if (data.success && data.thread && data.thread.replies) {
-          setComments(prev => ({ ...prev, [postId]: data.thread.replies || [] }));
+        if (data.success) {
+          const replyList = data.replies || data.thread?.replies || [];
+          setComments(prev => ({ ...prev, [postId]: replyList }));
         }
       }
     } catch (error) {
@@ -222,12 +229,10 @@ const ForumScreen: React.FC = () => {
           }
           // Return the image URL
           if (image.startsWith('http') || image.startsWith('/')) {
-            return image;
+            return resolveMediaUrl(image);
           }
           // Construct full URL for relative paths
-          const apiUrl = process.env.REACT_APP_API_URL || 'https://nutrilea-backend.onrender.com/api';
-          const baseUrl = apiUrl.replace('/api', '');
-          return `${baseUrl}/${image}`;
+          return resolveMediaUrl(`/${image}`);
         }
       }
     } catch (error) {
@@ -507,6 +512,31 @@ const ForumScreen: React.FC = () => {
                 </div>
 
                 <p className="post-content">{post.content}</p>
+
+                {post.attachments && post.attachments.length > 0 && (
+                  <div className="post-attachments">
+                    {post.attachments.map((attachment, index) => (
+                      <div key={`${post.id}-attachment-${index}`} className="post-attachment">
+                        {attachment.type === 'video' ? (
+                          <video
+                            src={resolveMediaUrl(attachment.url)}
+                            controls
+                            className="post-attachment-video"
+                          />
+                        ) : (
+                          <img
+                            src={resolveMediaUrl(attachment.url)}
+                            alt={attachment.name || 'Attachment'}
+                            className="post-attachment-image"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 <div className="post-meta">
                   <span className="post-date">

@@ -34,12 +34,15 @@ const AdminScreen: React.FC = () => {
   const [createData, setCreateData] = useState<any>({});
   const [editModalData, setEditModalData] = useState<any>({});
   
-  const apiBase = process.env.REACT_APP_API_URL || 'https://nutrileaf-10.onrender.com/api';
+  const apiBase = process.env.REACT_APP_API_URL || 'https://nutrilea-10.onrender.com/api';
   const apiOrigin = apiBase.endsWith('/api') ? apiBase.slice(0, -4) : apiBase;
   const resolveImageUrl = (image?: string) => {
     if (!image) return '';
+    const isEmoji = image.length <= 2 && /\p{Emoji}/u.test(image);
+    if (isEmoji) return '';
     if (image.startsWith('http')) return image;
-    return `${apiOrigin}${image}`;
+    if (image.startsWith('/')) return `${apiOrigin}${image}`;
+    return `${apiOrigin}/${image}`;
   };
 
   const scanParts = [
@@ -796,13 +799,13 @@ const AdminScreen: React.FC = () => {
                   <tr key={product.id} style={styles.tableRow}>
                     <td style={styles.tableCell}>{product.id}</td>
                     <td style={styles.tableCell}>
-                      {product.image && Array.isArray(product.image) && product.image.length > 0 ? (
+                      {product.image && Array.isArray(product.image) && product.image.length > 0 && resolveImageUrl(product.image[0]) ? (
                         <img
                           src={resolveImageUrl(product.image[0])}
                           alt={product.name}
                           style={styles.thumb}
                         />
-                      ) : product.image && typeof product.image === 'string' ? (
+                      ) : product.image && typeof product.image === 'string' && resolveImageUrl(product.image) ? (
                         <img
                           src={resolveImageUrl(product.image)}
                           alt={product.name}
@@ -868,7 +871,7 @@ const AdminScreen: React.FC = () => {
                   <tr key={user.id} style={styles.tableRow}>
                     <td style={styles.tableCell}>{user.id}</td>
                     <td style={styles.tableCell}>
-                      {user.image ? (
+                      {user.image && resolveImageUrl(user.image) ? (
                         <img
                           src={resolveImageUrl(user.image)}
                           alt={user.name || 'User'}

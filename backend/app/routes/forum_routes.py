@@ -4,10 +4,22 @@ Handles forum threads and replies.
 """
 
 import jwt
+import os
+import uuid
 from flask import Blueprint, request, jsonify, current_app
+from werkzeug.utils import secure_filename
 from app.models import ForumThread, ForumReply, User
 
 forum_bp = Blueprint('forum', __name__, url_prefix='/api/forum')
+
+MAX_ATTACHMENTS_TOTAL = 25 * 1024 * 1024  # 25MB
+
+def allowed_file(filename):
+    if not filename or '.' not in filename:
+        return False
+    ext = filename.rsplit('.', 1)[1].lower()
+    allowed = current_app.config.get('ALLOWED_EXTENSIONS', set())
+    return ext in allowed
 
 def get_user_from_token():
     """Extract user from JWT token in Authorization header."""
@@ -65,6 +77,7 @@ def list_forum_threads():
                 'views_count': thread.views_count,
                 'likeCount': thread.likes_count,
                 'commentCount': thread.replies_count,
+                'attachments': thread.attachments or [],
                 'created_at': thread.created_at.isoformat() if thread.created_at else None,
                 'updated_at': thread.updated_at.isoformat() if thread.updated_at else None
             } for thread in paginated_threads],
@@ -102,6 +115,7 @@ def get_forum_thread(thread_id):
                 'views_count': thread.views_count,
                 'likeCount': thread.likes_count,
                 'commentCount': thread.replies_count,
+                'attachments': thread.attachments or [],
                 'created_at': thread.created_at.isoformat() if thread.created_at else None,
                 'updated_at': thread.updated_at.isoformat() if thread.updated_at else None
             },
@@ -153,11 +167,64 @@ def create_forum_thread():
                 'error': 'Content must be at least 10 characters'
             }), 400
         
+        attachments = []
+
+        if not request.is_json:
+            files = request.files.getlist('attachments')
+            total_size = 0
+            upload_folder = current_app.config.get('UPLOAD_FOLDER')
+            if not upload_folder:
+                upload_folder = os.path.join(
+                    os.path.dirname(os.path.abspath(__file__)),
+                    '..',
+                    'static',
+                    'uploads',
+                )
+            os.makedirs(upload_folder, exist_ok=True)
+
+            for file in files:
+                if not file or not file.filename:
+                    continue
+                if not allowed_file(file.filename):
+                    return jsonify({
+                        'success': False,
+                        'message': 'Unsupported file type for attachments'
+                    }), 400
+
+                try:
+                    file.seek(0, os.SEEK_END)
+                    size = file.tell()
+                    file.seek(0)
+                except Exception:
+                    size = 0
+
+                total_size += size
+                if total_size > MAX_ATTACHMENTS_TOTAL:
+                    return jsonify({
+                        'success': False,
+                        'message': 'Attachments exceed 25MB total limit'
+                    }), 400
+
+                safe_name = secure_filename(file.filename)
+                ext = safe_name.rsplit('.', 1)[1].lower()
+                unique_name = f"{uuid.uuid4().hex}_{safe_name}"
+                file_path = os.path.join(upload_folder, unique_name)
+                file.save(file_path)
+
+                file_type = 'video' if ext in {'mp4', 'mov', 'avi', 'webm'} else 'image'
+                attachments.append({
+                    'type': file_type,
+                    'url': f"/uploads/{unique_name}",
+                    'name': safe_name,
+                    'size': size
+                })
+
         thread = ForumThread(
             title=title,
             content=content,
             user_name=user_name,
-            category=category
+            category=category,
+            attachments=attachments
         )
         
         thread.save()
@@ -176,6 +243,7 @@ def create_forum_thread():
                 'views_count': thread.views_count,
                 'likeCount': thread.likes_count,
                 'commentCount': thread.replies_count,
+                'attachments': thread.attachments or [],
                 'created_at': thread.created_at.isoformat() if thread.created_at else None,
                 'updated_at': thread.updated_at.isoformat() if thread.updated_at else None
             }

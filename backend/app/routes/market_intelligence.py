@@ -7,6 +7,7 @@ market_bp = Blueprint('market', __name__)
 def get_products():
     """Get all products with optional category filtering."""
     try:
+    base_url = request.host_url.rstrip('/')
         # Get query parameters
         category = request.args.get('category')
         region = request.args.get('region', 'Luzon')
@@ -41,7 +42,7 @@ def get_products():
                 'price': product.price,
                 'original_price': product.original_price,
                 'description': product.description,
-                'image': product.image,
+                'image': product.get_image_urls(base_url),
                 'quantity': product.quantity,
                 'benefits': product.benefits,
                 'uses': product.uses,

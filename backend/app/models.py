@@ -42,6 +42,11 @@ class Product(Document):
             # If it's an emoji, keep as-is
             elif len(img) <= 2:
                 urls.append(img)
+            # If it's already an uploads path, prefix base URL
+            elif img.startswith('/uploads/'):
+                urls.append(f"{base_url}{img}")
+            elif img.startswith('uploads/'):
+                urls.append(f"{base_url}/{img}")
             # Otherwise, construct full URL
             else:
                 urls.append(f"{base_url}/uploads/{img.lstrip('/')}")
@@ -135,6 +140,7 @@ class ForumThread(Document):
     replies_count = fields.IntField(default=0)
     likes_count = fields.IntField(default=0)  # Track number of likes
     status = fields.StringField(default='active')  # active, closed, pinned
+    attachments = fields.ListField(fields.DictField(), default=list)
     created_at = fields.DateTimeField(default=datetime.utcnow)
     updated_at = fields.DateTimeField(default=datetime.utcnow)
 
@@ -149,6 +155,7 @@ class ForumThread(Document):
             'repliesCount': self.replies_count,
             'likeCount': self.likes_count,
             'status': self.status,
+            'attachments': self.attachments or [],
             'createdAt': self.created_at.isoformat() if self.created_at else None,
             'updatedAt': self.updated_at.isoformat() if self.updated_at else None
         }
