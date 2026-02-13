@@ -595,26 +595,29 @@ const AdminScreen: React.FC = () => {
   };
 
   return (
-    <div>
+    <div className="admin-screen">
       <HeaderNav />
-      <div style={styles.container}>
-        <div style={styles.header}>
-          <h1>Admin Dashboard</h1>
-          <p>Manage products, users, orders, categories, and reviews</p>
+      <div className="admin-shell">
+        <div className="admin-header">
+          <div>
+            <p className="admin-kicker">Control Center</p>
+            <h1>Admin Dashboard</h1>
+            <p className="admin-subtitle">Manage products, users, orders, categories, and reviews</p>
+          </div>
+          <div className="admin-header-actions">
+            <div className="admin-pill">Live</div>
+          </div>
         </div>
 
       {/* Tabs */}
-      <div style={styles.tabContainer}>
+      <div className="admin-tabs">
         {['dashboard', 'products', 'users', 'orders', 'forum', 'categories', 'reviews'].map(tab => (
           <button
             key={tab}
             onClick={() => {
               setActiveTab(tab);
             }}
-            style={{
-              ...styles.tab,
-              ...(activeTab === tab ? styles.activeTab : {})
-            }}
+            className={`admin-tab ${activeTab === tab ? 'admin-tab--active' : ''}`}
           >
             {tab.charAt(0).toUpperCase() + tab.slice(1)}
           </button>
@@ -623,113 +626,131 @@ const AdminScreen: React.FC = () => {
 
       {/* Dashboard Tab */}
       {activeTab === 'dashboard' && (
-        <div style={styles.dashboardSection}>
-          <h2>Dashboard Statistics</h2>
-          <div style={styles.statsGrid}>
-            <div style={styles.statCard}>
-              <div style={styles.statValue}>{stats.totalUsers}</div>
-              <div style={styles.statLabel}>Total Users</div>
+        <div className="admin-dashboard">
+          <div className="admin-dashboard-header">
+            <div>
+              <h2>Overview</h2>
+              <p>Performance snapshot for the last 30 days</p>
             </div>
-            <div style={styles.statCard}>
-              <div style={styles.statValue}>{stats.totalProducts}</div>
-              <div style={styles.statLabel}>Total Products</div>
+            <div className="admin-dashboard-chip">Updated just now</div>
+          </div>
+          <div className="admin-stat-grid">
+            <div className="admin-stat-card" style={{ ['--delay' as any]: '0ms' }}>
+              <div className="admin-stat-value">{stats.totalUsers}</div>
+              <div className="admin-stat-label">Total users</div>
             </div>
-            <div style={styles.statCard}>
-              <div style={styles.statValue}>{stats.totalOrders}</div>
-              <div style={styles.statLabel}>Total Orders</div>
+            <div className="admin-stat-card" style={{ ['--delay' as any]: '80ms' }}>
+              <div className="admin-stat-value">{stats.totalProducts}</div>
+              <div className="admin-stat-label">Total products</div>
             </div>
-            <div style={styles.statCard}>
-              <div style={styles.statValue}>{stats.pendingOrders}</div>
-              <div style={styles.statLabel}>Pending Orders</div>
+            <div className="admin-stat-card" style={{ ['--delay' as any]: '160ms' }}>
+              <div className="admin-stat-value">{stats.totalOrders}</div>
+              <div className="admin-stat-label">Total orders</div>
             </div>
-            <div style={styles.statCard}>
-              <div style={styles.statValue}>{stats.totalForumThreads}</div>
-              <div style={styles.statLabel}>Forum Threads</div>
+            <div className="admin-stat-card" style={{ ['--delay' as any]: '240ms' }}>
+              <div className="admin-stat-value">{stats.pendingOrders}</div>
+              <div className="admin-stat-label">Pending orders</div>
             </div>
-            <div style={styles.statCard}>
-              <div style={styles.statValue}>₱{stats.totalRevenue}</div>
-              <div style={styles.statLabel}>Total Revenue</div>
+            <div className="admin-stat-card" style={{ ['--delay' as any]: '320ms' }}>
+              <div className="admin-stat-value">{stats.totalForumThreads}</div>
+              <div className="admin-stat-label">Forum threads</div>
+            </div>
+            <div className="admin-stat-card" style={{ ['--delay' as any]: '400ms' }}>
+              <div className="admin-stat-value">₱{stats.totalRevenue}</div>
+              <div className="admin-stat-label">Total revenue</div>
             </div>
           </div>
 
-          <div style={styles.analyticsBlock}>
-            <div style={styles.analyticsHeader}>
-              <h3 style={styles.analyticsTitle}>Admin Analytics</h3>
-              <p style={styles.analyticsSubtitle}>Static preview (no backend yet)</p>
+          <div className="admin-analytics">
+            <div className="admin-analytics-header">
+              <div>
+                <h3>Admin analytics</h3>
+                <p>Static preview (no backend yet)</p>
+              </div>
+              <button className="admin-pill">This week</button>
             </div>
 
-            <div style={styles.analyticsGrid}>
-              <div style={styles.analyticsCard}>
-                <div style={styles.analyticsLabel}>Healthy detected</div>
-                <div style={styles.analyticsValue}>{detection.healthy}</div>
+            <div className="admin-analytics-grid">
+              <div className="admin-analytics-card" style={{ ['--delay' as any]: '80ms' }}>
+                <div className="admin-analytics-label">Healthy detected</div>
+                <div className="admin-analytics-value">{detection.healthy}</div>
               </div>
-              <div style={styles.analyticsCard}>
-                <div style={styles.analyticsLabel}>Disease detected</div>
-                <div style={styles.analyticsValue}>{detection.disease}</div>
+              <div className="admin-analytics-card" style={{ ['--delay' as any]: '160ms' }}>
+                <div className="admin-analytics-label">Disease detected</div>
+                <div className="admin-analytics-value">{detection.disease}</div>
               </div>
-              <div style={styles.analyticsCard}>
-                <div style={styles.analyticsLabel}>Accuracy result</div>
-                <div style={styles.analyticsValue}>{accuracyTrend[accuracyTrend.length - 1]}%</div>
+              <div className="admin-analytics-card" style={{ ['--delay' as any]: '240ms' }}>
+                <div className="admin-analytics-label">Accuracy result</div>
+                <div className="admin-analytics-value">{accuracyTrend[accuracyTrend.length - 1]}%</div>
               </div>
-              <div style={styles.analyticsCard}>
-                <div style={styles.analyticsLabel}>Market value</div>
-                <div style={styles.analyticsValue}>PHP {marketValueTrend[marketValueTrend.length - 1]}k</div>
+              <div className="admin-analytics-card" style={{ ['--delay' as any]: '320ms' }}>
+                <div className="admin-analytics-label">Market value</div>
+                <div className="admin-analytics-value">PHP {marketValueTrend[marketValueTrend.length - 1]}k</div>
               </div>
             </div>
 
-            <div style={styles.analyticsCharts}>
-              <div style={styles.chartCard}>
-                <h4 style={styles.chartTitle}>Total scans by malunggay part</h4>
-                <div style={styles.chartList}>
+            <div className="admin-chart-grid">
+              <div className="admin-chart-card admin-chart-card--scan">
+                <div className="admin-card-header">
+                  <h4>Total scans by malunggay part</h4>
+                  <span className="admin-chip">Live feed</span>
+                </div>
+                <div className="admin-chart-list">
                   {scanParts.map(item => (
-                    <div key={item.label} style={styles.chartRow}>
-                      <div style={styles.chartLabel}>{item.label}</div>
-                      <div style={styles.chartTrack}>
+                    <div key={item.label} className="admin-chart-row">
+                      <div className="admin-chart-label">{item.label}</div>
+                      <div className="admin-chart-track">
                         <div
+                          className="admin-chart-fill"
                           style={{
-                            ...styles.chartFill,
                             width: `${Math.round((item.value / maxScan) * 100)}%`,
                             background: item.color
                           }}
                         />
                       </div>
-                      <div style={styles.chartValue}>{item.value}</div>
+                      <div className="admin-chart-value">{item.value}</div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div style={styles.chartCard}>
-                <h4 style={styles.chartTitle}>Healthy vs disease detected</h4>
-                <div style={styles.donutRow}>
+              <div className="admin-chart-card admin-chart-card--donut">
+                <div className="admin-card-header">
+                  <h4>Healthy vs disease detected</h4>
+                  <span className="admin-chip">This month</span>
+                </div>
+                <div className="admin-donut-row">
                   <div
+                    className="admin-donut"
                     style={{
-                      ...styles.donut,
                       background: `conic-gradient(#2e7d5b 0% ${healthyPct}%, #e06b6b ${healthyPct}% 100%)`
                     }}
                   >
-                    <div style={styles.donutCenter}>
-                      <div style={styles.donutValue}>{healthyPct}%</div>
-                      <div style={styles.donutLabel}>Healthy</div>
+                    <div className="admin-donut-center">
+                      <div className="admin-donut-value">{healthyPct}%</div>
+                      <div className="admin-donut-label">Healthy</div>
                     </div>
                   </div>
-                  <div style={styles.donutLegend}>
-                    <div style={styles.legendItem}>
-                      <span style={{ ...styles.legendDot, background: '#2e7d5b' }} />
+                  <div className="admin-donut-legend">
+                    <div className="admin-legend-item">
+                      <span className="admin-legend-dot" style={{ background: '#2e7d5b' }} />
                       Healthy: {detection.healthy}
                     </div>
-                    <div style={styles.legendItem}>
-                      <span style={{ ...styles.legendDot, background: '#e06b6b' }} />
+                    <div className="admin-legend-item">
+                      <span className="admin-legend-dot" style={{ background: '#e06b6b' }} />
                       Disease: {detection.disease}
                     </div>
-                    <div style={styles.legendNote}>Total scans: {detectionTotal}</div>
+                    <div className="admin-legend-note">Total scans: {detectionTotal}</div>
                   </div>
                 </div>
               </div>
 
-              <div style={styles.chartCard}>
-                <h4 style={styles.chartTitle}>Accuracy of scan results</h4>
-                <svg width="260" height="110" style={styles.chartSvg}>
+              <div className="admin-chart-card admin-chart-card--accuracy">
+                <div className="admin-card-header">
+                  <h4>Accuracy of scan results</h4>
+                  <span className="admin-chip">Trend</span>
+                </div>
+                <svg width="260" height="110" className="admin-chart-svg">
                   <polyline
                     fill="none"
                     stroke="#1f6a45"
@@ -742,24 +763,27 @@ const AdminScreen: React.FC = () => {
                     points={`${accuracyPoints} 250,90 10,90`}
                   />
                 </svg>
-                <div style={styles.chartAxis}>
+                <div className="admin-chart-axis">
                   <span>Week 1</span>
                   <span>Week 7</span>
                 </div>
               </div>
 
-              <div style={styles.chartCard}>
-                <h4 style={styles.chartTitle}>Market value (monthly)</h4>
-                <div style={styles.barChart}>
+              <div className="admin-chart-card admin-chart-card--market">
+                <div className="admin-card-header">
+                  <h4>Market value (monthly)</h4>
+                  <span className="admin-chip">PHP</span>
+                </div>
+                <div className="admin-bar-chart">
                   {marketValueTrend.map((value, index) => (
-                    <div key={`${value}-${index}`} style={styles.barItem}>
+                    <div key={`${value}-${index}`} className="admin-bar-item">
                       <div
+                        className="admin-bar"
                         style={{
-                          ...styles.bar,
                           height: `${Math.round((value / marketMax) * 100)}%`
                         }}
                       />
-                      <div style={styles.barLabel}>{index + 1}m</div>
+                      <div className="admin-bar-label">{index + 1}m</div>
                     </div>
                   ))}
                 </div>
@@ -771,17 +795,13 @@ const AdminScreen: React.FC = () => {
 
       {/* Products Tab */}
       {activeTab === 'products' && (
-        <div style={styles.section}>
-          <div style={styles.sectionHeader}>
+        <div className="admin-section">
+          <div className="admin-section-header">
             <h2>Manage Products</h2>
-            <button 
-              onClick={() => handleCreate('product')}
-              style={styles.createBtn}
-            >
-              + Create Product
-            </button>
+            <button onClick={() => handleCreate('product')} className="admin-button">+ Create Product</button>
           </div>
           {productsLoading ? <p>Loading...</p> : (
+            <div className="admin-table-card">
             <table style={styles.table}>
               <thead>
                 <tr>
@@ -837,23 +857,20 @@ const AdminScreen: React.FC = () => {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       )}
 
       {/* Users Tab */}
       {activeTab === 'users' && (
-        <div style={styles.section}>
-          <div style={styles.sectionHeader}>
+        <div className="admin-section">
+          <div className="admin-section-header">
             <h2>Manage Users</h2>
-            <button 
-              onClick={() => handleCreate('user')}
-              style={styles.createBtn}
-            >
-              + Create User
-            </button>
+            <button onClick={() => handleCreate('user')} className="admin-button">+ Create User</button>
           </div>
           {usersLoading ? <p>Loading...</p> : (
+            <div className="admin-table-card">
             <table style={styles.table}>
               <thead>
                 <tr>
@@ -911,15 +928,17 @@ const AdminScreen: React.FC = () => {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       )}
 
       {/* Orders Tab */}
       {activeTab === 'orders' && (
-        <div style={styles.section}>
+        <div className="admin-section">
           <h2>Manage Orders</h2>
           {ordersLoading ? <p>Loading...</p> : (
+            <div className="admin-table-card">
             <table style={styles.table}>
               <thead>
                 <tr>
@@ -994,15 +1013,17 @@ const AdminScreen: React.FC = () => {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       )}
 
       {/* Forum Tab */}
       {activeTab === 'forum' && (
-        <div style={styles.section}>
+        <div className="admin-section">
           <h2>Manage Forum Threads</h2>
           {forumLoading ? <p>Loading...</p> : (
+            <div className="admin-table-card">
             <table style={styles.table}>
               <thead>
                 <tr>
@@ -1077,23 +1098,20 @@ const AdminScreen: React.FC = () => {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       )}
 
       {/* Categories Tab */}
       {activeTab === 'categories' && (
-        <div style={styles.section}>
-          <div style={styles.sectionHeader}>
+        <div className="admin-section">
+          <div className="admin-section-header">
             <h2>Manage Categories</h2>
-            <button 
-              onClick={() => handleCreate('category')}
-              style={styles.createBtn}
-            >
-              + Create Category
-            </button>
+            <button onClick={() => handleCreate('category')} className="admin-button">+ Create Category</button>
           </div>
           {categoriesLoading ? <p>Loading...</p> : (
+            <div className="admin-table-card">
             <table style={styles.table}>
               <thead>
                 <tr>
@@ -1129,15 +1147,17 @@ const AdminScreen: React.FC = () => {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       )}
 
       {/* Reviews Tab */}
       {activeTab === 'reviews' && (
-        <div style={styles.section}>
+        <div className="admin-section">
           <h2>Manage Reviews</h2>
           {reviewsLoading ? <p>Loading...</p> : (
+            <div className="admin-table-card">
             <table style={styles.table}>
               <thead>
                 <tr>
@@ -1177,6 +1197,7 @@ const AdminScreen: React.FC = () => {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       )}
