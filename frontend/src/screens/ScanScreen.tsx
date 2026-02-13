@@ -186,7 +186,8 @@ const ScanScreen = () => {
             const data = await resp.json();
 
             if (data.success) {
-                setCapturedImage(`${API_BASE}/image/uploads/${data.filename}`);
+                const uploadedUrl = data.url || `${API_BASE}/image/uploads/${data.filename}`;
+                setCapturedImage(uploadedUrl);
                 setResults({
                     health: data.analysis.health_status,
                     healthConfidence: data.analysis.confidence,

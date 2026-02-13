@@ -6,10 +6,9 @@ Requires admin role to access.
 from flask import Blueprint, request, jsonify, current_app
 from functools import wraps
 from werkzeug.security import generate_password_hash
-from werkzeug.utils import secure_filename
-import os
-import json
 from app.models import Product, User, Order, ForumThread, ForumReply, ProductCategory, Review
+from app.utils.helpers import upload_to_cloudinary
+import json
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/api/admin')
 
@@ -108,13 +107,8 @@ def create_user():
 
         image_url = None
         if 'image' in request.files and request.files['image'].filename:
-            file = request.files['image']
-            filename = secure_filename(file.filename)
-            upload_folder = current_app.config.get('UPLOAD_FOLDER', 'app/static/uploads')
-            os.makedirs(upload_folder, exist_ok=True)
-            file_path = os.path.join(upload_folder, filename)
-            file.save(file_path)
-            image_url = f'/uploads/{filename}'
+            upload_result = upload_to_cloudinary(request.files['image'], 'nutrilea/users', resource_type='image')
+            image_url = upload_result.get('secure_url')
         if not image_url and data.get('image'):
             image_url = data.get('image')
 
@@ -159,26 +153,18 @@ def create_product():
         image_urls = []
         if 'images' in request.files:
             files = request.files.getlist('images')
-            upload_folder = current_app.config.get('UPLOAD_FOLDER', 'app/static/uploads')
-            os.makedirs(upload_folder, exist_ok=True)
-            
             for file in files:
                 if file and file.filename:
-                    filename = secure_filename(file.filename)
-                    file_path = os.path.join(upload_folder, filename)
-                    file.save(file_path)
-                    # Store just the filename - Product model handles URL construction
-                    image_urls.append(filename)
+                    upload_result = upload_to_cloudinary(file, 'nutrilea/products', resource_type='image')
+                    secure_url = upload_result.get('secure_url')
+                    if secure_url:
+                        image_urls.append(secure_url)
         
         # Handle single image upload
         if 'image' in request.files and request.files['image'].filename:
-            file = request.files['image']
-            filename = secure_filename(file.filename)
-            upload_folder = current_app.config.get('UPLOAD_FOLDER', 'app/static/uploads')
-            os.makedirs(upload_folder, exist_ok=True)
-            file_path = os.path.join(upload_folder, filename)
-            file.save(file_path)
-            image_urls = [filename]
+            upload_result = upload_to_cloudinary(request.files['image'], 'nutrilea/products', resource_type='image')
+            secure_url = upload_result.get('secure_url')
+            image_urls = [secure_url] if secure_url else []
         
         # If no images uploaded but image URLs provided in JSON
         if not image_urls and data.get('image'):
@@ -266,27 +252,20 @@ def update_product(product_id):
         
         # Handle single image upload (replaces existing images)
         if 'image' in request.files and request.files['image'].filename:
-            file = request.files['image']
-            filename = secure_filename(file.filename)
-            upload_folder = current_app.config.get('UPLOAD_FOLDER', 'app/static/uploads')
-            os.makedirs(upload_folder, exist_ok=True)
-            file_path = os.path.join(upload_folder, filename)
-            file.save(file_path)
-            image_urls = [filename]
+            upload_result = upload_to_cloudinary(request.files['image'], 'nutrilea/products', resource_type='image')
+            secure_url = upload_result.get('secure_url')
+            image_urls = [secure_url] if secure_url else []
         
         # Handle multiple image upload (replaces existing images)
         elif 'images' in request.files:
             files = request.files.getlist('images')
-            upload_folder = current_app.config.get('UPLOAD_FOLDER', 'app/static/uploads')
-            os.makedirs(upload_folder, exist_ok=True)
             image_urls = []
-            
             for file in files:
                 if file and file.filename:
-                    filename = secure_filename(file.filename)
-                    file_path = os.path.join(upload_folder, filename)
-                    file.save(file_path)
-                    image_urls.append(filename)
+                    upload_result = upload_to_cloudinary(file, 'nutrilea/products', resource_type='image')
+                    secure_url = upload_result.get('secure_url')
+                    if secure_url:
+                        image_urls.append(secure_url)
         
         # Handle image URLs from JSON (not file upload)
         elif 'image' in data and not request.files:
@@ -442,13 +421,10 @@ def update_user(user_id):
     
     try:
         if 'image' in request.files and request.files['image'].filename:
-            file = request.files['image']
-            filename = secure_filename(file.filename)
-            upload_folder = current_app.config.get('UPLOAD_FOLDER', 'app/static/uploads')
-            os.makedirs(upload_folder, exist_ok=True)
-            file_path = os.path.join(upload_folder, filename)
-            file.save(file_path)
-            user.image = f'/uploads/{filename}'
+            upload_result = upload_to_cloudinary(request.files['image'], 'nutrilea/users', resource_type='image')
+            secure_url = upload_result.get('secure_url')
+            if secure_url:
+                user.image = secure_url
         elif 'image' in data:
             user.image = data['image']
         if 'name' in data:
@@ -712,13 +688,8 @@ def create_category():
         # Handle image upload
         image_url = None
         if 'image' in request.files and request.files['image'].filename:
-            file = request.files['image']
-            filename = secure_filename(file.filename)
-            upload_folder = current_app.config.get('UPLOAD_FOLDER', 'app/static/uploads')
-            os.makedirs(upload_folder, exist_ok=True)
-            file_path = os.path.join(upload_folder, filename)
-            file.save(file_path)
-            image_url = f'/uploads/{filename}'
+            upload_result = upload_to_cloudinary(request.files['image'], 'nutrilea/categories', resource_type='image')
+            image_url = upload_result.get('secure_url')
         
         # If no image uploaded but image URL provided in JSON
         if not image_url and data.get('image'):
@@ -755,13 +726,8 @@ def update_category(category_id):
         # Handle image upload
         image_url = category.image
         if 'image' in request.files and request.files['image'].filename:
-            file = request.files['image']
-            filename = secure_filename(file.filename)
-            upload_folder = current_app.config.get('UPLOAD_FOLDER', 'app/static/uploads')
-            os.makedirs(upload_folder, exist_ok=True)
-            file_path = os.path.join(upload_folder, filename)
-            file.save(file_path)
-            image_url = f'/uploads/{filename}'
+            upload_result = upload_to_cloudinary(request.files['image'], 'nutrilea/categories', resource_type='image')
+            image_url = upload_result.get('secure_url')
         
         # Update fields
         if 'name' in data:

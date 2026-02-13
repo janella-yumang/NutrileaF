@@ -8,6 +8,10 @@ except ImportError:
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'supersecretkey')
+
+    CLOUDINARY_CLOUD_NAME = os.environ.get('CLOUDINARY_CLOUD_NAME')
+    CLOUDINARY_API_KEY = os.environ.get('CLOUDINARY_API_KEY')
+    CLOUDINARY_API_SECRET = os.environ.get('CLOUDINARY_API_SECRET')
     
     # Upload folder configuration
     UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'app/static/uploads')

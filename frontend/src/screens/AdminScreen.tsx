@@ -609,24 +609,28 @@ const AdminScreen: React.FC = () => {
           </div>
         </div>
 
-      {/* Tabs */}
-      <div className="admin-tabs">
-        {['dashboard', 'products', 'users', 'orders', 'forum', 'categories', 'reviews'].map(tab => (
-          <button
-            key={tab}
-            onClick={() => {
-              setActiveTab(tab);
-            }}
-            className={`admin-tab ${activeTab === tab ? 'admin-tab--active' : ''}`}
-          >
-            {tab.charAt(0).toUpperCase() + tab.slice(1)}
-          </button>
-        ))}
-      </div>
+      <div className="admin-body">
+        <aside className="admin-sidebar">
+          <div className="admin-sidebar-title">Sections</div>
+          <div className="admin-tabs admin-tabs--side">
+            {['dashboard', 'products', 'users', 'orders', 'forum', 'categories', 'reviews'].map(tab => (
+              <button
+                key={tab}
+                onClick={() => {
+                  setActiveTab(tab);
+                }}
+                className={`admin-tab ${activeTab === tab ? 'admin-tab--active' : ''}`}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </button>
+            ))}
+          </div>
+        </aside>
 
-      {/* Dashboard Tab */}
-      {activeTab === 'dashboard' && (
-        <div className="admin-dashboard">
+        <main className="admin-content">
+        {/* Dashboard Tab */}
+        {activeTab === 'dashboard' && (
+          <div className="admin-dashboard">
           <div className="admin-dashboard-header">
             <div>
               <h2>Overview</h2>
@@ -794,8 +798,8 @@ const AdminScreen: React.FC = () => {
       )}
 
       {/* Products Tab */}
-      {activeTab === 'products' && (
-        <div className="admin-section">
+        {activeTab === 'products' && (
+          <div className="admin-section">
           <div className="admin-section-header">
             <h2>Manage Products</h2>
             <button onClick={() => handleCreate('product')} className="admin-button">+ Create Product</button>
@@ -863,8 +867,8 @@ const AdminScreen: React.FC = () => {
       )}
 
       {/* Users Tab */}
-      {activeTab === 'users' && (
-        <div className="admin-section">
+        {activeTab === 'users' && (
+          <div className="admin-section">
           <div className="admin-section-header">
             <h2>Manage Users</h2>
             <button onClick={() => handleCreate('user')} className="admin-button">+ Create User</button>
@@ -934,8 +938,8 @@ const AdminScreen: React.FC = () => {
       )}
 
       {/* Orders Tab */}
-      {activeTab === 'orders' && (
-        <div className="admin-section">
+        {activeTab === 'orders' && (
+          <div className="admin-section">
           <h2>Manage Orders</h2>
           {ordersLoading ? <p>Loading...</p> : (
             <div className="admin-table-card">
@@ -1019,8 +1023,8 @@ const AdminScreen: React.FC = () => {
       )}
 
       {/* Forum Tab */}
-      {activeTab === 'forum' && (
-        <div className="admin-section">
+        {activeTab === 'forum' && (
+          <div className="admin-section">
           <h2>Manage Forum Threads</h2>
           {forumLoading ? <p>Loading...</p> : (
             <div className="admin-table-card">
@@ -1104,8 +1108,8 @@ const AdminScreen: React.FC = () => {
       )}
 
       {/* Categories Tab */}
-      {activeTab === 'categories' && (
-        <div className="admin-section">
+        {activeTab === 'categories' && (
+          <div className="admin-section">
           <div className="admin-section-header">
             <h2>Manage Categories</h2>
             <button onClick={() => handleCreate('category')} className="admin-button">+ Create Category</button>
@@ -1153,8 +1157,8 @@ const AdminScreen: React.FC = () => {
       )}
 
       {/* Reviews Tab */}
-      {activeTab === 'reviews' && (
-        <div className="admin-section">
+        {activeTab === 'reviews' && (
+          <div className="admin-section">
           <h2>Manage Reviews</h2>
           {reviewsLoading ? <p>Loading...</p> : (
             <div className="admin-table-card">
@@ -1202,8 +1206,8 @@ const AdminScreen: React.FC = () => {
         </div>
       )}
 
-      {/* Create Modal */}
-      {showCreateModal && (
+        {/* Create Modal */}
+        {showCreateModal && (
         <div style={styles.modalOverlay}>
           <div style={styles.modal}>
             <h3>
@@ -1407,8 +1411,8 @@ const AdminScreen: React.FC = () => {
         </div>
       )}
 
-      {/* Edit Modal */}
-      {showEditModal && (
+        {/* Edit Modal */}
+        {showEditModal && (
         <div style={styles.modalOverlay}>
           <div style={styles.modal}>
             <h3>
@@ -1660,7 +1664,10 @@ const AdminScreen: React.FC = () => {
             </div>
           </div>
         </div>
-      )}
+        )}
+
+        </main>
+      </div>
 
     </div>
   </div>
@@ -2005,7 +2012,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   table: {
     width: '100%',
     borderCollapse: 'collapse',
-    marginTop: '16px',
+    marginTop: '0',
     overflow: 'hidden',
     borderRadius: '12px',
     border: '1px solid rgba(15, 36, 25, 0.08)',
@@ -2065,20 +2072,20 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontWeight: 600
   },
   tableCell: {
-    padding: '14px 12px',
+    padding: '12px 12px',
     textAlign: 'left',
     borderBottom: '1px solid rgba(15, 36, 25, 0.06)',
     verticalAlign: 'middle',
-    lineHeight: '1.5'
+    lineHeight: '1.45'
   },
   tableHeader: {
-    padding: '16px 12px',
+    padding: '12px 12px',
     textAlign: 'left',
     backgroundColor: '#f8faf9',
     fontWeight: '600',
     color: '#0f2419',
     borderBottom: '2px solid rgba(15, 36, 25, 0.12)',
-    fontSize: '13px',
+    fontSize: '12px',
     textTransform: 'uppercase',
     letterSpacing: '0.5px'
   },

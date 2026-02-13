@@ -1,9 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 from werkzeug.security import generate_password_hash, check_password_hash
-from werkzeug.utils import secure_filename
 import jwt
 import datetime
-import os
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -361,14 +359,14 @@ def upload_profile_image():
         if not user:
             return jsonify({'success': False, 'message': 'User not found'}), 404
 
-        file = request.files['image']
-        filename = secure_filename(file.filename)
-        upload_folder = current_app.config.get('UPLOAD_FOLDER', 'app/static/uploads')
-        os.makedirs(upload_folder, exist_ok=True)
-        file_path = os.path.join(upload_folder, filename)
-        file.save(file_path)
+        from app.utils.helpers import upload_to_cloudinary
 
-        user.image = f'/uploads/{filename}'
+        upload_result = upload_to_cloudinary(request.files['image'], 'nutrilea/profile', resource_type='image')
+        secure_url = upload_result.get('secure_url')
+        if not secure_url:
+            return jsonify({'success': False, 'message': 'Image upload failed'}), 500
+
+        user.image = secure_url
         user.save()
 
         return jsonify({

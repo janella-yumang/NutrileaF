@@ -5,10 +5,10 @@ Handles forum threads and replies.
 
 import jwt
 import os
-import uuid
 from flask import Blueprint, request, jsonify, current_app
 from werkzeug.utils import secure_filename
 from app.models import ForumThread, ForumReply, User
+from app.utils.helpers import upload_to_cloudinary
 
 forum_bp = Blueprint('forum', __name__, url_prefix='/api/forum')
 
@@ -172,16 +172,6 @@ def create_forum_thread():
         if not request.is_json:
             files = request.files.getlist('attachments')
             total_size = 0
-            upload_folder = current_app.config.get('UPLOAD_FOLDER')
-            if not upload_folder:
-                upload_folder = os.path.join(
-                    os.path.dirname(os.path.abspath(__file__)),
-                    '..',
-                    'static',
-                    'uploads',
-                )
-            os.makedirs(upload_folder, exist_ok=True)
-
             for file in files:
                 if not file or not file.filename:
                     continue
@@ -205,16 +195,22 @@ def create_forum_thread():
                         'message': 'Attachments exceed 25MB total limit'
                     }), 400
 
+                file.seek(0)
+
                 safe_name = secure_filename(file.filename)
                 ext = safe_name.rsplit('.', 1)[1].lower()
-                unique_name = f"{uuid.uuid4().hex}_{safe_name}"
-                file_path = os.path.join(upload_folder, unique_name)
-                file.save(file_path)
+                upload_result = upload_to_cloudinary(file, 'nutrilea/forum', resource_type='auto')
+                secure_url = upload_result.get('secure_url')
+                if not secure_url:
+                    return jsonify({
+                        'success': False,
+                        'message': 'Attachment upload failed'
+                    }), 500
 
                 file_type = 'video' if ext in {'mp4', 'mov', 'avi', 'webm'} else 'image'
                 attachments.append({
                     'type': file_type,
-                    'url': f"/uploads/{unique_name}",
+                    'url': secure_url,
                     'name': safe_name,
                     'size': size
                 })
